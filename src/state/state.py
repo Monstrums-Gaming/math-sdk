@@ -258,6 +258,12 @@ class GeneralGameState(ABC):
         self.win_manager = WinManager(self.config.basegame_type, self.config.freegame_type, mode_max_win)
         self.library = {}
         self.recorded_events = {}
+        # Reset per-batch so the payout sidecar mirrors this batch's book file.
+        # _payout_ints accumulates across run_spin calls; without this reset it
+        # would carry prior batches' payouts into the next batch's sidecar,
+        # double-counting entries (e.g. 50k + 100k = 150k for a 100k/2-batch run)
+        # and breaking the books-vs-LUT payout hash verification.
+        self._payout_ints = []
         self.betmode = betmode
         self.num_sims = num_sims
         for sim in range(
