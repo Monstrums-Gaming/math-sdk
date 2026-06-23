@@ -176,6 +176,29 @@ def win_info_event(gamestate, include_padding_index=True):
     gamestate.book.add_event(event)
 
 
+def win_info_special_event(gamestate, amount, meta=None):
+    """Emit a winInfo event for a single board-less win (e.g. a mystery-box prize).
+
+    Unlike win_info_event, there is no board to read positions from: the win is
+    described purely by its payout and optional meta. `amount` is the RGS
+    multiplier (base-bet units); it is capped at the wincap and emitted in the
+    same integer "cents" scale (x100) the client uses for every other win.
+    """
+    capped_amount = int(round(min(amount, gamestate.config.wincap) * 100, 0))
+
+    win_entry = {"win": capped_amount, "positions": []}
+    if meta is not None:
+        win_entry["meta"] = meta
+
+    event = {
+        "index": len(gamestate.book.events),
+        "type": EventConstants.WIN_DATA.value,
+        "totalWin": capped_amount,
+        "wins": [win_entry],
+    }
+    gamestate.book.add_event(event)
+
+
 def update_tumble_win_event(gamestate):
     """Update a banner to record successive tumble wins."""
     event = {
