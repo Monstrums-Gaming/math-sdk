@@ -20,7 +20,8 @@ frontend_demo/
   index.html    # page layout
   app.js        # RGS client + event replay (ES module)
   styles.css    # box / reveal / win animations
-  prizes.js     # CP1–CP9 catalog (copy of the generated config_fe)
+  prizes.js     # CP1–CP9 catalog (copy of the generated config_fe) + baked image paths
+  images/       # CP1.png … CP9.png — prize art baked into the bundle
   README.md
 ```
 
@@ -70,16 +71,34 @@ cd games/3_2_mystery_box_cash_paradise/frontend_demo
 python3 -m http.server 8000
 ```
 
+Any static server works (`npx serve`, VS Code Live Server, …); `python3 -m http.server`
+just needs no dependencies. Pick any free port. Then open one of:
+
 - **LOCAL SIM (no RGS, fully offline):** open `http://localhost:8000/`. With no `rgs_url`/
   `sessionID` the demo auto-runs Local mode — it draws weighted-random prizes from the prize
   table, builds the same event sequence the engine emits, and tracks a client-side balance
   (starts at 1,000). Over many opens the outcome frequencies match the prize table (~85% RTP).
+
+  The prize art comes from the **baked-in** `images/CP*.png` (see below) — no
+  network call, so it looks the same here as on live RGS.
 
 - **LIVE RGS:** open with the params from a real Stake session, e.g.
   `http://localhost:8000/?rgs_url=<host>&sessionID=<id>&currency=USD&mode=base`.
   Balance and outcomes come from the RGS; wins are finalized via `/wallet/end-round`.
 
 The header badge shows which mode is active.
+
+## Prize art: baked images
+
+The CP1–CP9 prize art is **baked into the bundle** as `images/CP*.png` and
+referenced from `prizes.js` (`image: "./images/CP1.png"`). The renderer prefers
+that image and falls back to the prize's emoji if a file is missing. These images
+are same-origin assets, so they render on the live Stake RGS (whose CSP allows
+`img-src 'self'`) with **no network call** — prize names, art, and probabilities
+all come from `prizes.js`, identically off-RGS and on live.
+
+To change the art, just overwrite the `images/CP*.png` files (keeping the
+`CP1`…`CP9` names) — no code change needed.
 
 ## Bet level
 
@@ -95,9 +114,12 @@ live game, set them there; this demo only locks its own UI.
 
 ## Deploy to Stake Engine
 
-Upload `index.html`, `app.js`, `styles.css`, `prizes.js` as the game's **frontend files**
-(no build step — unlike the Svelte/Vite example in `docs/simple_example/`, which requires
-`yarn build` and uploading `dist/`). Stake injects the query params at launch.
+Upload the whole folder as the game's **frontend files**: `index.html`, `app.js`,
+`styles.css`, `prizes.js`, **and the `images/` folder** (`CP1.png … CP9.png` — the
+prize art must ship in the bundle, since the CSP blocks fetching it at runtime).
+No build step — unlike the Svelte/Vite example in
+`docs/simple_example/`, which requires `yarn build` and uploading `dist/`. Stake
+injects the query params at launch.
 
 ## Source of truth
 

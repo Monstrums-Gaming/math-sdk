@@ -154,6 +154,8 @@ html, body {
   animation: pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 .prize-emoji { font-size: 88px; line-height: 1; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5)); }
+/* Real prize art (box image_url) replaces the emoji glyph when present. */
+.prize-emoji img { width: 96px; height: 96px; object-fit: contain; display: block; }
 .prize-name { font-size: 20px; font-weight: 700; }
 .prize-id { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
 
@@ -236,7 +238,8 @@ summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
   border-top: 1px solid var(--line);
   font-size: 14px;
 }
-.prize-board li .pemoji { font-size: 22px; }
+.prize-board li .pemoji { font-size: 22px; display: inline-flex; align-items: center; }
+.prize-board li .pemoji img { width: 24px; height: 24px; object-fit: contain; vertical-align: middle; }
 .prize-board li .pname { flex: 1; }
 .prize-board li .pprob { color: var(--muted); font-variant-numeric: tabular-nums; }
 .prize-board li .pnote { color: var(--accent-2); font-size: 11px; }

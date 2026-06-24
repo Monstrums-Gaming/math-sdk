@@ -71,7 +71,8 @@ const ui = {
   prizeName: el("prizeName"), prizeId: el("prizeId"),
   winBanner: el("winBanner"), winLabel: el("winLabel"), winAmount: el("winAmount"),
   betSelect: el("betSelect"), openBtn: el("openBtn"), costHint: el("costHint"),
-  prizeList: el("prizeList"), playJson: el("playJson"), endJson: el("endJson"),
+  prizeList: el("prizeList"), prizeSummary: el("prizeSummary"),
+  playJson: el("playJson"), endJson: el("endJson"),
 };
 
 // ---- state ------------------------------------------------------------------
@@ -259,12 +260,35 @@ async function revealPrize(prizeId, prizeName) {
   await sleep(420);
   ui.box.dataset.state = "open";
   await sleep(180);
-  ui.prizeEmoji.textContent = meta.emoji;
-  ui.prizeName.textContent = prizeName || meta.name || prizeId;
+  setPrizeIcon(ui.prizeEmoji, meta);
+  // Use the prize-table name, falling back to the event/id name.
+  ui.prizeName.textContent = meta.name || prizeName || prizeId;
   ui.prizeId.textContent = prizeId;
   ui.prizeCard.hidden = false;
   ui.box.dataset.state = "revealed";
   await sleep(450);
+}
+
+// Build a prize's icon node: the bundled prize image (prizes.js `image` →
+// images/CP*.png) when present, otherwise the emoji. If the image fails to load it
+// swaps itself out for the emoji so we never show a broken glyph. Built with the
+// DOM (no inline onerror) to stay CSP-safe on the Stake Engine.
+function makePrizeIcon(meta) {
+  const emoji = (meta && meta.emoji) || "🎁";
+  if (meta && meta.image) {
+    const img = document.createElement("img");
+    img.src = meta.image;
+    img.alt = meta.name || "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => img.replaceWith(document.createTextNode(emoji)));
+    return img;
+  }
+  return document.createTextNode(emoji);
+}
+
+// Render a prize's icon into `node` (used by the reveal card).
+function setPrizeIcon(node, meta) {
+  node.replaceChildren(makePrizeIcon(meta));
 }
 
 function showWin(winCurrency, winMultiplier, winLevel, isJackpot) {
@@ -365,13 +389,30 @@ function renderPrizeBoard() {
   ui.prizeList.innerHTML = "";
   for (const p of PRIZES) {
     const li = document.createElement("li");
-    li.innerHTML =
-      `<span class="pemoji">${p.emoji}</span>` +
-      `<span class="pname">${p.name}` +
-      (p.note ? ` <span class="pnote">(${p.note})</span>` : "") +
-      `</span>` +
-      `<span class="pprob">${(p.prob * 100).toFixed(p.prob < 0.01 ? 1 : 0)}%</span>`;
+
+    const icon = document.createElement("span");
+    icon.className = "pemoji";
+    icon.appendChild(makePrizeIcon(p)); // prize image (with emoji fallback) or emoji
+
+    const name = document.createElement("span");
+    name.className = "pname";
+    name.textContent = p.name;
+    if (p.note) {
+      const note = document.createElement("span");
+      note.className = "pnote";
+      note.textContent = `(${p.note})`;
+      name.append(" ", note);
+    }
+
+    const prob = document.createElement("span");
+    prob.className = "pprob";
+    prob.textContent = `${(p.prob * 100).toFixed(p.prob < 0.01 ? 1 : 0)}%`;
+
+    li.append(icon, name, prob);
     ui.prizeList.appendChild(li);
+  }
+  if (ui.prizeSummary) {
+    ui.prizeSummary.textContent = `All possible prizes (${PRIZES.length})`;
   }
 }
 
@@ -385,7 +426,7 @@ async function init() {
   state.currency = CURRENCY;
   ui.balance.textContent = "—";
   setModeBadge();
-  renderPrizeBoard();
+  renderPrizeBoard(); // prizes + baked-image art from prizes.js
   updateCostHint();
   resetStage();
 

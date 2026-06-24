@@ -16,16 +16,20 @@
 
 export const BOX_COST = 4.98; // base-bet units, single "base" bet mode (matches game_config.py)
 
+// `image` points at a prize PNG baked into the bundle (images/CP*.png) — a
+// same-origin asset, so the art renders on the live RGS (whose CSP allows
+// `img-src 'self'`) with no network call. The renderer prefers `image` and
+// falls back to `emoji` if the file is missing.
 export const PRIZES = [
-  { id: "CP1", name: "$0.01 Voucher", value: 0.0, prob: 0.302, emoji: "🪙", note: "below RGS minimum → pays 0" },
-  { id: "CP2", name: "$0.10 Voucher", value: 0.1, prob: 0.28, emoji: "🎫" },
-  { id: "CP3", name: "$1 Voucher", value: 1.0, prob: 0.25, emoji: "💵" },
-  { id: "CP4", name: "$2 Voucher", value: 2.0, prob: 0.05, emoji: "💵" },
-  { id: "CP5", name: "$5 Voucher", value: 5.0, prob: 0.05, emoji: "💶" },
-  { id: "CP6", name: "$10 Voucher", value: 10.0, prob: 0.05, emoji: "💷" },
-  { id: "CP7", name: "$50 Voucher", value: 50.0, prob: 0.01, emoji: "💰" },
-  { id: "CP8", name: "$100 Voucher", value: 100.0, prob: 0.006, emoji: "🤑" },
-  { id: "CP9", name: "$1,000 Voucher", value: 1000.0, prob: 0.002, emoji: "💎", note: "max win / wincap" },
+  { id: "CP1", name: "$0.01 Voucher", value: 0.0, prob: 0.302, emoji: "🪙", image: "./images/CP1.png", note: "below RGS minimum → pays 0" },
+  { id: "CP2", name: "$0.10 Voucher", value: 0.1, prob: 0.28, emoji: "🎫", image: "./images/CP2.png" },
+  { id: "CP3", name: "$1 Voucher", value: 1.0, prob: 0.25, emoji: "💵", image: "./images/CP3.png" },
+  { id: "CP4", name: "$2 Voucher", value: 2.0, prob: 0.05, emoji: "💵", image: "./images/CP4.png" },
+  { id: "CP5", name: "$5 Voucher", value: 5.0, prob: 0.05, emoji: "💶", image: "./images/CP5.png" },
+  { id: "CP6", name: "$10 Voucher", value: 10.0, prob: 0.05, emoji: "💷", image: "./images/CP6.png" },
+  { id: "CP7", name: "$50 Voucher", value: 50.0, prob: 0.01, emoji: "💰", image: "./images/CP7.png" },
+  { id: "CP8", name: "$100 Voucher", value: 100.0, prob: 0.006, emoji: "🤑", image: "./images/CP8.png" },
+  { id: "CP9", name: "$1,000 Voucher", value: 1000.0, prob: 0.002, emoji: "💎", image: "./images/CP9.png", note: "max win / wincap" },
 ];
 
 export const PRIZE_BY_ID = Object.fromEntries(PRIZES.map((p) => [p.id, p]));
