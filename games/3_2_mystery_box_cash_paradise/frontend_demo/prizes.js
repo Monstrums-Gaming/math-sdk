@@ -14,7 +14,7 @@
 // it is only used to draw the "all possible prizes" board.
 // -----------------------------------------------------------------------------
 
-export const BOX_COST = 4.97767; // base-bet units, single "base" bet mode
+export const BOX_COST = 4.98; // base-bet units, single "base" bet mode (matches game_config.py)
 
 export const PRIZES = [
   { id: "CP1", name: "$0.01 Voucher", value: 0.0, prob: 0.302, emoji: "🪙", note: "below RGS minimum → pays 0" },

@@ -26,7 +26,7 @@ frontend_demo/
 
 ## How this game works
 
-Not a slot. One purchase (cost **4.97767× base bet**, single `base` mode) returns exactly
+Not a slot. One purchase (cost **4.98× base bet**, single `base` mode) returns exactly
 one cash-voucher prize from a fixed probability table. Target RTP 85%.
 
 ## The RGS contract this implements
@@ -80,6 +80,18 @@ python3 -m http.server 8000
   Balance and outcomes come from the RGS; wins are finalized via `/wallet/end-round`.
 
 The header badge shows which mode is active.
+
+## Bet level
+
+The demo uses a **single fixed base bet** (the selector is locked), so the box always costs
+its full price (`base bet × box_cost`). Local mode fixes it at `1.00`; Live mode uses the RGS
+`defaultBetLevel`.
+
+Note: `box_cost` in `game_config.py` is the bet mode's **cost multiplier** (`debit = base bet ×
+cost`), not a bet amount. The selectable base-bet levels (`minBet`/`maxBet`/`stepBet`/
+`betLevels`) are **not** defined by the math-sdk — they come from `/wallet/authenticate` and are
+configured operator-side on the Stake Engine dashboard. To truly restrict bet levels for the
+live game, set them there; this demo only locks its own UI.
 
 ## Deploy to Stake Engine
 

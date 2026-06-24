@@ -189,8 +189,9 @@ function localAuth() {
   return {
     balance: { amount: state.balanceApi, currency: state.currency },
     config: {
+      // Single fixed base bet of 1.0 -> box always costs 1.0 x box_cost.
       defaultBetLevel: API_MULTIPLIER,
-      betLevels: [0.1, 0.2, 0.5, 1, 2, 5].map(toApi),
+      betLevels: [API_MULTIPLIER],
     },
     round: null,
   };
@@ -209,9 +210,8 @@ function toast(msg) {
 
 function setBusy(busy) {
   state.phase = busy ? "playing" : "rest";
-  const blocked = busy;
-  ui.openBtn.disabled = blocked;
-  ui.betSelect.disabled = blocked;
+  ui.openBtn.disabled = busy;
+  // betSelect stays permanently disabled (fixed bet) — see populateBetLevels().
 }
 
 function resetStage() {
@@ -336,21 +336,20 @@ function rgsErrorMessage(code) {
   return map[code] || `Error: ${code}`;
 }
 
-// ---- bet levels -------------------------------------------------------------
+// ---- bet level (locked) -----------------------------------------------------
+// This game has a single fixed base bet so the box is always its full cost.
+// Live mode uses the RGS defaultBetLevel; Local mode uses 1.0 (see localAuth).
+// The <select> is rendered with one option and kept disabled.
 function populateBetLevels(config) {
-  const levels = config?.betLevels?.length
-    ? config.betLevels
-    : [config?.defaultBetLevel || API_MULTIPLIER];
+  const level = config?.defaultBetLevel || config?.betLevels?.[0] || API_MULTIPLIER;
+  state.bet = level;
   ui.betSelect.innerHTML = "";
-  for (const lvl of levels) {
-    const opt = document.createElement("option");
-    opt.value = String(lvl);
-    opt.textContent = fmtMoney(toUnits(lvl));
-    ui.betSelect.appendChild(opt);
-  }
-  const def = config?.defaultBetLevel;
-  state.bet = def && levels.includes(def) ? def : levels[0];
-  ui.betSelect.value = String(state.bet);
+  const opt = document.createElement("option");
+  opt.value = String(level);
+  opt.textContent = fmtMoney(toUnits(level));
+  ui.betSelect.appendChild(opt);
+  ui.betSelect.value = String(level);
+  ui.betSelect.disabled = true; // fixed bet — not player-selectable
   updateCostHint();
 }
 
@@ -406,7 +405,6 @@ async function init() {
     setBalanceApi(resp.balance?.amount ?? 0);
     populateBetLevels(resp.config);
     ui.openBtn.disabled = false;
-    ui.betSelect.disabled = false;
     if (!IS_LIVE) {
       ui.banner.hidden = false;
       ui.banner.innerHTML =
