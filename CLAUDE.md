@@ -14,10 +14,13 @@ source env/bin/activate         # activate venv (Make prints this)
 
 make run GAME=0_0_lines         # run a game's run.py; auto-formats books JSON if compression=False
 make test                       # run pytest suite in tests/
-make test_run                   # run run.py for the canonical sample games
+make test_run                   # run run.py for the games in Makefile TEST_NAMES (0_0_* samples + 3_2_mystery_box_cash_paradise)
+make clean                      # remove env/ and __pycache__/*.pyc
 pytest tests/win_calculations/test_linespay.py        # single test file
 pytest tests/win_calculations/test_linespay.py::<name> # single test
 ```
+
+There is no configured linter/formatter (no ruff/black/flake8/pyproject) — don't go looking for a lint command. `make test` is pytest-only and covers just the win-calculation math (see "Conventions & gotchas").
 
 Running a game directly (equivalent to `make run`, useful for flags): `python games/<game_id>/run.py`. The venv is required because the project is installed as an editable package (`pip install -e .`) exposing `src`, `optimization_program`, `uploads`, and `utils` as importable top-level modules — game files import e.g. `from src.state.run_sims import create_books`.
 
