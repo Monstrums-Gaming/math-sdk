@@ -280,14 +280,18 @@ stream. Delivered separately from the ACP publish set (never inside `publish.zip
 ## Job lifecycle
 
 ```
-POST /builds ─202─> queued ─> running ─> succeeded ─> (prod + bucket) upload ─> uploaded ─> [ephemeral] delete local
-                                     └─> failed                        (else)     skipped         (keep local)
-                                                                       (err)      failed  ─────────(keep local)
+POST /builds ─202─> queued ─> running ─(build + S3 upload + cleanup all happen here)─> succeeded
+                                     └─> failed
 ```
 
-- **Build status** (`status`) and **deploy status** (`deploy_status`) are independent: an S3
-  upload failure leaves `status=succeeded`, `local_available=true` (the zip is still
-  downloadable), and only sets `deploy_status=failed`.
+- **`succeeded` means fully done.** The S3 upload + ephemeral cleanup run *while the job is
+  still `running`, so by the time `status` becomes `succeeded`, `deploy_status`, `s3_files`,
+  `events_file`, and `local_available` are all final. **Poll until `status == "succeeded"`,
+  then read them once** — no need to wait on `deploy_status` separately.
+- **Build status** (`status`) and **deploy status** (`deploy_status`) are still independent
+  *outcomes*: an S3 upload failure leaves `status=succeeded`, `local_available=true` (the zip
+  is still downloadable), and only sets `deploy_status=failed`. `deploy_status` ends `uploaded`
+  (prod + bucket), `failed` (upload error), or `skipped` (dev / no bucket).
 - **Ephemeral mode** (`EPHEMERAL_BUILDS`, default on when a bucket is set): a successful
   upload deletes the local build; the backoffice saves `s3_files[].url`. A failed upload
   keeps everything local.
