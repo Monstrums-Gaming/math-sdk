@@ -6,6 +6,8 @@ Why subprocess and not an in-process import: ``run.py`` -> ``create_books`` spaw
 fragile; shelling out (exactly as ``build.sh`` does) keeps the build fully isolated.
 """
 
+import contextlib
+import fcntl
 import json
 import os
 import shutil
@@ -33,10 +35,43 @@ _pool = ThreadPoolExecutor(max_workers=settings.MAX_CONCURRENT_BUILDS, thread_na
 _game_locks: dict[str, threading.Lock] = defaultdict(threading.Lock)
 _game_locks_guard = threading.Lock()
 
+# Cross-process lockfiles live here (one per effective game id). The in-process threading
+# lock only serializes builds within a single worker; concurrent builds of the same game from
+# another worker, a service restart, or a stray manual build.sh would otherwise write
+# games/<id>/library at the same time and corrupt each other (books written by one process,
+# LUT by another -> "Book payouts != LUT payouts" hash mismatch). An fcntl.flock on a per-game
+# lockfile serializes them across processes too.
+_LOCK_DIR = settings.ARTIFACT_DIR / ".locks"
+
 
 def _game_lock(game_id: str) -> threading.Lock:
     with _game_locks_guard:
         return _game_locks[game_id]
+
+
+@contextlib.contextmanager
+def _game_build_lock(eff_id: str):
+    """Serialize builds of one game id across BOTH threads (in-process) and processes.
+
+    Holds the in-process threading lock and an exclusive fcntl.flock on
+    ARTIFACT_DIR/.locks/<eff_id>.lock for the duration, so no two builds ever share the
+    games/<eff_id>/ output tree regardless of worker count."""
+    _LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = _LOCK_DIR / f"{_safe_lock_name(eff_id)}.lock"
+    with _game_lock(eff_id):
+        fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            yield
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            os.close(fd)
+
+
+def _safe_lock_name(eff_id: str) -> str:
+    """A filesystem-safe lockfile stem (game ids are already tame, but never build a path
+    from an unsanitized id)."""
+    return "".join(c if c.isalnum() or c in "-_." else "_" for c in eff_id) or "game"
 
 
 def _now_iso() -> str:
@@ -108,7 +143,7 @@ def _run_job(job_id: str, manifest: dict, mode: str) -> None:
     eff_id = effective_game_id(manifest_game_id, mode)
     registry.update(job_id, status="running")
 
-    with _game_lock(eff_id):
+    with _game_build_lock(eff_id):
         job_dir = settings.ARTIFACT_DIR / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = job_dir / "manifest.json"

@@ -16,13 +16,61 @@ invariant violation (probs != 1.0, non-integral quotas, rtp >= 1.0) comes back a
 error rather than a silently-wrong game.
 """
 
+import math
 import re
 
 from service.config import settings
 
+# How far the incoming probabilities may drift from 1.0 before we treat it as an authoring
+# error rather than rounding noise. Coarse decimals (e.g. 0.99999) fall well inside this and
+# get snapped to an exact distribution; a fat-fingered 0.9 / weights summing to 100 do not.
+_PROB_SUM_TOLERANCE = 0.01
+
 
 class BuildError(ValueError):
     """Raised for inputs we can reject before the validate subprocess (clear 400s)."""
+
+
+def _normalize_prob_counts(enriched: list, num_sims: int) -> None:
+    """Snap the prizes' draw probabilities onto the ``num_sims`` integer grid, in place.
+
+    The RGS math requires the probabilities to sum to *exactly* 1.0 and each ``num_sims*prob``
+    to be integral (odds are published as ``round(num_sims*prob)`` books per prize). Backoffice
+    inputs are coarse (a handful of decimals) and routinely sum to 0.99999/1.00001. Rather than
+    reject that, we allocate ``num_sims`` draws across the prizes by largest-remainder (Hamilton)
+    apportionment, then set ``prob = count / num_sims`` — exact multiples of ``1/num_sims`` that
+    sum to 1.0. Genuinely wrong odds (sum far from 1.0) still raise a clear error.
+    """
+    probs = [e["prob"] for e in enriched]
+    if any(p < 0 for p in probs):
+        raise BuildError("prize probabilities must be non-negative.")
+    total = sum(probs)
+    if total <= 0:
+        raise BuildError("prize probabilities must be positive and sum to ~1.0.")
+    if abs(total - 1.0) > _PROB_SUM_TOLERANCE:
+        raise BuildError(
+            f"prize probabilities sum to {total:.6f}; they must sum to 1.0 "
+            f"(within {_PROB_SUM_TOLERANCE}). Fix the odds — the service only auto-corrects "
+            f"rounding drift, not a real mismatch."
+        )
+
+    # Largest-remainder apportionment of num_sims across the prizes (normalized by `total`,
+    # so a 0.99999 sum becomes an exact num_sims split with no bias toward any prize).
+    scaled = [p / total * num_sims for p in probs]
+    counts = [int(math.floor(s)) for s in scaled]
+    residual = num_sims - sum(counts)  # in [0, len(enriched)]
+    order = sorted(range(len(scaled)), key=lambda i: scaled[i] - counts[i], reverse=True)
+    for i in range(residual):
+        counts[order[i]] += 1
+
+    for e, c, p in zip(enriched, counts, probs):
+        if c == 0 and p > 0:
+            raise BuildError(
+                f"prize {e['sku']!r} probability {p:g} is too rare for num_sims={num_sims} "
+                f"(it would never be drawn); raise its probability or num_sims."
+            )
+        e["prob"] = c / num_sims
+        e["count"] = c
 
 
 def _snap_to_grid(multiplier: float) -> float:
@@ -73,6 +121,9 @@ def assemble_manifest(spec: dict) -> dict:
     skus = [e["sku"] for e in enriched]
     if len(set(skus)) != len(skus):
         raise BuildError(f"prize SKUs must be unique, got {skus}.")
+
+    # Snap odds onto the num_sims grid so they sum to exactly 1.0 with integral quotas.
+    _normalize_prob_counts(enriched, num_sims)
 
     paying = [e for e in enriched if e["eff"] > 0]
     if not paying:
