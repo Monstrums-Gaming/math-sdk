@@ -48,6 +48,13 @@ test_run:
 		$(VENV_PY) games/$$f/run.py; \
 	done
 
+# Build every manifest in games/mystery_box_dynamic/manifests/ (one process each).
+build_all_dynamic:
+	@for m in games/mystery_box_dynamic/manifests/*.json; do \
+		echo "building $$m"; \
+		GAME_MANIFEST="$$m" $(VENV_PY) games/mystery_box_dynamic/run.py; \
+	done
+
 
 clean:
 	rm -rf env __pycache__ *.pyc

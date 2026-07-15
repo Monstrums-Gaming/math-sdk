@@ -1,0 +1,30 @@
+{
+    "game_id": "3_2_cash_paradise_dyn",
+    "provider_number": 3,
+    "provider_name": "monstrum",
+    "game_name": "Cash Paradise",
+    "working_name": "Cash Paradise",
+    "box_cost": 4.98,
+    "wincap": 1000,
+    "rtp": 0.85,
+    "win_type": "scatter",
+    "cost_model": "box_cost",
+    "build": {
+        "num_sims": 100000,
+        "compression": true,
+        "run_format_checks": true,
+        "num_threads": 1,
+        "batching_size": 50000
+    },
+    "prizes": {
+        "P1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "0" },
+        "P2": { "name": "$0.10 Voucher", "payout": 0.1,  "prob": 0.28,  "criteria": "p_010_voucher" },
+        "P3": { "name": "$1 Voucher",    "payout": 1,    "prob": 0.25,  "criteria": "p_1_voucher" },
+        "P4": { "name": "$2 Voucher",    "payout": 2,    "prob": 0.05,  "criteria": "p_2_voucher" },
+        "P5": { "name": "$5 Voucher",    "payout": 5,    "prob": 0.05,  "criteria": "p_5_voucher" },
+        "P6": { "name": "$10 Voucher",   "payout": 10,   "prob": 0.05,  "criteria": "p_10_voucher" },
+        "P7": { "name": "$50 Voucher",   "payout": 50,   "prob": 0.01,  "criteria": "p_50_voucher" },
+        "P8": { "name": "$100 Voucher",  "payout": 100,  "prob": 0.006, "criteria": "p_100_voucher" },
+        "P9": { "name": "$1000 Voucher", "payout": 1000, "prob": 0.002, "criteria": "wincap" }
+    }
+}
