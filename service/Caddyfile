@@ -1,0 +1,36 @@
+# Caddy reverse proxy for the mystery-box build service — for a box where ports 80/443 are
+# FREE (a standalone Docker box with no existing nginx/Forge edge).
+#
+# If the box ALREADY runs nginx / Laravel Forge on 80/443 (the staging box does, per
+# service/CICD.md), do NOT run this — Caddy can't bind 80/443. Use that existing edge as the
+# proxy instead: see service/DEPLOY.md "Custom domain + HTTPS".
+#
+# This terminates HTTPS with an automatic Let's Encrypt cert and proxies to mbs, which stays
+# plain HTTP on the host loopback (127.0.0.1:8000) and is never exposed directly.
+#
+# Run Caddy with HOST networking so it (a) binds 80/443 on the box and (b) can reach mbs at
+# 127.0.0.1:8000 — which survives every CI redeploy (the workflow always recreates mbs on
+# 127.0.0.1:8000, so there is no docker-network to re-attach):
+#
+#   docker run -d --name mbs-proxy --restart unless-stopped --network host \
+#     -v /home/ubuntu/math-sdk/service/Caddyfile:/etc/caddy/Caddyfile \
+#     -v caddy_data:/data caddy:2
+#
+# Requirements:
+#   - DNS A record: staging-builds.builds.theboxforge.com -> the box's public IP.
+#   - Security group: allow inbound 80 + 443.
+#
+# Per environment, change the site address:  staging-builds.builds.theboxforge.com (staging),
+# builds.theboxforge.com (prod, or your chosen prod hostname).
+
+staging-builds.builds.theboxforge.com {
+	encode zstd gzip
+
+	# A prod build can take a while; don't cut the connection early.
+	reverse_proxy localhost:8000 {
+		transport http {
+			read_timeout 300s
+			write_timeout 300s
+		}
+	}
+}

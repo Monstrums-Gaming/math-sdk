@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cash Paradise — Mystery Box Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Shown when the page is opened without a live RGS session -->
+    <div id="banner" class="banner" hidden></div>
+
+    <main class="game" id="game">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">🎁</span>
+          <div>
+            <div class="brand-title">Cash Paradise</div>
+            <div class="brand-sub">
+              Mystery Box · <span class="mode-badge" id="modeBadge" data-mode="local">LOCAL SIM</span>
+            </div>
+          </div>
+        </div>
+        <div class="wallet">
+          <div class="wallet-label">Balance</div>
+          <div class="wallet-amount" id="balance">—</div>
+        </div>
+      </header>
+
+      <section class="stage">
+        <!-- The box: tap to open. Flips to reveal the drawn prize. -->
+        <div class="box" id="box" data-state="closed" role="button" tabindex="0" aria-label="Open mystery box">
+          <div class="box-lid"></div>
+          <div class="box-body">
+            <span class="box-q">?</span>
+          </div>
+          <div class="prize-card" id="prizeCard" hidden>
+            <div class="prize-emoji" id="prizeEmoji">🎁</div>
+            <div class="prize-name" id="prizeName"></div>
+            <div class="prize-id" id="prizeId"></div>
+          </div>
+        </div>
+
+        <div class="win-banner" id="winBanner" hidden>
+          <div class="win-label" id="winLabel">YOU WON</div>
+          <div class="win-amount" id="winAmount"></div>
+        </div>
+      </section>
+
+      <section class="controls">
+        <label class="bet-select">
+          <span>Base bet (fixed)</span>
+          <select id="betSelect" disabled title="This game uses a single fixed base bet"></select>
+        </label>
+        <button class="open-btn" id="openBtn" disabled>Open Box</button>
+        <div class="cost-hint" id="costHint"></div>
+      </section>
+
+      <details class="prize-board">
+        <summary id="prizeSummary">All possible prizes (9)</summary>
+        <ul id="prizeList"></ul>
+      </details>
+
+      <details class="json-panel">
+        <summary>Raw RGS responses</summary>
+        <h4>/wallet/play</h4>
+        <pre id="playJson">—</pre>
+        <h4>/wallet/end-round</h4>
+        <pre id="endJson">—</pre>
+      </details>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

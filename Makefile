@@ -1,7 +1,7 @@
 PYTHON := python3
 VENV_DIR := env
 VENV_PY := $(VENV_DIR)/bin/python
-TEST_NAMES = 0_0_cluster 0_0_scatter 0_0_lines 0_0_expwilds 0_0_ways 0_0_lines_feature_match
+TEST_NAMES = mystery_box 3_2_mystery_box_cash_paradise
 
 ifeq ($(OS),Windows_NT)
 	VENV_PY := $(VENV_DIR)\Scripts\python.exe
@@ -46,6 +46,13 @@ test_run:
 	@for f in $(TEST_NAMES); do \
 		echo "processing $$f"; \
 		$(VENV_PY) games/$$f/run.py; \
+	done
+
+# Build every manifest in games/mystery_box_dynamic/manifests/ (one process each).
+build_all_dynamic:
+	@for m in games/mystery_box_dynamic/manifests/*.json; do \
+		echo "building $$m"; \
+		GAME_MANIFEST="$$m" $(VENV_PY) games/mystery_box_dynamic/run.py; \
 	done
 
 

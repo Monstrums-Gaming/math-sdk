@@ -1,0 +1,86 @@
+name: deploy-build-service-prod
+
+# Production sibling of deploy-service-staging.yml. Builds the arm64 image, pushes it to the PROD ECR
+# repo, and deploys it on the PROD EC2 box via SSM. Gated behind the GitHub `production`
+# Environment (add required reviewers there for a manual approval step). See service/CICD.md
+# "Part E — Preparing production" for the one-time AWS setup (prod ECR repo, prod box role,
+# EC2_INSTANCE_ID_PROD variable, gha-deploy policy update).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'service/**'
+      - 'games/mystery_box_dynamic/**'
+      - 'src/**'
+      - 'requirements.txt'
+      - 'setup.py'
+      - '.github/workflows/deploy-service-prod.yml'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write        # required for OIDC
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ACCOUNT_ID: "493499579237"
+  ECR_REPO: mysterybox-build-service-production
+  ENV_FILE: /home/ubuntu/math-sdk/.env     # .env location on the PROD EC2 box
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest                 # amd64 runner -> cross-builds arm64 below
+    environment: production                # add required reviewers here for a manual gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume AWS role (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::493499579237:role/gha-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # The prod EC2 box is a Graviton (t4g) instance = arm64, so build arm64.
+      # GitHub runners are amd64, so cross-build via QEMU + buildx. If your prod box is
+      # x86_64, switch --platform linux/arm64 -> linux/amd64.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push image (arm64 — Graviton t4g)
+        run: |
+          IMG="${{ steps.ecr.outputs.registry }}/${ECR_REPO}:${GITHUB_SHA::12}"
+          LATEST="${{ steps.ecr.outputs.registry }}/${ECR_REPO}:latest"
+          docker buildx build --platform linux/arm64 \
+            -f service/Dockerfile -t "$IMG" -t "$LATEST" --push .
+          echo "IMG=$IMG" >> "$GITHUB_ENV"
+
+      - name: Deploy on PROD EC2 via SSM
+        if: ${{ vars.EC2_INSTANCE_ID_PROD != '' }}
+        run: |
+          REG="${{ steps.ecr.outputs.registry }}"
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID_PROD }}" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy $IMG" \
+            --parameters commands="[
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REG\",
+              \"docker system prune -af || true\",
+              \"docker pull $IMG\",
+              \"docker rm -f mbs || true\",
+              \"docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 --cpus 2 --memory 2g --env-file $ENV_FILE $IMG\",
+              \"sleep 3 && curl -sf http://127.0.0.1:8000/healthz\"
+            ]" \
+            --query 'Command.CommandId' --output text)
+          echo "SSM command: $CMD_ID"
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID_PROD }}" || true
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID_PROD }}" \
+            --query '{status:Status, out:StandardOutputContent, err:StandardErrorContent}' --output json
+          STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID_PROD }}" --query Status --output text)
+          test "$STATUS" = "Success"

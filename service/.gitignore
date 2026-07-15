@@ -1,0 +1,3 @@
+# Per-job build artifacts (manifests, snapshot publish files, zips, logs) are runtime
+# output, not source.
+artifacts/
