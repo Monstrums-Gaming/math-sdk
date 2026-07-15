@@ -114,6 +114,16 @@ awk -F, '{print $3}' games/<game_id>/library/publish_files/lookUpTable_base_0.cs
   | sort -n | uniq -c
 ```
 
+## Before publishing: set the real `provider_number`
+
+The manifests ship with `"provider_number": 3` as a **placeholder**. `provider_number` is
+your Stake Engine studio/provider ID (assigned to your ACP account, not chosen by you —
+it is not documented in the SDK). Before the final prod build you upload, replace it in
+each manifest with your real provider number (found in your ACP account, or from your
+Stake Engine onboarding contact), and align the leading segment of `game_id` to match it.
+It does not affect local builds/format checks — only the `providerNumber` written into
+`config.json`.
+
 ## Publishing
 
 Only a **prod** build is publishable. Upload the three `publish_files` to the Stake
