@@ -9,9 +9,14 @@ container.
 git push (staging) ─▶ GitHub Actions ─▶ build arm64 ─▶ push to ECR ─▶ SSM RunShellScript ─▶ docker pull + restart on EC2 ─▶ curl /healthz
 ```
 
-The ready-to-run workflow is **`.github/workflows/deploy-service.yml`** (triggers on push to
-`staging` + manual dispatch). This doc is the one-time setup behind it — **Part A** (AWS/GitHub
-for CI) and **Part B** (the EC2 box). Both were needed to make deploys hands-off.
+The ready-to-run workflow is **`.github/workflows/deploy-service-staging.yml`** (triggers on
+push to `staging` + manual dispatch). This doc is the one-time setup behind it — **Part A**
+(AWS/GitHub for CI) and **Part B** (the EC2 box). Both were needed to make deploys hands-off.
+
+**Production** is a separate box driven by **`.github/workflows/deploy-service-prod.yml`**
+(push to `main`, own ECR repo, manual approval gate). Its one-time setup is **Part E** — do it
+once you spin up the prod instance. Until then the prod workflow builds+pushes but skips the
+deploy step, so `main` merges are safe.
 
 > **Architecture note:** the target box `dev.theboxforge.com` is a **`t4g.medium` (AWS Graviton
 > = arm64)**. The image **must be arm64** — an amd64 image fails on the box with
@@ -213,14 +218,14 @@ Do this once to prove the box works before relying on auto-deploy.
 
 # Part C — The workflow
 
-`.github/workflows/deploy-service.yml` (already committed; shown here for reference):
+`.github/workflows/deploy-service-staging.yml` (already committed; shown here for reference):
 
 ```yaml
-name: deploy-build-service
+name: deploy-build-service-staging
 on:
   push:
     branches: [staging]
-    paths: ['service/**','games/mystery_box_dynamic/**','src/**','requirements.txt','setup.py','.github/workflows/deploy-service.yml']
+    paths: ['service/**','games/mystery_box_dynamic/**','src/**','requirements.txt','setup.py','.github/workflows/deploy-service-staging.yml']
   workflow_dispatch: {}
 
 permissions:
@@ -287,8 +292,8 @@ Key facts:
 # Part D — Run & verify
 
 ```sh
-git push origin staging            # or: gh workflow run deploy-service.yml --ref staging
-gh run watch "$(gh run list --workflow=deploy-service.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+git push origin staging            # or: gh workflow run deploy-service-staging.yml --ref staging
+gh run watch "$(gh run list --workflow=deploy-service-staging.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
 ```
 Expected deploy-step output ends with `"status": "Success"` and `{"status":"ok"}`.
 Confirm on the box: `docker ps` shows `mbs` on the new SHA tag.
@@ -313,6 +318,121 @@ aws ssm send-command --instance-ids i-0dd60212d9ea2c1af --document-name AWS-RunS
 
 ---
 
+# Part E — Preparing production (separate box)
+
+Staging is live. Production is a **second, separate EC2 box** with its own ECR repo, its own
+`.env` (prod S3 prefix), and a **manual approval gate**. The workflow
+**`.github/workflows/deploy-service-prod.yml`** already exists — it triggers on push to
+`main` (+ manual dispatch) and is otherwise identical to staging. Everything below is the
+one-time setup to run **once you spin up the prod box**; until then the prod workflow builds
++ pushes to ECR but skips the deploy step (gated on `vars.EC2_INSTANCE_ID_PROD`, unset).
+
+## Prod vs staging — what differs
+
+| Setting | Staging | Production |
+|---------|---------|------------|
+| Workflow | `deploy-service-staging.yml` | `deploy-service-prod.yml` |
+| Trigger branch | `staging` | `main` |
+| ECR repo | `mysterybox-build-service-staging` | `mysterybox-build-service-production` |
+| EC2 box | `i-0dd60212d9ea2c1af` | *(new box — separate instance)* |
+| GitHub variable | `EC2_INSTANCE_ID` | `EC2_INSTANCE_ID_PROD` |
+| Approval gate | none | GitHub `production` Environment (required reviewers) |
+| `S3_PREFIX` in `.env` | `math-sdk/staging` | `math-sdk/production` |
+| OIDC role | `gha-deploy` (shared) | `gha-deploy` (shared — policy must allow the prod ECR repo) |
+| Container name / bind | `mbs` / `127.0.0.1:8000` | `mbs` / `127.0.0.1:8000` (same — different box) |
+
+The instance role, `.env` path, container name, and loopback bind are intentionally the same
+recipe as staging — only the repo, box, and S3 prefix change.
+
+## E1. Create the prod ECR repo
+
+```sh
+aws ecr create-repository \
+  --repository-name mysterybox-build-service-production \
+  --image-scanning-configuration scanOnPush=true \
+  --region us-east-1
+aws ecr put-lifecycle-policy --repository-name mysterybox-build-service-production --region us-east-1 \
+  --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"keep last 10",
+    "selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},
+    "action":{"type":"expire"}}]}'
+```
+
+## E2. Let `gha-deploy` push to the prod repo
+
+The existing role policy (A3) scopes `EcrPush` to the **staging** repo only, so a prod push
+would `AccessDenied`. Re-put the policy with **both** repos:
+
+```sh
+cat > /tmp/gha-deploy-policy.json <<'JSON'
+{ "Version":"2012-10-17","Statement":[
+  {"Sid":"EcrAuth","Effect":"Allow","Action":"ecr:GetAuthorizationToken","Resource":"*"},
+  {"Sid":"EcrPush","Effect":"Allow",
+   "Action":["ecr:BatchCheckLayerAvailability","ecr:InitiateLayerUpload","ecr:UploadLayerPart",
+             "ecr:CompleteLayerUpload","ecr:PutImage","ecr:BatchGetImage"],
+   "Resource":[
+     "arn:aws:ecr:us-east-1:493499579237:repository/mysterybox-build-service-staging",
+     "arn:aws:ecr:us-east-1:493499579237:repository/mysterybox-build-service-production"]},
+  {"Sid":"SsmDeploy","Effect":"Allow",
+   "Action":["ssm:SendCommand","ssm:GetCommandInvocation"],"Resource":"*"}
+]}
+JSON
+aws iam put-role-policy --role-name gha-deploy --policy-name gha-deploy --policy-document file:///tmp/gha-deploy-policy.json
+```
+The trust policy (A2/A3) already allows any branch (`:*`), so `main` works with no change.
+
+## E3. Provision the prod box + instance role
+
+Launch a **t4g** (Graviton/arm64) Ubuntu 24.04 instance for prod (own instance — do **not**
+reuse the staging box). Then repeat **Part B** against it, with prod-flavoured names:
+
+```sh
+PROD_IID=i-xxxxxxxxxxxxxxxxx        # the new prod instance id
+# instance role: ECR read + SSM core (same two managed policies as B1)
+aws iam create-role --role-name mbs-prod-role --assume-role-policy-document file:///tmp/ec2-trust.json
+aws iam attach-role-policy --role-name mbs-prod-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+aws iam attach-role-policy --role-name mbs-prod-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+aws iam create-instance-profile --instance-profile-name mbs-prod-profile
+aws iam add-role-to-instance-profile --instance-profile-name mbs-prod-profile --role-name mbs-prod-role
+aws ec2 associate-iam-instance-profile --instance-id "$PROD_IID" \
+  --iam-instance-profile Name=mbs-prod-profile --region us-east-1
+```
+Then on the prod box: **B2** (SSM agent), **B3** (Docker), **B4** (`.env` — set
+`S3_PREFIX=math-sdk/production`), **B5** (`rm -rf ~/.aws`). Confirm registration from the
+admin machine: `aws ssm describe-instance-information --region us-east-1`.
+
+## E4. GitHub: the prod variable + approval gate
+
+```sh
+gh variable set EC2_INSTANCE_ID_PROD --body "i-xxxxxxxxxxxxxxxxx" --repo Monstrums-Gaming/math-sdk
+```
+Then create the **`production` Environment** for the manual gate:
+repo → Settings → Environments → **New environment** → `production` → add yourself under
+**Required reviewers**. The prod workflow declares `environment: production`, so every prod
+deploy now pauses for approval before it builds/deploys. (Optionally restrict the environment
+to the `main` branch under **Deployment branches**.)
+
+## E5. First prod deploy
+
+```sh
+# manual first deploy on the box (proves it works before relying on CI) — Part B6, but with
+# the production repo:
+REG=493499579237.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REG
+docker pull $REG/mysterybox-build-service-production:latest
+docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 \
+  --cpus 2 --memory 2g --env-file /home/ubuntu/math-sdk/.env \
+  $REG/mysterybox-build-service-production:latest
+curl http://127.0.0.1:8000/healthz          # {"status":"ok"}
+```
+Then let CI take over: merge to `main` (or `gh workflow run deploy-service-prod.yml --ref main`)
+→ approve the `production` gate → it builds arm64, pushes to the prod repo, and SSM-deploys.
+
+> **Same-box option:** if you'd rather run prod as a second container on the *staging* box
+> instead of a new instance, don't — the box name, `.env`, and container name (`mbs`) collide.
+> Production being a separate box is the whole point here; keep them isolated.
+
+---
+
 ## Troubleshooting (real issues hit setting this up)
 
 | Symptom | Cause & fix |
@@ -324,7 +444,9 @@ aws ssm send-command --instance-ids i-0dd60212d9ea2c1af --document-name AWS-RunS
 | `InvalidInstanceId` / SSM step can't reach box | Instance not registered — no instance role, or agent not running. Attach the role (B1), restart the agent (B2), confirm `describe-instance-information` (from admin machine). |
 | `Unable to locate credentials` running `aws` on the box | You ran it before the instance role was attached, or `~/.aws` is empty and the role isn't associated yet. |
 | `describe-instance-information` AccessDenied **on the box** | Run it from the admin machine — the instance role deliberately can't query SSM inventory. |
-| Deploy step **skipped** | `EC2_INSTANCE_ID` repo variable not set (A4). |
+| Deploy step **skipped** | `EC2_INSTANCE_ID` (staging) / `EC2_INSTANCE_ID_PROD` (prod) repo variable not set (A4 / E4). |
+| Prod push: `AccessDenied` on `ecr:PutImage` | `gha-deploy` policy still scoped to the staging repo only — add the prod repo ARN (E2). |
+| Prod deploy never runs / stuck "Waiting" | The `production` Environment approval gate — approve it under the run's review prompt (E4). |
 | S3 upload fails in the container (`bucket = 'juice-cdn  # ...'`) | Inline comment in `.env` — Docker `--env-file` keeps it. Move comments to their own lines. |
 | Container starts but S3 `AccessDenied` | The `.env` AWS keys lack `s3:PutObject` (this is separate from the ECR instance role). |
 
