@@ -27,9 +27,14 @@ web request.
 
 `.env`:
 ```
-MATHSDK_URL=http://127.0.0.1:8000
+# pick ONE, depending on how you reach the service (see Notes):
+MATHSDK_URL=http://mbs:8000                                   # same Docker network (local/dev)
+# MATHSDK_URL=http://127.0.0.1:8000                           # Laravel native on the same host
+# MATHSDK_URL=https://staging-builds.builds.theboxforge.com   # public custom domain + TLS
 MATHSDK_KEY=the-same-API_KEY-that-is-in-the-container-.env
 ```
+Over a real HTTPS custom domain, keep full cert verification (don't disable it) — it's a valid
+Let's Encrypt cert. See [`DEPLOY.md`](DEPLOY.md) "Custom domain + HTTPS" for the proxy setup.
 `config/services.php`:
 ```php
 'mathsdk' => [
@@ -228,8 +233,21 @@ to the admin rather than swallowing it.
 
 ## Notes
 
-- **Same-box only:** `127.0.0.1` works because Laravel + the container share the host. Split
-  them → call the build server's private IP / TLS subdomain instead.
+- **`localhost` only works if Laravel runs on the host.** `127.0.0.1:8000` reaches the service
+  only when Laravel and the `mbs` container share the host's network namespace (native PHP /
+  Forge daemon). **If Laravel itself runs in a container** (Docker Compose / Sail), `localhost`
+  is the *Laravel container*, not the host — you get `cURL error 7: Failed to connect to
+  localhost port 8000`. Fix: put `mbs` on the Laravel container's Docker network and call it by
+  **container name**:
+  ```sh
+  docker network connect <laravel_compose_network> mbs   # e.g. laravel-fulfillement-hub_fulfilment
+  ```
+  then set `MATHSDK_URL=http://mbs:8000` in Laravel's `.env` (not `127.0.0.1`). `docker network
+  connect` is lost if `mbs` is recreated — re-run it after any `docker rm mbs`, or add `mbs` to
+  your compose stack. `host.docker.internal:8000` does **not** work here because `mbs` publishes
+  to the host's `127.0.0.1` only, which host-gateway traffic can't reach.
+- **Same-host, both native:** `127.0.0.1` works because Laravel + the service share the host.
+  Different hosts → call the build server's private IP / TLS subdomain instead.
 - **`mode`:** `dev` = fast, non-publishable preview (no S3 upload); `prod` = real, uploaded build.
 - **`game_id`** is derived from the box name; rebuilding overwrites its files. Pass an explicit
   `game_id` in `$spec` if you want to pin it (e.g. to your box's UUID).
