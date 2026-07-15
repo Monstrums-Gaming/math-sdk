@@ -1,0 +1,25 @@
+# Never bake runtime config/secrets into the image — config comes only from --env-file at
+# runtime. (config.py load_dotenv(/app/.env) would otherwise read a stale baked copy.)
+.env
+.env.*
+!.env.example
+
+# Local virtualenv (the image builds its own) and Python caches
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# VCS / CI / editor
+.git/
+.github/
+.vscode/
+.idea/
+
+# Generated build output and service artifacts (large, not needed in the image)
+games/*/library/
+service/artifacts/
+
+# Scratch / OS junk
+.DS_Store
+*.log
