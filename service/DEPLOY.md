@@ -20,8 +20,50 @@ Bursty CPU, light RAM, tiny disk (ephemeral mode deletes local output after uplo
 | Frequent/back-to-back builds | **c6i.large / c7g.large** | Non-burstable — no t3 CPU-credit throttling. |
 | Colocated with the backoffice | **t3.large** (2 vCPU, 8 GB) | Extra RAM for PHP-FPM + MySQL + the service. |
 
-- Disk: **20 GB gp3** is ample — ephemeral mode keeps the local footprint near-zero.
-- Only reel-slot games (1M+ sims + Rust optimizer) would need more cores.
+### Recommended production (dedicated, mystery-box only)
+
+**`t4g.medium` (2 vCPU, 4 GB, Graviton/arm64), 30 GB gp3, dedicated instance.**
+
+- **arm64 is required** — the CI builds `--platform linux/arm64`, so prod must be Graviton
+  (`t4g`/`c7g`), same as staging. An amd64 box fails with `exec format error`.
+- **Burstable is fine**: a backoffice "create a box" flow is low-volume and each 100k-sim
+  build is a ~2.5 s CPU burst — t-family credits cover it. Move to **`c7g.large`**
+  (non-burstable) only if you'll do frequent back-to-back builds and hit CPU-credit
+  throttling (watch CloudWatch `CPUCreditBalance`).
+- **Dedicated, not colocated** for prod: isolation means a build can never starve the
+  backoffice (on staging they share a box, which is fine at low volume).
+- **Disk 30 GB** (not 20): ephemeral mode keeps the app footprint near-zero, but leave
+  headroom for Docker images + build cache (see "Housekeeping" below).
+- Prefer an **EC2 IAM role** (`s3:PutObject` + `GetObject`/`HeadObject` on the bucket) over
+  static keys in `.env`; with the container, remember the IMDSv2 hop-limit = 2 gotcha.
+- Only **reel-slot games** (1M+ sims + Rust optimizer) would need more cores (`c7g.xlarge`+)
+  and Rust installed — not applicable to a mystery-box-only service.
+
+### Housekeeping — prune Docker weekly
+
+Every image rebuild/pull leaves **reclaimable** layers and build cache; left alone they fill
+the disk and Docker Desktop/daemon gets sluggish under disk pressure. The CI deploy already
+runs `docker system prune -af` before each pull, so a **frequently-deployed** box stays clean
+— but add a weekly cron as a safety net for quiet periods (and for local dev boxes, where
+repeated `docker build` piles up cache fast).
+
+Create `/etc/cron.d/docker-prune` (Ubuntu; runs as root, Sundays 04:00):
+
+```cron
+# Weekly Docker cleanup — reclaim unused images + build cache older than 7 days.
+# `until=168h` keeps the current deploy's image; the running container is always protected.
+0 4 * * 0 root docker system prune -af --filter "until=168h" >> /var/log/docker-prune.log 2>&1
+```
+
+Then `sudo chmod 644 /etc/cron.d/docker-prune`. Verify it parses: `sudo run-parts --test
+/etc/cron.d 2>/dev/null; cat /var/log/docker-prune.log` after the first run. On macOS/local
+dev there's no `cron.d`; run it by hand periodically instead:
+`docker builder prune -f && docker image prune -f` (avoid `-a` locally if Docker Hub is flaky,
+so the base image isn't dropped and re-pulled).
+
+> Why `--filter "until=168h"` and not a bare `prune -af`: it only removes objects older than a
+> week, so an in-flight or just-deployed image is never touched. The running `mbs` container
+> and its image are protected regardless.
 
 ---
 
@@ -159,13 +201,19 @@ Create `/home/ubuntu/math-sdk/.env` (from `.env.example`) with `API_KEY`, `AWS_S
 ```sh
 docker run -d --name mbs --restart unless-stopped \
   -p 8000:8000 \
+  -v mbs-data:/app/service/artifacts \
   --env-file /home/ubuntu/math-sdk/.env \
   mysterybox-build-service
 ```
 
-- **Ephemeral mode** (bucket set) → builds go to S3 and local output is deleted, so **no
-  volume is needed**. If you set `EPHEMERAL_BUILDS=false`, add `-v mbs-artifacts:/app/service/artifacts`
-  to keep the zips across restarts.
+- **Job status is SQLite** (`ARTIFACT_DIR/jobs.db`) and survives a *process* restart on its
+  own. To also survive a **container recreate** (every CI deploy replaces the container),
+  mount `ARTIFACT_DIR` on a named volume as above (`-v mbs-data:/app/service/artifacts`) —
+  otherwise `GET /builds/{id}` loses history on each deploy (the backoffice still has the saved
+  S3 URLs, so it's degraded, not broken). The volume is tiny (SQLite + per-job manifest/log).
+- **Ephemeral mode** (bucket set) → build *output* goes to S3 and local output is deleted, so
+  the volume only holds the small `jobs.db` + logs. With `EPHEMERAL_BUILDS=false` the same
+  volume also keeps the publish zips across restarts.
 - Health check: `curl http://localhost:8000/healthz` → `{"status":"ok"}`. Logs:
   `docker logs -f mbs`.
 

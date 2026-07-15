@@ -37,6 +37,11 @@ class Settings:
     # Where per-job artifacts (snapshot publish files + publish.zip) are written.
     ARTIFACT_DIR: Path = Path(os.environ.get("ARTIFACT_DIR", REPO_ROOT / "service" / "artifacts"))
 
+    # SQLite file backing the job registry (restart-durable job status). Defaults alongside
+    # the artifacts (follows an ARTIFACT_DIR override); mount ARTIFACT_DIR on a volume to also
+    # survive container recreation.
+    JOBS_DB_PATH: Path = Path(os.environ.get("JOBS_DB_PATH", ARTIFACT_DIR / "jobs.db"))
+
     # The venv python that has the SDK installed; defaults to the repo's ./env.
     PYTHON_BIN: str = os.environ.get("PYTHON_BIN", str(REPO_ROOT / "env" / "bin" / "python"))
 
