@@ -38,6 +38,8 @@ docker run -e API_KEY=changeme -p 8000:8000 mysterybox-build-service
 
 Full reference: **[`service/API.md`](API.md)**. Interactive docs on the running service:
 Swagger UI at `/docs`, ReDoc at `/redoc`, OpenAPI spec at `/openapi.json`.
+Laravel backoffice integration (API client, queued job, DB schema, error handling):
+**[`BACKOFFICE_INTEGRATION.md`](BACKOFFICE_INTEGRATION.md)**.
 
 All `/builds` and `/manifests` routes require the `X-API-Key` header. `/healthz` is open.
 
