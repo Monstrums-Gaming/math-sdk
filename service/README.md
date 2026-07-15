@@ -174,9 +174,13 @@ build with `overwrite=true`.
 
 ## Notes / limits
 
-- **Single instance.** Job records are in memory (artifacts persist on disk under
-  `ARTIFACT_DIR`); a restart loses status history but not finished zips. Move to
-  SQLite/Redis before running multiple replicas.
+- **Single instance.** Job status is persisted to **SQLite** (`JOBS_DB_PATH`, defaults to
+  `ARTIFACT_DIR/jobs.db`), so it **survives a process restart** (uvicorn crash/reload). The
+  registry uses one connection guarded by an in-process lock, which does **not** coordinate
+  across processes — so still run **exactly one worker**; SQS + an external store is the path
+  for multiple replicas / HA. To also survive a **container recreate** (each CI deploy replaces
+  the container), mount `ARTIFACT_DIR` on a volume (see `DEPLOY.md`); otherwise the DB resets
+  per deploy. Downloadable artifacts persist on disk under `ARTIFACT_DIR` regardless.
 - **`provider_number`** in the manifest must be your real ACP-assigned studio id before
   the final prod build you upload (the samples ship a placeholder `3`).
 - For an ACP-valid build use `cost_model: "unit"` in the manifest — `box_cost` builds

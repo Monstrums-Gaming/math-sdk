@@ -201,13 +201,19 @@ Create `/home/ubuntu/math-sdk/.env` (from `.env.example`) with `API_KEY`, `AWS_S
 ```sh
 docker run -d --name mbs --restart unless-stopped \
   -p 8000:8000 \
+  -v mbs-data:/app/service/artifacts \
   --env-file /home/ubuntu/math-sdk/.env \
   mysterybox-build-service
 ```
 
-- **Ephemeral mode** (bucket set) → builds go to S3 and local output is deleted, so **no
-  volume is needed**. If you set `EPHEMERAL_BUILDS=false`, add `-v mbs-artifacts:/app/service/artifacts`
-  to keep the zips across restarts.
+- **Job status is SQLite** (`ARTIFACT_DIR/jobs.db`) and survives a *process* restart on its
+  own. To also survive a **container recreate** (every CI deploy replaces the container),
+  mount `ARTIFACT_DIR` on a named volume as above (`-v mbs-data:/app/service/artifacts`) —
+  otherwise `GET /builds/{id}` loses history on each deploy (the backoffice still has the saved
+  S3 URLs, so it's degraded, not broken). The volume is tiny (SQLite + per-job manifest/log).
+- **Ephemeral mode** (bucket set) → build *output* goes to S3 and local output is deleted, so
+  the volume only holds the small `jobs.db` + logs. With `EPHEMERAL_BUILDS=false` the same
+  volume also keeps the publish zips across restarts.
 - Health check: `curl http://localhost:8000/healthz` → `{"status":"ok"}`. Logs:
   `docker logs -f mbs`.
 

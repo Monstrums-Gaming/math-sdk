@@ -1,16 +1,26 @@
-"""In-memory build-job registry.
+"""SQLite-backed build-job registry.
 
-Single-instance store: jobs live in a dict guarded by a lock; the downloadable artifacts
-live on disk under ARTIFACT_DIR. On process restart the in-memory records are lost but the
-zips persist — acceptable for a single internal service. Swap for SQLite/Redis if the
-service ever needs to scale horizontally or survive restarts with full status history.
+Job status is persisted to a SQLite file (``settings.JOBS_DB_PATH``) so it survives a process
+restart (uvicorn crash/reload) — unlike the previous in-memory dict. Each job is stored as a
+single JSON blob (the whole ``Job`` dataclass), which keeps the schema stable when ``Job`` gains
+a field. The downloadable artifacts still live on disk under ARTIFACT_DIR.
+
+Scope: this is single-box durability. The connection is guarded by an in-process lock, which
+does NOT coordinate across processes — so keep exactly one worker (see DEPLOY.md). Surviving a
+container *recreate* additionally requires the DB path to be on a mounted volume. Multi-replica
+/ HA remains the SQS + external-store path.
 """
 
+import json
+import sqlite3
 import threading
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields as _dataclass_fields
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
+
+from service.config import settings
 
 
 def _now_iso() -> str:
@@ -57,35 +67,67 @@ class Job:
         return data
 
 
-class JobRegistry:
-    """Thread-safe job store."""
+_JOB_FIELDS = frozenset(f.name for f in _dataclass_fields(Job))
 
-    def __init__(self) -> None:
-        self._jobs: dict[str, Job] = {}
+
+class JobRegistry:
+    """SQLite-backed, thread-safe job store. Same API as the former in-memory registry:
+    create/get/update/list return ``Job`` objects, so callers are unchanged."""
+
+    def __init__(self, db_path: Optional[Path] = None) -> None:
+        self._db_path = Path(db_path or settings.JOBS_DB_PATH)
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
+        # One connection shared across threads (serialized by _lock). WAL + a busy timeout keep
+        # writes robust; check_same_thread=False because builds run in a ThreadPoolExecutor.
+        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS jobs "
+            "(id TEXT PRIMARY KEY, created_at TEXT, data TEXT NOT NULL)"
+        )
+        self._conn.commit()
+
+    @staticmethod
+    def _to_job(data_json: str) -> Job:
+        return Job(**json.loads(data_json))
 
     def create(self, game_id: str, mode: str, publishable: bool) -> Job:
         job = Job(id=uuid.uuid4().hex, game_id=game_id, mode=mode, publishable=publishable)
         with self._lock:
-            self._jobs[job.id] = job
+            self._conn.execute(
+                "INSERT INTO jobs (id, created_at, data) VALUES (?, ?, ?)",
+                (job.id, job.created_at, json.dumps(asdict(job))),
+            )
+            self._conn.commit()
         return job
 
     def get(self, job_id: str) -> Optional[Job]:
         with self._lock:
-            return self._jobs.get(job_id)
+            row = self._conn.execute("SELECT data FROM jobs WHERE id = ?", (job_id,)).fetchone()
+            return self._to_job(row[0]) if row else None
 
     def update(self, job_id: str, **fields) -> Optional[Job]:
+        unknown = set(fields) - _JOB_FIELDS
+        if unknown:
+            raise ValueError(f"unknown Job field(s): {sorted(unknown)}")
         with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
+            row = self._conn.execute("SELECT data FROM jobs WHERE id = ?", (job_id,)).fetchone()
+            if row is None:
                 return None
-            for key, value in fields.items():
-                setattr(job, key, value)
-            return job
+            data = json.loads(row[0])
+            data.update(fields)  # read-modify-write, same effect as the old setattr loop
+            self._conn.execute(
+                "UPDATE jobs SET data = ? WHERE id = ?", (json.dumps(data), job_id)
+            )
+            self._conn.commit()
+            return Job(**data)
 
     def list(self) -> list[Job]:
         with self._lock:
-            return list(self._jobs.values())
+            rows = self._conn.execute("SELECT data FROM jobs ORDER BY created_at").fetchall()
+            return [self._to_job(r[0]) for r in rows]
 
 
 registry = JobRegistry()
