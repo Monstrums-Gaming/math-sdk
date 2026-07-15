@@ -77,9 +77,9 @@ builds it in the same call.
   "box_cost": 2.00,
   "cost_model": "unit",              // default "unit" (ACP-valid); or "box_cost"
   "prizes": [                         // 'payout' = catalog multiplier (value at box price)
-    { "name": "Nothing",      "payout": 0,   "prob": 0.65 },
-    { "name": "$1 Prize",     "payout": 1,   "prob": 0.28 },
-    { "name": "$200 Jackpot", "payout": 200, "prob": 0.005 }
+    { "sku": "P1", "name": "Nothing",      "payout": 0,   "prob": 0.65 },   // 'sku' optional
+    { "sku": "P2", "name": "$1 Prize",     "payout": 1,   "prob": 0.28 },
+    {              "name": "$200 Jackpot", "payout": 200, "prob": 0.005 }   // omitted -> auto "P3"
   ]
   // optional: game_id, working_name, win_type, num_sims, build{}
 }
@@ -87,6 +87,8 @@ builds it in the same call.
 
 **What the service derives** (you don't send these):
 - `game_id` → `<provider_number>_<slug(game_name)>` unless you pass one.
+- **prize keys** → the returned `manifest.prizes` is a **dict keyed by each prize's `sku`**
+  (must be unique); when a row omits `sku` it is auto-keyed `P1`, `P2`, … by position.
 - `criteria` → highest-paying prize = `"wincap"`; any prize that snaps to 0 on the RGS
   `0.1×` grid = `"0"`; every other distinct payout gets its own bucket.
 - `wincap` = max catalog payout; `rtp` = expected payout ÷ cost (must be `< 1.0`).
@@ -278,14 +280,18 @@ stream. Delivered separately from the ACP publish set (never inside `publish.zip
 ## Job lifecycle
 
 ```
-POST /builds ─202─> queued ─> running ─> succeeded ─> (prod + bucket) upload ─> uploaded ─> [ephemeral] delete local
-                                     └─> failed                        (else)     skipped         (keep local)
-                                                                       (err)      failed  ─────────(keep local)
+POST /builds ─202─> queued ─> running ─(build + S3 upload + cleanup all happen here)─> succeeded
+                                     └─> failed
 ```
 
-- **Build status** (`status`) and **deploy status** (`deploy_status`) are independent: an S3
-  upload failure leaves `status=succeeded`, `local_available=true` (the zip is still
-  downloadable), and only sets `deploy_status=failed`.
+- **`succeeded` means fully done.** The S3 upload + ephemeral cleanup run *while the job is
+  still `running`, so by the time `status` becomes `succeeded`, `deploy_status`, `s3_files`,
+  `events_file`, and `local_available` are all final. **Poll until `status == "succeeded"`,
+  then read them once** — no need to wait on `deploy_status` separately.
+- **Build status** (`status`) and **deploy status** (`deploy_status`) are still independent
+  *outcomes*: an S3 upload failure leaves `status=succeeded`, `local_available=true` (the zip
+  is still downloadable), and only sets `deploy_status=failed`. `deploy_status` ends `uploaded`
+  (prod + bucket), `failed` (upload error), or `skipped` (dev / no bucket).
 - **Ephemeral mode** (`EPHEMERAL_BUILDS`, default on when a bucket is set): a successful
   upload deletes the local build; the backoffice saves `s3_files[].url`. A failed upload
   keeps everything local.

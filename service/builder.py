@@ -196,16 +196,22 @@ def _run_job(job_id: str, manifest: dict, mode: str) -> None:
         # Snapshot the readable events sample separately (kept out of publish.zip).
         sample_local = _snapshot_sample_events(eff_id, job_dir)
 
-        # The build artifact is now captured; the build has succeeded regardless of what
-        # the S3 deploy does next. Deploy + cleanup stay inside the per-game lock so a
-        # concurrent same-game build can't overwrite games/<eff_id> mid-upload.
+        # Record the artifact paths first (so deploy/cleanup can use them), run the S3 deploy +
+        # cleanup, and only THEN mark the job 'succeeded'. Marking terminal-success LAST means a
+        # client polling until status=='succeeded' always sees a settled deploy_status / s3_files
+        # / events_file / local_available — there is no window where 'succeeded' precedes the
+        # upload (which previously made a poll-until-succeeded backoffice read empty s3 fields).
+        # Deploy stays best-effort: a failed upload still ends 'succeeded' with
+        # deploy_status='failed'. All of this stays inside the per-game lock so a concurrent
+        # same-game build can't overwrite games/<eff_id> mid-upload.
         registry.update(
-            job_id, status="succeeded", finished_at=_now_iso(),
+            job_id,
             files=files, zip_path=str(job_dir / "publish.zip"),
             events_path=str(sample_local) if sample_local else None,
         )
         uploaded = _maybe_deploy(job_id, manifest_game_id, mode, job_dir, sample_local)
         _cleanup_after_build(job_id, eff_id, job_dir, uploaded)
+        registry.update(job_id, status="succeeded", finished_at=_now_iso())
 
 
 def _maybe_deploy(job_id: str, game_id: str, mode: str, job_dir: Path, sample_local: Optional[Path]) -> bool:
