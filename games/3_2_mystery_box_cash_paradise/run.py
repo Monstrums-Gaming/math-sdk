@@ -20,7 +20,7 @@ if __name__ == "__main__":
     batching_size = 50000
     # Production: emit compressed books (.jsonl.zst) so the published config
     # carries a real books hash. Set to False for a readable-JSON smoke test.
-    compression = False
+    compression = True
     profiling = False
 
     # With the optimiser disabled, published odds == books-per-criteria, i.e.
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # count (30200 / 28000 / 25000 / 5000 / 5000 / 5000 / 1000 / 600 / 200), so
     # the lookup table reproduces the authored odds exactly. Drop to a small
     # number (e.g. 50) only for a quick smoke test.
-    num_sims = int(50000)
+    num_sims = int(100000)
     num_sim_args = {
         "base": num_sims,
     }
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         # that tooling raise; leave it off (the RGS format checks below are the
         # meaningful verification for this game).
         "run_analysis": False,
-        "run_format_checks": False,
+        "run_format_checks": True,
     }
 
     config = GameConfig()
