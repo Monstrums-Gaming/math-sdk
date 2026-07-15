@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir \
       numpy==2.2.5 \
       zstandard==0.23.0 \
       python-dotenv==1.1.0 \
-      xlsxwriter==3.2.0
+      xlsxwriter==3.2.0 \
+      boto3==1.35.97
 
 COPY . .
 RUN pip install --no-cache-dir -e .

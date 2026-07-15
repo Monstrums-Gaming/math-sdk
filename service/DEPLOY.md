@@ -111,6 +111,152 @@ env/bin/pip install -r requirements.txt
 
 ---
 
+## Alternative: manual deploy on EC2 with Docker
+
+Prefer a container to a Forge daemon? The repo ships `service/Dockerfile` (single uvicorn
+worker, boto3 included). No Rust needed.
+
+### 1. Launch the instance
+
+- **AMI:** Ubuntu 24.04 · **Type:** t3.medium (see sizing) · **Disk:** 20 GB gp3.
+- **Security group:** SSH (22) from your IP. Expose the app port (8000) only if the
+  backoffice is off-box; if Laravel is on the same instance/VPC, keep 8000 closed and call
+  it privately.
+- **IAM role (recommended):** attach an instance role with `s3:PutObject` +
+  `s3:GetObject`/`s3:HeadObject` on the bucket, so you don't put AWS keys in `.env`.
+
+### 2. Install Docker
+
+```sh
+sudo apt-get update && sudo apt-get install -y docker.io git
+sudo usermod -aG docker ubuntu   # log out/in so `docker` works without sudo
+```
+
+### 3. Build the image
+
+```sh
+git clone <your-repo> math-sdk && cd math-sdk
+git checkout <branch>
+docker build -f service/Dockerfile -t mysterybox-build-service .   # context = repo root
+```
+
+### 4. Provide config at runtime (never bake secrets into the image)
+
+Create `/home/ubuntu/math-sdk/.env` (from `.env.example`) with `API_KEY`, `AWS_S3_BUCKET`,
+`S3_PREFIX`, `AWS_REGION`, `S3_PUBLIC_BASE_URL`, etc. With an IAM role, **omit**
+`AWS_ACCESS_KEY_ID`/`SECRET` — boto3 uses the role. Otherwise set them.
+
+> ⚠️ **No inline comments on value lines in a `--env-file`.** Docker (unlike python-dotenv)
+> does **not** strip them — `AWS_S3_BUCKET=juice-cdn   # my bucket` sets the bucket to the
+> literal `juice-cdn   # my bucket`, silently breaking S3 (deploy skipped/failed). Keep
+> comments on their own `#` lines. Verify what the container actually resolved:
+> ```sh
+> docker exec mbs python -c "from service.config import settings; print(repr(settings.AWS_S3_BUCKET))"
+> ```
+
+### 5. Run
+
+```sh
+docker run -d --name mbs --restart unless-stopped \
+  -p 8000:8000 \
+  --env-file /home/ubuntu/math-sdk/.env \
+  mysterybox-build-service
+```
+
+- **Ephemeral mode** (bucket set) → builds go to S3 and local output is deleted, so **no
+  volume is needed**. If you set `EPHEMERAL_BUILDS=false`, add `-v mbs-artifacts:/app/service/artifacts`
+  to keep the zips across restarts.
+- Health check: `curl http://localhost:8000/healthz` → `{"status":"ok"}`. Logs:
+  `docker logs -f mbs`.
+
+### IMDSv2 gotcha (IAM role from inside a container)
+
+By default the instance metadata hop limit is 1, which **blocks Docker containers** from
+reaching the IAM role credentials (IMDSv2). Either raise the hop limit to 2, or fall back to
+static keys in `.env`.
+
+```sh
+# raise hop limit so the container can use the instance role
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+IID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+aws ec2 modify-instance-metadata-options --instance-id "$IID" \
+  --http-put-response-hop-limit 2 --http-endpoint enabled --region <region>
+```
+
+### Same box as the Forge backoffice (recommended)
+
+Forge runs Laravel natively (Nginx + PHP-FPM on 80/443); the service runs as a Docker
+container beside it. They don't collide — the container just needs to be reachable from
+Laravel over **loopback only**.
+
+- **Bind the container to `127.0.0.1`**, not `0.0.0.0`, so it is never publicly exposed and
+  you don't touch the security group / ufw:
+  ```sh
+  docker run -d --name mbs --restart unless-stopped \
+    -p 127.0.0.1:8000:8000 \
+    --cpus 2 --memory 2g \
+    --env-file /home/forge/math-sdk/.env \
+    mysterybox-build-service
+  ```
+- **`--cpus` / `--memory`** cap a build so it can't starve PHP-FPM/MySQL on the shared box.
+  Combine with `MAX_CONCURRENT_BUILDS` in `.env`.
+- **Laravel calls `http://127.0.0.1:8000`** with the API key — no Forge Nginx site, no TLS,
+  no public port. Example `config/services.php`:
+  ```php
+  'mathsdk' => [
+      'url' => env('MATHSDK_URL', 'http://127.0.0.1:8000'),
+      'key' => env('MATHSDK_KEY'),
+  ],
+  ```
+- **Two separate deploy lifecycles:** Forge's git pipeline deploys Laravel; the container is
+  updated independently (§7 below). They share the host, not the release process.
+- **Two separate `.env` files:** Laravel's (Forge-managed, in the site dir) and the
+  service's (`/home/forge/math-sdk/.env`, passed via `--env-file`). Keep them distinct.
+- Size the box for both (t3.large / 8 GB — see sizing). Install Docker manually per §2;
+  Forge won't manage it, but it runs fine alongside Forge's stack.
+
+#### Adding it to an *existing, running* Forge box
+
+Safe to do live — the container is isolated from Forge's stack (different ports, own
+process). But on a production box, mind three things:
+
+1. **Check headroom first.** The box was sized for the backoffice. Run `free -h`, `nproc`,
+   `uptime`. If RAM is tight, a build can push MySQL into swap. Cap the container
+   (`--cpus`, `--memory`) and set `MAX_CONCURRENT_BUILDS=1`; resize the instance
+   (stop → change type → start) if it's already near capacity.
+2. **Docker bypasses ufw.** Publishing a port to `0.0.0.0` opens it *even if ufw would
+   block it* — a real exposure risk on a box managed by Forge's firewall. **Binding to
+   `127.0.0.1` (as above) avoids this entirely** — nothing is published beyond loopback.
+   Never publish `-p 8000:8000` (all interfaces) here.
+3. **IAM role for S3** can be attached to the **already-running** instance without a reboot
+   (Actions → Security → Modify IAM role). Then the container uses it (remember IMDSv2
+   hop-limit = 2).
+
+Rollback is clean: `docker rm -f mbs` removes the service with zero effect on the Laravel
+app. Forge's deploy pipeline and OS updates never touch the container.
+
+### 6. TLS / public access (optional)
+
+If the service must be reachable off-VPC, front it with an **ALB + ACM cert**, or run a
+`caddy`/`nginx` container that terminates TLS and proxies to `mbs:8000`. For a same-VPC
+backoffice, skip this — call `http://<private-ip>:8000` with the API key.
+
+### 7. Update
+
+```sh
+cd math-sdk && git pull
+docker build -f service/Dockerfile -t mysterybox-build-service .
+docker rm -f mbs
+docker run -d --name mbs --restart unless-stopped -p 8000:8000 \
+  --env-file .env mysterybox-build-service
+```
+
+> Production tip: build the image in CI and push to **ECR**, then `docker pull` on the box —
+> reproducible and faster than building on the instance. Full step-by-step (ECR + GitHub
+> Actions OIDC + SSM deploy) in **[`CICD.md`](CICD.md)**.
+
+---
+
 ## Mixing with the backoffice
 
 | Topology | When | How |
