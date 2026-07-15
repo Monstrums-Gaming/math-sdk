@@ -68,6 +68,7 @@ jobs:
             --comment "deploy $IMG" \
             --parameters commands="[
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REG\",
+              \"docker system prune -af || true\",
               \"docker pull $IMG\",
               \"docker rm -f mbs || true\",
               \"docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 --cpus 2 --memory 2g --env-file $ENV_FILE $IMG\",
