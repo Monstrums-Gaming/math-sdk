@@ -9,15 +9,24 @@ container.
 git push ──▶ GitHub Actions ──▶ build ──▶ push to ECR ──▶ SSM RunCommand ──▶ docker pull + restart on EC2
 ```
 
-Fill in the placeholders once:
+The ready-to-run workflow lives at **`.github/workflows/deploy-service.yml`** (triggers on
+push to the `staging` branch + manual dispatch). This guide is the one-time AWS setup behind
+it.
 
-| Placeholder | Example |
-|-------------|---------|
-| `<ACCOUNT_ID>` | `123456789012` |
-| `<REGION>` | `ap-southeast-2` |
-| `<REPO>` (GitHub) | `Monstrums-Gaming/math-sdk` |
-| `<INSTANCE_ID>` | `i-0abc123...` |
-| `<ECR_REPO>` | `mysterybox-build-service` |
+**This repo's concrete values** (the workflow is already wired with these):
+
+| Setting | Value |
+|---------|-------|
+| Account | `493499579237` |
+| Region | `us-east-1` |
+| GitHub repo | `Monstrums-Gaming/math-sdk` |
+| ECR repo | `mysterybox-build-service-staging` |
+| Branch | `staging` |
+| OIDC role | `arn:aws:iam::493499579237:role/gha-deploy` |
+| Instance | set as GitHub **variable** `EC2_INSTANCE_ID` (enables the deploy step) |
+
+The generic placeholders below (`<ACCOUNT_ID>`, `<REGION>`, `<ECR_REPO>`, …) map to the
+values above — substitute them when copying commands.
 
 Prereqs: AWS CLI configured locally (admin, for the one-time setup), the EC2 box already
 running the container per `DEPLOY.md`.
@@ -28,18 +37,18 @@ running the container per `DEPLOY.md`.
 
 ```sh
 aws ecr create-repository \
-  --repository-name mysterybox-build-service \
+  --repository-name mysterybox-build-service-staging \
   --image-scanning-configuration scanOnPush=true \
   --region <REGION>
 ```
 
 Registry URL is `​<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com`; the image will be
-`<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service:<tag>`.
+`<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:<tag>`.
 
 (Optional) keep only recent images with a lifecycle policy:
 
 ```sh
-aws ecr put-lifecycle-policy --repository-name mysterybox-build-service --region <REGION> \
+aws ecr put-lifecycle-policy --repository-name mysterybox-build-service-staging --region <REGION> \
   --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"keep last 10",
     "selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},
     "action":{"type":"expire"}}]}'
@@ -92,7 +101,7 @@ thumbprint for GitHub, but the CLI still requires the flag.)
     { "Sid": "EcrPush",   "Effect": "Allow",
       "Action": ["ecr:BatchCheckLayerAvailability","ecr:InitiateLayerUpload","ecr:UploadLayerPart",
                  "ecr:CompleteLayerUpload","ecr:PutImage","ecr:BatchGetImage"],
-      "Resource": "arn:aws:ecr:<REGION>:<ACCOUNT_ID>:repository/mysterybox-build-service" },
+      "Resource": "arn:aws:ecr:<REGION>:<ACCOUNT_ID>:repository/mysterybox-build-service-staging" },
     { "Sid": "SsmDeploy", "Effect": "Allow",
       "Action": ["ssm:SendCommand","ssm:GetCommandInvocation","ssm:ListCommandInvocations"],
       "Resource": ["arn:aws:ec2:<REGION>:<ACCOUNT_ID>:instance/<INSTANCE_ID>",
@@ -159,7 +168,7 @@ permissions:
 
 env:
   AWS_REGION: <REGION>
-  ECR_REPO: mysterybox-build-service
+  ECR_REPO: mysterybox-build-service-staging
   INSTANCE_ID: <INSTANCE_ID>
 
 jobs:
@@ -223,7 +232,7 @@ git push origin main            # or trigger "Run workflow" (workflow_dispatch)
 ```
 
 - Watch the run in the GitHub **Actions** tab.
-- Confirm the image landed: `aws ecr list-images --repository-name mysterybox-build-service --region <REGION>`.
+- Confirm the image landed: `aws ecr list-images --repository-name mysterybox-build-service-staging --region <REGION>`.
 - On the box: `docker ps` shows `mbs` running the new SHA tag; `curl http://127.0.0.1:8000/healthz`.
 
 ---
@@ -233,8 +242,8 @@ git push origin main            # or trigger "Run workflow" (workflow_dispatch)
 ```sh
 aws ecr get-login-password --region <REGION> \
   | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
-docker build -f service/Dockerfile -t <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service:manual .
-docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service:manual
+docker build -f service/Dockerfile -t <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:manual .
+docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:manual
 ```
 
 ## Rollback
@@ -243,9 +252,9 @@ Deploy any prior tag (SHAs are immutable):
 
 ```sh
 aws ssm send-command --instance-ids <INSTANCE_ID> --document-name AWS-RunShellCommand \
-  --parameters commands='["docker pull <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service:<OLD_SHA>",
+  --parameters commands='["docker pull <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:<OLD_SHA>",
     "docker rm -f mbs || true",
-    "docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 --cpus 2 --memory 2g --env-file /home/forge/math-sdk/.env <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service:<OLD_SHA>"]' \
+    "docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 --cpus 2 --memory 2g --env-file /home/forge/math-sdk/.env <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:<OLD_SHA>"]' \
   --region <REGION>
 ```
 
