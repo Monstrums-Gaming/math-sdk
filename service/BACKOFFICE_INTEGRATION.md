@@ -1,39 +1,35 @@
-# Backoffice integration guide (Laravel)
+# Backoffice integration (Laravel) — calling the build service
 
-How to call the mystery-box build service from your Laravel backoffice: an admin defines a
-box → your app asks the service to build it → the service uploads the publish files to S3 →
-you store the returned URLs against the box.
+You already have mystery box + prize models. This is **only the integration**: how to hand a
+box to the build service, track the build, and store the resulting S3 file URLs. It does not
+introduce a new box module — it plugs into your existing one.
 
-The service runs as a container on the **same server** as your Forge app, bound to
-`127.0.0.1:8000`, so Laravel calls it over loopback with an API key. No public exposure.
-
-Full API reference: [`API.md`](API.md). This guide is the Laravel side.
+The service runs as a container on the **same server**, bound to `127.0.0.1:8000`, so Laravel
+calls it over loopback with an API key. API reference: [`API.md`](API.md).
 
 ---
 
 ## The flow
 
 ```
-Admin fills a box form  ─▶  POST /manifests?build=true&mode=prod   (returns job_id)
-                        ─▶  poll GET /builds/{job_id}  until  status = succeeded
-                        ─▶  save s3_files[].url on the box record
+Your existing "publish/build box" action
+   ─▶ POST /manifests?build=true&mode=prod   (maps your box → a manifest, returns job_id)
+   ─▶ poll GET /builds/{job_id} until status = succeeded
+   ─▶ save game_id + s3_files[].url onto your box record
 ```
 
-- **Build is async** — a prod build takes seconds to a minute+. Kick it off, store the
-  `job_id`, and **poll from a queued job**, never inside the web request.
-- **Ephemeral mode** is on, so the service returns stable S3 URLs (`s3_files[].url`) and
-  deletes its local copy. Your DB becomes the record of "box → files".
+Build is async (seconds to a minute+): fire it, then **poll from a queued job** — never in the
+web request.
 
 ---
 
-## 1. Configuration
+## 1. Config
 
-`.env` (your Laravel app's env, Forge-managed):
+`.env`:
 ```
 MATHSDK_URL=http://127.0.0.1:8000
 MATHSDK_KEY=the-same-API_KEY-that-is-in-the-container-.env
 ```
-
 `config/services.php`:
 ```php
 'mathsdk' => [
@@ -44,9 +40,8 @@ MATHSDK_KEY=the-same-API_KEY-that-is-in-the-container-.env
 
 ---
 
-## 2. A thin API client
+## 2. API client — `app/Services/MathSdk.php`
 
-`app/Services/MathSdk.php`:
 ```php
 <?php
 
@@ -62,14 +57,10 @@ class MathSdk
         return Http::baseUrl(config('services.mathsdk.url'))
             ->withHeaders(['X-API-Key' => config('services.mathsdk.key')])
             ->acceptJson()
-            ->timeout(30);   // each call is quick; the *build* is what's slow (we poll)
+            ->timeout(30);
     }
 
-    /**
-     * Assemble a manifest from simplified box fields and start a build.
-     * Returns the decoded body incl. ['job' => ['job_id' => ...]].
-     * Throws on 4xx/5xx (e.g. 400 = bad box economics/odds).
-     */
+    /** Assemble a manifest from simplified box fields and start a build. */
     public function assembleAndBuild(array $boxSpec, string $mode = 'prod', bool $overwrite = true): array
     {
         return $this->client()
@@ -88,60 +79,38 @@ class MathSdk
 
 ---
 
-## 3. Store the box + its build result
+## 3. Add build-tracking columns to your existing box table
 
-Migration (`php artisan make:migration create_mystery_boxes_table`):
+Additive migration — no new table:
 ```php
-Schema::create('mystery_boxes', function (Blueprint $t) {
-    $t->id();
-    $t->string('name');
-    $t->decimal('box_cost', 8, 2);
-    $t->decimal('rtp', 6, 4)->nullable();          // returned by the service
-    $t->json('prizes');                            // the admin's prize rows
-    $t->string('game_id')->nullable();             // returned by the service
+Schema::table('mystery_boxes', function (Blueprint $t) {   // ← your existing table name
+    $t->string('game_id')->nullable();
     $t->string('build_job_id')->nullable();
-    $t->string('build_status')->default('draft');  // draft|building|succeeded|failed
+    $t->string('build_status')->default('idle');   // idle|building|succeeded|failed
     $t->text('build_error')->nullable();
-    $t->json('s3_files')->nullable();              // [{name,key,uri,url}, ...]
-    $t->timestamps();
+    $t->decimal('rtp', 6, 4)->nullable();          // returned by the service
+    $t->json('s3_files')->nullable();              // [{name,key,uri,url}, ...] — the publish files
 });
 ```
 
 ---
 
-## 4. Kick off the build (controller)
+## 4. Trigger from your existing flow
 
+Wherever you currently finalize/publish a box, dispatch the build (don't build inline):
 ```php
 use App\Jobs\BuildMysteryBox;
-use App\Models\MysteryBox;
 
-public function store(Request $request)
-{
-    $data = $request->validate([
-        'name'      => 'required|string',
-        'box_cost'  => 'required|numeric|min:0.01',
-        'prizes'    => 'required|array|min:1',
-        'prizes.*.name'   => 'required|string',
-        'prizes.*.payout' => 'required|numeric|min:0',
-        'prizes.*.prob'   => 'required|numeric|gt:0|lte:1',
-    ]);
-
-    $box = MysteryBox::create([
-        'name'         => $data['name'],
-        'box_cost'     => $data['box_cost'],
-        'prizes'       => $data['prizes'],
-        'build_status' => 'building',
-    ]);
-
-    BuildMysteryBox::dispatch($box->id);
-
-    return response()->json(['id' => $box->id, 'status' => 'building']);
-}
+// inside your existing controller/service after the box is saved:
+$box->update(['build_status' => 'building']);
+BuildMysteryBox::dispatch($box->id);
 ```
+Add a "Build / Rebuild" button in your box admin that hits this. Requires a running queue
+worker (Forge → site → **Queue**).
 
 ---
 
-## 5. The build job (assemble → poll → save)
+## 5. The job — map your box → spec, build, poll, save
 
 `app/Jobs/BuildMysteryBox.php`:
 ```php
@@ -149,7 +118,7 @@ public function store(Request $request)
 
 namespace App\Jobs;
 
-use App\Models\MysteryBox;
+use App\Models\MysteryBox;               // ← your existing model
 use App\Services\MathSdk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -161,69 +130,62 @@ class BuildMysteryBox implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 600;   // allow the poll loop to run
+    public int $timeout = 600;
 
     public function __construct(public int $boxId) {}
 
     public function handle(MathSdk $sdk): void
     {
-        $box = MysteryBox::findOrFail($this->boxId);
+        $box = MysteryBox::with('prizes')->findOrFail($this->boxId);
 
-        // Build the simplified box spec the /manifests endpoint expects.
+        // ── MAP your existing box + prizes to the service's box spec ──────────────
+        // Adjust the field names on the right to match YOUR schema.
         $spec = [
-            'game_name'       => $box->name,
-            'provider_number' => 3,              // your ACP studio id
+            'game_name'       => $box->name,                    // your box name
+            'provider_number' => (int) config('services.mathsdk.provider_number', 3), // your real ACP studio id
             'provider_name'   => 'monstrum',
-            'box_cost'        => (float) $box->box_cost,
-            'cost_model'      => 'unit',         // ACP-valid
-            'prizes'          => $box->prizes,   // [{name,payout,prob}, ...]
+            'box_cost'        => (float) $box->price,           // your price/box_cost field
+            'cost_model'      => 'unit',                        // ACP-valid
+            'prizes'          => $box->prizes->map(fn ($p) => [
+                'name'   => $p->name,                           // your prize label
+                'payout' => (float) $p->payout,                 // your catalog value/multiplier
+                'prob'   => (float) $p->probability,            // your odds — see note below
+            ])->values()->all(),
         ];
+        // ──────────────────────────────────────────────────────────────────────────
 
         try {
             $res   = $sdk->assembleAndBuild($spec, mode: 'prod', overwrite: true);
             $jobId = $res['job']['job_id'];
-            $box->update([
-                'build_job_id' => $jobId,
-                'game_id'      => $res['game_id'],
-                'rtp'          => $res['rtp'],
-            ]);
+            $box->update(['build_job_id' => $jobId, 'game_id' => $res['game_id'], 'rtp' => $res['rtp']]);
         } catch (\Throwable $e) {
-            // 400 = bad odds/economics (RTP >= 1.0, probs != 1.0, etc.)
+            // 400 = bad odds/economics (RTP >= 1.0, probs != 1.0, non-integral quotas)
             $box->update(['build_status' => 'failed', 'build_error' => $e->getMessage()]);
             return;
         }
 
-        // Poll until the build settles (prod builds: seconds to a minute+).
         for ($i = 0; $i < 60; $i++) {
             sleep(5);
-            $status = $sdk->getBuild($jobId);
-
-            if ($status['status'] === 'succeeded') {
-                $box->update([
-                    'build_status' => 'succeeded',
-                    's3_files'     => $status['s3_files'],   // save the URLs
-                ]);
+            $s = $sdk->getBuild($jobId);
+            if ($s['status'] === 'succeeded') {
+                $box->update(['build_status' => 'succeeded', 's3_files' => $s['s3_files']]);
                 return;
             }
-            if ($status['status'] === 'failed') {
-                $box->update(['build_status' => 'failed', 'build_error' => $status['error'] ?? 'build failed']);
+            if ($s['status'] === 'failed') {
+                $box->update(['build_status' => 'failed', 'build_error' => $s['error'] ?? 'build failed']);
                 return;
             }
         }
-
         $box->update(['build_status' => 'failed', 'build_error' => 'build timed out']);
     }
 }
 ```
 
-You need a running queue worker — Forge sets this up (site → **Queue**). The scheduler isn't
-required; the job self-polls.
-
 ---
 
-## 6. Using the result
+## 6. The result
 
-After success, `$box->s3_files` holds the stable, savable paths:
+On success, `$box->s3_files` holds the stable publish-file URLs:
 ```json
 [
   { "name": "index.json",             "url": "https://juice-cdn.s3.ap-southeast-2.amazonaws.com/math-sdk/staging/<game_id>/index.json" },
@@ -231,37 +193,43 @@ After success, `$box->s3_files` holds the stable, savable paths:
   { "name": "lookUpTable_base_0.csv", "url": "https://…/lookUpTable_base_0.csv" }
 ]
 ```
-Show them in the admin UI, or hand the three files to whoever uploads to the Stake **ACP
-dashboard** (that's what makes the game live — S3 is just your storage).
+Show them in your box admin, or hand the three files to whoever uploads them to the Stake
+**ACP dashboard** (that's what makes a game live — S3 is just storage).
 
 ---
 
-## Box economics — the one rule admins must respect
+## Prize odds — the one thing to get right
 
-`cost_model: "unit"` RTP is `Σ (payout ÷ box_cost, snapped to 0.1×) × prob`, and it **must be
-< 1.0** or the service returns `400 "prizes pay X RTP (>= 1.0)"`. Also every `prob` must be a
-multiple of `1/100000` and they must sum to `1.0`. Surface these `400` messages to the admin
-so they can fix the odds — don't swallow them. Aim RTP around 0.80–0.90.
+The service needs, across a box's prizes:
+- **probabilities that sum to exactly `1.0`**, each a **multiple of `1/100000`**, and
+- **RTP `< 1.0`**, where RTP = `Σ (payout ÷ box_cost, snapped to 0.1×) × prob`.
+
+If your existing prizes store **weights** or **percentages** instead of normalized
+probabilities, normalize in the mapping before sending:
+```php
+$total = $box->prizes->sum('weight');
+'prob' => round($p->weight / $total, 5),   // 5 dp = a multiple of 1/100000
+```
+Rounding can make the sum land at `0.99999`/`1.00001` — nudge the largest prize by the
+remainder if your source data is coarse, or keep prize probabilities to ≤5 decimals at the
+source. If odds/economics are off, the API returns `400` with the exact reason — surface that
+to the admin rather than swallowing it.
 
 ---
 
-## Error handling cheat-sheet
+## Error handling
 
-| Response | Meaning | What to do |
-|----------|---------|-----------|
-| `400 Invalid manifest / Assembled manifest invalid` | Bad odds/economics | Show the message to the admin; let them fix the box. |
+| Response | Meaning | Action |
+|----------|---------|--------|
+| `400 Invalid manifest / Assembled manifest invalid` | Bad odds/economics | Show the message to the admin; fix the prizes. |
 | `401` | Wrong/missing API key | Fix `MATHSDK_KEY`. |
-| `409` | prod `game_id` already built | Pass `overwrite=true` (the client does) or bump the game name. |
-| job `deploy_status: "failed"` | Build OK but S3 upload failed | Retry the build (`overwrite=true`); check the service's S3 creds. |
-
----
+| `409` | prod `game_id` already built | Client passes `overwrite=true`; or change the box name. |
+| job `deploy_status: "failed"` | Build OK, S3 upload failed | Rebuild (`overwrite=true`); check the service's S3 creds. |
 
 ## Notes
 
-- **Same-box only:** `127.0.0.1` works because Laravel and the container share the host. If
-  you split them, call the build server's private IP / TLS subdomain instead.
-- **Idempotency:** `game_id` is derived from the box name (`<provider>_<slug>`); rebuilding
-  the same box overwrites its files. Pass an explicit `game_id` in `$spec` if you want to
-  control it.
-- **dev vs prod:** use `mode=dev` for a fast, non-publishable preview (no S3 upload); `prod`
-  for the real, uploaded build.
+- **Same-box only:** `127.0.0.1` works because Laravel + the container share the host. Split
+  them → call the build server's private IP / TLS subdomain instead.
+- **`mode`:** `dev` = fast, non-publishable preview (no S3 upload); `prod` = real, uploaded build.
+- **`game_id`** is derived from the box name; rebuilding overwrites its files. Pass an explicit
+  `game_id` in `$spec` if you want to pin it (e.g. to your box's UUID).
