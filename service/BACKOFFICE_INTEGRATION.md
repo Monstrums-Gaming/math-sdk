@@ -28,9 +28,9 @@ web request.
 `.env`:
 ```
 # pick ONE, depending on how you reach the service (see Notes):
-MATHSDK_URL=http://mbs:8000                                   # same Docker network (local/dev)
-# MATHSDK_URL=http://127.0.0.1:8000                           # Laravel native on the same host
-# MATHSDK_URL=https://staging-builds.builds.theboxforge.com   # public custom domain + TLS
+MATHSDK_URL=http://mbs:8000                            # same Docker network (local/dev)
+# MATHSDK_URL=http://127.0.0.1:8000                    # Laravel native on the same host
+# MATHSDK_URL=https://staging.builds.theboxforge.com   # public custom domain + TLS
 MATHSDK_KEY=the-same-API_KEY-that-is-in-the-container-.env
 ```
 Over a real HTTPS custom domain, keep full cert verification (don't disable it) — it's a valid
@@ -200,6 +200,13 @@ On success, `$box->s3_files` holds the stable publish-file URLs:
 ```
 Show them in your box admin, or hand the three files to whoever uploads them to the Stake
 **ACP dashboard** (that's what makes a game live — S3 is just storage).
+
+**Readable events sample (for frontend/game devs).** Each build also produces
+`books_events.json` — a readable ~100-round sample of the per-round event stream (one round
+per distinct prize so every event shape appears). It's returned **separately** from the ACP
+files: `GET /builds/{id}` includes an `events_file` (`{name,url,…}`) when S3 is on, or fetch
+it from `GET /builds/{id}/events`. Store/surface `events_file.url` alongside the box so your
+frontend devs can pull it. It is **not** part of the ACP upload set.
 
 ---
 

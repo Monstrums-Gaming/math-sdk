@@ -28,6 +28,10 @@ from service.jobs import Job, registry
 # The three files uploaded to the ACP live here; we zip the whole publish_files dir so
 # config.json (with the sha256 hashes) travels with them.
 _PUBLISH_SUBPATH = ("library", "publish_files")
+# The readable dev events sample (books_events_base.json) lives OUTSIDE publish_files so the
+# ACP set stays clean; delivered as its own artifact (never in publish.zip).
+_SAMPLE_SUBPATH = ("library", "samples", "books_events_base.json")
+_SAMPLE_DOWNLOAD_NAME = "books_events.json"  # name in the job dir / S3 / download
 
 # Bounded worker pool for builds + one lock per game_id so two builds of the SAME game
 # never write games/<id>/library concurrently. Different games build in parallel.
@@ -100,6 +104,11 @@ def effective_game_id(manifest_game_id: str, mode: str) -> str:
 def publish_dir_for(game_id: str) -> Path:
     """games/<game_id>/library/publish_files."""
     return settings.GAMES_DIR.joinpath(game_id, *_PUBLISH_SUBPATH)
+
+
+def sample_events_src(game_id: str) -> Path:
+    """games/<game_id>/library/samples/books_events_base.json (may not exist if disabled)."""
+    return settings.GAMES_DIR.joinpath(game_id, *_SAMPLE_SUBPATH)
 
 
 def already_built(manifest_game_id: str) -> bool:
@@ -184,33 +193,52 @@ def _run_job(job_id: str, manifest: dict, mode: str) -> None:
             registry.update(job_id, status="failed", finished_at=_now_iso(), error=str(err))
             return
 
+        # Snapshot the readable events sample separately (kept out of publish.zip).
+        sample_local = _snapshot_sample_events(eff_id, job_dir)
+
         # The build artifact is now captured; the build has succeeded regardless of what
         # the S3 deploy does next. Deploy + cleanup stay inside the per-game lock so a
         # concurrent same-game build can't overwrite games/<eff_id> mid-upload.
         registry.update(
             job_id, status="succeeded", finished_at=_now_iso(),
             files=files, zip_path=str(job_dir / "publish.zip"),
+            events_path=str(sample_local) if sample_local else None,
         )
-        uploaded = _maybe_deploy(job_id, manifest_game_id, mode, job_dir)
+        uploaded = _maybe_deploy(job_id, manifest_game_id, mode, job_dir, sample_local)
         _cleanup_after_build(job_id, eff_id, job_dir, uploaded)
 
 
-def _maybe_deploy(job_id: str, game_id: str, mode: str, job_dir: Path) -> bool:
-    """Best-effort S3 upload of a successful prod build's publish files + zip. Returns True
-    only on a fully successful upload. Never fails the job — records the outcome in the
-    deploy_* fields so a bucket misconfig can be retried (via overwrite=true) without loss."""
+def _maybe_deploy(job_id: str, game_id: str, mode: str, job_dir: Path, sample_local: Optional[Path]) -> bool:
+    """Best-effort S3 upload of a successful prod build's publish files + zip + events sample.
+    Returns True only on a fully successful upload. Never fails the job — records the outcome in
+    the deploy_* fields so a bucket misconfig can be retried (via overwrite=true) without loss."""
     if mode != "prod" or not s3.s3_enabled():
         return False  # dev preview, or no bucket configured -> stays "skipped"
     try:
-        result = s3.upload_build(game_id, job_dir / "publish_files", job_dir / "publish.zip")
+        result = s3.upload_build(
+            game_id, job_dir / "publish_files", job_dir / "publish.zip", sample_path=sample_local
+        )
         registry.update(
             job_id, deploy_status="uploaded",
             s3_prefix=result["prefix"], s3_files=result["files"], s3_zip=result["zip"],
+            events_file=result.get("sample"),
         )
         return True
     except Exception as err:  # boto3/network/credentials — keep the build succeeded
         registry.update(job_id, deploy_status="failed", deploy_error=f"{type(err).__name__}: {err}")
         return False
+
+
+def _snapshot_sample_events(eff_id: str, job_dir: Path) -> Optional[Path]:
+    """Copy the build's readable events sample into the job dir as books_events.json so it
+    survives ephemeral cleanup of games/<eff_id>/. Returns the copy's path, or None when the
+    build produced no sample (SAMPLE_EVENTS=0). Deliberately NOT added to publish.zip."""
+    src = sample_events_src(eff_id)
+    if not src.is_file():
+        return None
+    dest = job_dir / _SAMPLE_DOWNLOAD_NAME
+    shutil.copy2(src, dest)
+    return dest
 
 
 def _cleanup_after_build(job_id: str, eff_id: str, job_dir: Path, uploaded: bool) -> None:
@@ -223,7 +251,9 @@ def _cleanup_after_build(job_id: str, eff_id: str, job_dir: Path, uploaded: bool
     shutil.rmtree(settings.GAMES_DIR / eff_id, ignore_errors=True)
     shutil.rmtree(job_dir / "publish_files", ignore_errors=True)
     (job_dir / "publish.zip").unlink(missing_ok=True)
-    registry.update(job_id, local_available=False, zip_path=None)
+    # The events sample is now in S3 (events_file); drop the local copy + its server path.
+    (job_dir / _SAMPLE_DOWNLOAD_NAME).unlink(missing_ok=True)
+    registry.update(job_id, local_available=False, zip_path=None, events_path=None)
 
 
 def _build_env(mode: str) -> dict[str, str]:

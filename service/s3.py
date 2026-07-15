@@ -78,14 +78,20 @@ def _file_entry(client, name: str, bucket: str, key: str) -> dict:
     return entry
 
 
-def upload_build(game_id: str, publish_dir: Path, zip_path: Optional[Path] = None) -> dict:
-    """Upload a build's publish files (and optionally the zip) to the bucket under the
-    game's prefix. Returns stable, savable paths:
+def upload_build(
+    game_id: str,
+    publish_dir: Path,
+    zip_path: Optional[Path] = None,
+    sample_path: Optional[Path] = None,
+) -> dict:
+    """Upload a build's publish files (and optionally the zip + the readable events sample)
+    to the bucket under the game's prefix. Returns stable, savable paths:
 
         {bucket, prefix: "s3://bucket/prefix/", files: [{name,key,uri,url[,presigned_url]}],
-         zip: {name,key,uri,url[,presigned_url]} | None}
+         zip: {...} | None, sample: {...} | None}
 
-    Raises on any AWS/network error (the caller records it as a deploy failure).
+    ``sample`` is the dev-facing books_events.json, uploaded alongside but reported separately
+    from the ACP ``files``. Raises on any AWS/network error (caller records a deploy failure).
     """
     bucket = settings.AWS_S3_BUCKET
     prefix = key_prefix(game_id)
@@ -104,7 +110,36 @@ def upload_build(game_id: str, publish_dir: Path, zip_path: Optional[Path] = Non
         client.upload_file(str(zp), bucket, key, ExtraArgs={"ContentType": "application/zip"})
         zip_entry = _file_entry(client, zp.name, bucket, key)
 
-    return {"bucket": bucket, "prefix": f"s3://{bucket}/{prefix}", "files": files, "zip": zip_entry}
+    sample_entry = None
+    if sample_path is not None and Path(sample_path).is_file():
+        sp = Path(sample_path)
+        key = prefix + sp.name
+        client.upload_file(str(sp), bucket, key, ExtraArgs={"ContentType": _content_type(sp.name)})
+        sample_entry = _file_entry(client, sp.name, bucket, key)
+
+    return {
+        "bucket": bucket,
+        "prefix": f"s3://{bucket}/{prefix}",
+        "files": files,
+        "zip": zip_entry,
+        "sample": sample_entry,
+    }
+
+
+def presign(key: str) -> Optional[str]:
+    """A FRESH presigned GET URL for an object key, minted on demand (so it can't be stale
+    like one stored at build time). Returns None if presigning is disabled
+    (S3_PRESIGN_EXPIRY <= 0) or on any error, so callers fall back to the stable public URL."""
+    if settings.S3_PRESIGN_EXPIRY <= 0:
+        return None
+    try:
+        return _client().generate_presigned_url(
+            "get_object",
+            Params={"Bucket": settings.AWS_S3_BUCKET, "Key": key},
+            ExpiresIn=settings.S3_PRESIGN_EXPIRY,
+        )
+    except Exception:
+        return None
 
 
 def object_exists(game_id: str) -> bool:

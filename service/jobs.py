@@ -33,6 +33,12 @@ class Job:
     zip_path: Optional[str] = None    # absolute path to publish.zip (None once ephemerally deleted)
     local_available: bool = True      # False after ephemeral cleanup removes local files
 
+    # Dev-facing readable events sample (books_events.json) — a SEPARATE artifact from the ACP
+    # publish set (never in publish.zip). events_path is the server-local copy (for /events in
+    # local mode); events_file is its stable S3 descriptor {name,key,uri,url} once uploaded.
+    events_path: Optional[str] = None
+    events_file: Optional[dict] = None
+
     # --- S3 deploy sub-state (independent of build status) ---
     # "skipped" (no bucket / dev build) | "uploaded" | "failed". A deploy failure never
     # flips the build to failed — the on-disk artifact is still valid.
@@ -47,6 +53,7 @@ class Job:
         """Serializable status view (drops server-local paths)."""
         data = asdict(self)
         data.pop("zip_path", None)
+        data.pop("events_path", None)  # server-local path; the public view carries events_file
         return data
 
 

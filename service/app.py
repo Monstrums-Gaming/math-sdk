@@ -11,10 +11,12 @@ lookUpTable_base_0.csv) plus config.json, zipped for download. A dev build is a 
 non-publishable preview (1000 sims, uncompressed, no format checks).
 """
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from pathlib import Path
 
-from service import builder, manifest_builder
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
+from fastapi.responses import FileResponse, RedirectResponse
+
+from service import builder, manifest_builder, s3
 from service.auth import require_api_key
 from service.config import settings
 from service.jobs import registry
@@ -198,3 +200,43 @@ def download_build(job_id: str) -> FileResponse:
         media_type="application/zip",
         filename=f"{job.game_id}_publish.zip",
     )
+
+
+@app.get(
+    "/builds/{job_id}/events",
+    dependencies=[Depends(require_api_key)],
+    tags=["builds"],
+    summary="Download the readable events sample (books_events.json)",
+    responses={
+        **_AUTH_RESPONSES,
+        200: {"content": {"application/json": {}}, "description": "Readable events sample."},
+        307: {"description": "Redirect to the sample's S3 URL (ephemeral mode)."},
+        404: {"description": "Unknown job_id, or the build produced no events sample."},
+        409: {"description": "Job not succeeded yet."},
+    },
+)
+def download_events(job_id: str):
+    """The readable ~100-round events sample for frontend/game devs — a dev aid delivered
+    separately from the ACP publish set (never inside publish.zip). Streams the local file
+    when available; in ephemeral (S3) mode redirects to its stable S3 URL."""
+    job = registry.get(job_id)
+    if job is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "unknown job_id.")
+    if job.status != "succeeded":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"job is '{job.status}', not ready.")
+    # Prefer the durable S3 copy when present: it avoids a race with ephemeral cleanup deleting
+    # the local file mid-request, and we re-presign fresh so the redirect target never expires
+    # (falling back to the stable public URL). Serve the local file only in local/dev mode
+    # (no bucket), where events_file is None.
+    if job.events_file:
+        key = job.events_file.get("key")
+        target = (s3.presign(key) if key else None) or job.events_file.get("url")
+        if target:
+            return RedirectResponse(url=target, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    if job.events_path and Path(job.events_path).is_file():
+        return FileResponse(
+            job.events_path,
+            media_type="application/json",
+            filename=f"{job.game_id}_books_events.json",
+        )
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "this build has no events sample.")

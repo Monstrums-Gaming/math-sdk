@@ -95,6 +95,16 @@ Convenience **local** download of `publish.zip`, for local mode (no S3) or dev. 
 mode the local zip is deleted after upload, so this returns `409` — fetch the S3 paths from
 `GET /builds/{job_id}` (`s3_files` / `s3_zip`) instead.
 
+### `GET /builds/{job_id}/events` — readable events sample
+
+Every build also emits `books_events.json`: a **readable**, coverage-first sample (~100
+rounds, one per distinct prize/`criteria` so every event shape — including `wincap` — appears)
+for frontend/game devs to inspect the per-round event stream. It's a **dev aid**, delivered
+**separately** from the ACP publish set (never inside `publish.zip`). Local mode streams the
+JSON; ephemeral mode `307`-redirects to its S3 URL (also on `GET /builds/{job_id}` as
+`events_file`). Tune via manifest `build.sample_events` (default 100, `0` disables) or the
+`SAMPLE_EVENTS` env override.
+
 ## Ephemeral builds (stateless worker)
 
 When `AWS_S3_BUCKET` is set, **`EPHEMERAL_BUILDS` defaults on**: a successful prod build
