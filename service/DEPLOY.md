@@ -266,10 +266,14 @@ The staging box runs the Forge backoffice, so **nginx already owns 80/443** — 
 Caddy (it can't bind those ports). Reuse the existing edge as the proxy:
 
 1. **Forge → New Site**, domain `staging.builds.theboxforge.com`, "no application" /
-   static — you only want its nginx vhost. Enable **Let's Encrypt** on the site (Forge
-   provisions + renews the cert).
-2. Edit that site's Nginx config → replace the `location /` block with a proxy to the
-   local service:
+   static — you only want its nginx vhost.
+2. **Obtain the cert FIRST, on the default config.** Forge → SSL → **Let's Encrypt**. Do this
+   *before* adding the proxy: Let's Encrypt's HTTP-01 challenge hits
+   `http://…/.well-known/acme-challenge/…` over port 80, and Forge's own default config serves
+   that token. (Needs DNS → the box and inbound 80 open. If the record is behind Cloudflare's
+   proxy, grey-cloud it to DNS-only first, or the challenge 404s at Cloudflare's edge.)
+3. **Only after the cert is active**, edit the site's Nginx config → replace the
+   `include forge-conf/<id>/site.conf;` line with a proxy to the local service:
    ```nginx
    location / {
        proxy_pass http://127.0.0.1:8000;
@@ -279,7 +283,11 @@ Caddy (it can't bind those ports). Reuse the existing edge as the proxy:
        proxy_read_timeout 300;   # a prod build can take a while
    }
    ```
-3. `mbs` stays exactly as deployed (`-p 127.0.0.1:8000:8000`) — the CI redeploy is unchanged;
+   > Do **not** add a `location ^~ /.well-known/acme-challenge/ {…}` carve-out on a Forge box —
+   > Forge re-injects its own (more-specific) challenge location on each renewal, so it wins
+   > over `location /` automatically. A `^~` carve-out pointing at the site's `public/`
+   > overrides Forge's handler and makes issuance/renewal 404.
+4. `mbs` stays exactly as deployed (`-p 127.0.0.1:8000:8000`) — the CI redeploy is unchanged;
    nginx reaches it over loopback. No Docker-network or workflow changes.
 
 Plain-nginx (non-Forge) equivalent: create the vhost by hand and run `certbot --nginx -d
