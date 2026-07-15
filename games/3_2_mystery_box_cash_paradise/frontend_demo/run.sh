@@ -12,7 +12,7 @@ set -euo pipefail
 # Serve from the directory this script lives in, regardless of cwd.
 cd "$(dirname "$0")"
 
-PORT="${1:-8000}"
+PORT="${1:-7800}"
 URL="http://localhost:${PORT}"
 
 echo "Cash Paradise demo → ${URL}"

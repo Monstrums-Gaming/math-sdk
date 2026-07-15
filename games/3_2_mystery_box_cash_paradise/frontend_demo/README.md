@@ -82,6 +82,17 @@ just needs no dependencies. Pick any free port. Then open one of:
   The prize art comes from the **baked-in** `images/CP*.png` (see below) — no
   network call, so it looks the same here as on live RGS.
 
+- **LOCAL REPLAY (replay generated books):** open `http://localhost:8000/?replay`. Instead
+  of drawing client-side, the demo replays real math-engine **books** from the bundled
+  `books_base.json` — each book's `events` are exactly what the renderer consumes, so this
+  is the closest offline preview of live RGS behaviour. Balance still tracks client-side.
+  `books_base.json` is a readable JSON array produced by a dev build of the game math
+  (`cd ../../mystery_box_dynamic && ./build.sh dev cash_paradise.json`, then copy
+  `games/<game_id>_dev/library/books/books_base.json` here). Its prize ids must be
+  `CP1…CP9` to match `prizes.js`/`images/`. Dev override: `?books=<url>` points at an
+  alternate file (dev-only — the hosted-build CSP blocks external fetch). If the file fails
+  to load, the demo falls back to LOCAL SIM.
+
 - **LIVE RGS:** open with the params from a real Stake session, e.g.
   `http://localhost:8000/?rgs_url=<host>&sessionID=<id>&currency=USD&mode=base`.
   Balance and outcomes come from the RGS; wins are finalized via `/wallet/end-round`.

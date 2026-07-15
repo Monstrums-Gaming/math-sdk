@@ -17,14 +17,14 @@
         "batching_size": 50000
     },
     "prizes": {
-        "P1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "0" },
-        "P2": { "name": "$0.10 Voucher", "payout": 0.1,  "prob": 0.28,  "criteria": "p_010_voucher" },
-        "P3": { "name": "$1 Voucher",    "payout": 1,    "prob": 0.25,  "criteria": "p_1_voucher" },
-        "P4": { "name": "$2 Voucher",    "payout": 2,    "prob": 0.05,  "criteria": "p_2_voucher" },
-        "P5": { "name": "$5 Voucher",    "payout": 5,    "prob": 0.05,  "criteria": "p_5_voucher" },
-        "P6": { "name": "$10 Voucher",   "payout": 10,   "prob": 0.05,  "criteria": "p_10_voucher" },
-        "P7": { "name": "$50 Voucher",   "payout": 50,   "prob": 0.01,  "criteria": "p_50_voucher" },
-        "P8": { "name": "$100 Voucher",  "payout": 100,  "prob": 0.006, "criteria": "p_100_voucher" },
-        "P9": { "name": "$1000 Voucher", "payout": 1000, "prob": 0.002, "criteria": "wincap" }
+        "CP1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "0" },
+        "CP2": { "name": "$0.10 Voucher", "payout": 0.1,  "prob": 0.28,  "criteria": "p_010_voucher" },
+        "CP3": { "name": "$1 Voucher",    "payout": 1,    "prob": 0.25,  "criteria": "p_1_voucher" },
+        "CP4": { "name": "$2 Voucher",    "payout": 2,    "prob": 0.05,  "criteria": "p_2_voucher" },
+        "CP5": { "name": "$5 Voucher",    "payout": 5,    "prob": 0.05,  "criteria": "p_5_voucher" },
+        "CP6": { "name": "$10 Voucher",   "payout": 10,   "prob": 0.05,  "criteria": "p_10_voucher" },
+        "CP7": { "name": "$50 Voucher",   "payout": 50,   "prob": 0.01,  "criteria": "p_50_voucher" },
+        "CP8": { "name": "$100 Voucher",  "payout": 100,  "prob": 0.006, "criteria": "p_100_voucher" },
+        "CP9": { "name": "$1000 Voucher", "payout": 1000, "prob": 0.002, "criteria": "wincap" }
     }
 }

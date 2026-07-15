@@ -40,6 +40,15 @@ const MODE = getParam("mode") || "base"; // single bet mode in game_config.py
 // Auto-detect: live only when both launch params are present, else local.
 const IS_LIVE = Boolean(RGS_URL && SESSION_ID);
 
+// LOCAL REPLAY (dev/local only): opt-in via ?replay — instead of drawing a prize
+// client-side, replay a pre-generated math "book" (its events are the exact shape the
+// renderer consumes). ?books=<url> optionally overrides the bundled file (dev only; the
+// hosted CSP blocks external fetch). Default (no ?replay) stays the client-side draw.
+const REPLAY = getParam("replay") != null;
+const BOOKS_URL = getParam("books"); // optional dev override URL
+const BUNDLED_BOOKS = "./books_base.json";
+let isReplay = !IS_LIVE && REPLAY; // may be cleared if the books file fails to load
+
 // ---- currency formatting (from docs/rgs_docs/RGS.md) ------------------------
 const CURRENCY_META = {
   USD: { symbol: "$", decimals: 2 }, CAD: { symbol: "CA$", decimals: 2 },
@@ -82,6 +91,7 @@ const state = {
   currency: CURRENCY,
   bet: API_MULTIPLIER, // base bet in RGS integer units
   hasOpenRound: false, // a live round awaiting /end-round
+  books: [], // LOCAL REPLAY: pre-generated books to replay from
 };
 
 // ---- money helpers ----------------------------------------------------------
@@ -195,6 +205,47 @@ function localAuth() {
       betLevels: [API_MULTIPLIER],
     },
     round: null,
+  };
+}
+
+// =============================================================================
+// LOCAL REPLAY — replay a pre-generated math book instead of drawing client-side
+// =============================================================================
+
+// Fetch the bundled (or ?books= override) books file once. It is a JSON array of
+// books, each { id, payoutMultiplier, events[] }. Throws so init() can fall back.
+async function loadBooks() {
+  const res = await fetch(BOOKS_URL || BUNDLED_BOOKS);
+  if (!res.ok) throw new Error(`books HTTP ${res.status}`);
+  const data = await res.json(); // bundled file is a single JSON array
+  if (!Array.isArray(data) || !data.length) throw new Error("books file is empty");
+  state.books = data;
+}
+
+// Same { round, balance } shape as localPlay(), but the outcome comes from a book.
+// Uniform pick reproduces the odds because the lookup-table weights are all 1 (the
+// distribution is baked into the book counts, not per-book weights).
+function replayPlay() {
+  const cost = betUnits() * BOX_COST;
+  state.balanceApi -= toApi(cost); // debit the box cost
+
+  const book = state.books[Math.floor(Math.random() * state.books.length)];
+  const events = book.events;
+  const payoutMultiplier = book.payoutMultiplier; // already base-bet x100
+  const winUnits = betUnits() * (payoutMultiplier / EVENT_SCALE);
+  state.balanceApi += toApi(winUnits); // credit the win (settled immediately)
+
+  return {
+    round: {
+      betID: Math.floor(Math.random() * 1e9),
+      amount: state.bet,
+      payout: toApi(winUnits),
+      payoutMultiplier,
+      active: false,
+      mode: MODE,
+      state: events,
+    },
+    balance: { amount: state.balanceApi, currency: state.currency },
   };
 }
 
@@ -315,7 +366,7 @@ async function openBox() {
     // Finalize any still-open live round before starting a new one.
     if (IS_LIVE && state.hasOpenRound) await finalizeRound();
 
-    const resp = IS_LIVE ? await livePlay() : localPlay();
+    const resp = IS_LIVE ? await livePlay() : isReplay ? replayPlay() : localPlay();
     ui.playJson.textContent = JSON.stringify(resp, null, 2);
     if (resp.balance) setBalanceApi(resp.balance.amount);
 
@@ -418,7 +469,7 @@ function renderPrizeBoard() {
 
 // ---- init -------------------------------------------------------------------
 function setModeBadge() {
-  ui.modeBadge.textContent = IS_LIVE ? "LIVE RGS" : "LOCAL SIM";
+  ui.modeBadge.textContent = IS_LIVE ? "LIVE RGS" : isReplay ? "LOCAL REPLAY" : "LOCAL SIM";
   ui.modeBadge.dataset.mode = IS_LIVE ? "live" : "local";
 }
 
@@ -446,11 +497,25 @@ async function init() {
     setBalanceApi(resp.balance?.amount ?? 0);
     populateBetLevels(resp.config);
     ui.openBtn.disabled = false;
+    // LOCAL REPLAY: load the books file; on failure fall back to the client-side draw.
+    if (isReplay) {
+      try {
+        await loadBooks();
+      } catch (e) {
+        console.error(e);
+        isReplay = false;
+        toast("Could not load books file — using client-side draw.");
+      }
+      setModeBadge(); // reflect a possible fallback to LOCAL SIM
+    }
     if (!IS_LIVE) {
       ui.banner.hidden = false;
-      ui.banner.innerHTML =
-        "Running in <b>LOCAL SIM</b> — outcomes are drawn client-side from the prize " +
-        "table (no RGS). Launch with <code>?rgs_url=…&sessionID=…</code> for LIVE RGS.";
+      ui.banner.innerHTML = isReplay
+        ? "Running in <b>LOCAL REPLAY</b> — replaying pre-generated math books " +
+          "(<code>books_base.json</code>), no RGS. Drop <code>?replay</code> for the client-side draw."
+        : "Running in <b>LOCAL SIM</b> — outcomes are drawn client-side from the prize " +
+          "table (no RGS). Launch with <code>?rgs_url=…&sessionID=…</code> for LIVE RGS, or " +
+          "<code>?replay</code> to replay generated books.";
     }
     // Resume a still-open live round if the session left one active.
     if (IS_LIVE && resp.round && resp.round.active === true) {
