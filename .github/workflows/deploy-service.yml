@@ -43,13 +43,19 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & push image (amd64)
+      # The target EC2 box is a Graviton (t4g) instance = arm64, so build arm64.
+      # GitHub runners are amd64, so cross-build via QEMU + buildx.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push image (arm64 — Graviton t4g)
         run: |
           IMG="${{ steps.ecr.outputs.registry }}/${ECR_REPO}:${GITHUB_SHA::12}"
           LATEST="${{ steps.ecr.outputs.registry }}/${ECR_REPO}:latest"
-          docker build --platform linux/amd64 -f service/Dockerfile -t "$IMG" -t "$LATEST" .
-          docker push "$IMG"
-          docker push "$LATEST"
+          docker buildx build --platform linux/arm64 \
+            -f service/Dockerfile -t "$IMG" -t "$LATEST" --push .
           echo "IMG=$IMG" >> "$GITHUB_ENV"
 
       - name: Deploy on EC2 via SSM
