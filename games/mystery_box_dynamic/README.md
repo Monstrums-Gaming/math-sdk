@@ -27,7 +27,7 @@ The 6 engine files (`gamestate.py`, `game_override.py`, `game_events.py`,
   "rtp": 0.85,                        // declared RTP (< 1.0)
   "cost_model": "box_cost",           // "box_cost" (default) | "unit" (see below)
   "build": { "num_sims": 100000, "compression": true, "run_format_checks": true,
-             "num_threads": 1, "batching_size": 50000 },
+             "num_threads": 1, "batching_size": 50000, "sample_events": 100 },
   "prizes": {                         // authored exactly as the internal prize_table
     "P1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "0" },
     "P9": { "name": "$1000 Voucher", "payout": 1000, "prob": 0.002, "criteria": "wincap" }
@@ -42,6 +42,12 @@ The 6 engine files (`gamestate.py`, `game_override.py`, `game_events.py`,
   values like `$0.01` are legal to author).
 - `num_sims` must make `num_sims × prob` an exact integer for every prize (100000 works
   for the sample); `run.py` asserts this.
+- `build.sample_events` (default `100`, `0` disables; env override `SAMPLE_EVENTS`) — after
+  the build, `run.py` writes a **readable** `library/samples/books_events_base.json`: a
+  coverage-first sample (one round per distinct `criteria`, so every prize/event shape —
+  including `wincap` — appears, then filled to the count) sliced from the run's book file.
+  A dev aid for frontend/game devs to inspect the event stream; kept **out** of
+  `publish_files/` so the ACP upload set stays clean.
 
 ### cost_model
 

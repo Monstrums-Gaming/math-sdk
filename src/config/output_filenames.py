@@ -29,6 +29,9 @@ class OutputFiles:
         self.book_path = os.path.join(self.library_path, "books")
         self.lookup_path = os.path.join(self.library_path, "lookup_tables")
         self.publish_path = os.path.join(self.library_path, "publish_files")
+        # Dev-facing samples (e.g. a readable books_events.json) — deliberately kept OUT of
+        # publish_files so the certified ACP upload set stays clean.
+        self.sample_path = os.path.join(self.library_path, "samples")
         self.optimization_path = os.path.join(self.library_path, "optimization_files")
         self.index_config_path = self.publish_path  # Required RGS files
         self.compressed_path = self.publish_path  # Required RGS files
@@ -46,6 +49,7 @@ class OutputFiles:
             "optimization_path",
             "optimization_result_path",
             "publish_path",
+            "sample_path",
         ]
         for p in all_paths:
             self.check_folder_exists(getattr(self, p))
@@ -155,6 +159,11 @@ class OutputFiles:
         else:
             raise RuntimeError("Logic error in name generation.")
         return os.path.join(self.compressed_path if compress else self.book_path, filename)
+
+    def get_sample_events_name(self, betmode: str):
+        """Path for the readable dev events sample (books_events_<mode>.json) under samples/.
+        Kept separate from the ACP publish_files set."""
+        return os.path.join(self.sample_path, f"books_events_{betmode}.json")
 
     def get_final_lookup_name(self, betmode: str):
         """Final csv lookup table name."""

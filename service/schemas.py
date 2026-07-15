@@ -65,3 +65,7 @@ class JobStatus(BaseModel):
     # Stable, savable paths for the backoffice. Each: {name, key, uri, url[, presigned_url]}.
     s3_files: list[dict] = []
     s3_zip: Optional[dict] = None
+    # Readable events sample (books_events.json), a dev aid delivered separately from the ACP
+    # set. When a bucket is configured this is its stable S3 descriptor; else fetch via
+    # GET /builds/{id}/events. None if the build produced no sample (SAMPLE_EVENTS=0).
+    events_file: Optional[dict] = None

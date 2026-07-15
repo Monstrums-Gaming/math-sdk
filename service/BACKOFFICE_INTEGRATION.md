@@ -201,6 +201,13 @@ On success, `$box->s3_files` holds the stable publish-file URLs:
 Show them in your box admin, or hand the three files to whoever uploads them to the Stake
 **ACP dashboard** (that's what makes a game live — S3 is just storage).
 
+**Readable events sample (for frontend/game devs).** Each build also produces
+`books_events.json` — a readable ~100-round sample of the per-round event stream (one round
+per distinct prize so every event shape appears). It's returned **separately** from the ACP
+files: `GET /builds/{id}` includes an `events_file` (`{name,url,…}`) when S3 is on, or fetch
+it from `GET /builds/{id}/events`. Store/surface `events_file.url` alongside the box so your
+frontend devs can pull it. It is **not** part of the ACP upload set.
+
 ---
 
 ## Prize odds — the one thing to get right

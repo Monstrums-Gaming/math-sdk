@@ -18,6 +18,7 @@ import sys
 from gamestate import GameState
 from game_config import GameConfig
 from utils.rgs_verification import execute_all_tests
+from utils.sample_events import write_sample_events
 from src.state.run_sims import create_books
 from src.write_data.write_configs import generate_configs
 
@@ -113,3 +114,22 @@ if __name__ == "__main__":
 
     if run_format_checks:
         execute_all_tests(config)
+
+    # Emit a small, readable events sample for frontend/game devs. Written AFTER the format
+    # checks (and outside publish_files) so it can never affect the certified ACP artifacts or
+    # their hashes. Count from the manifest build block, overridable via SAMPLE_EVENTS (0 = off).
+    # This is a best-effort dev aid: a bad count or a write error only SKIPS the sample — it must
+    # never fail an otherwise-valid build (the expensive sims + checks have already passed).
+    try:
+        sample_n = int(os.environ.get("SAMPLE_EVENTS", build.get("sample_events", 100)))
+    except (TypeError, ValueError):
+        print(f"[sample] WARNING: invalid sample_events count; defaulting to 100.")
+        sample_n = 100
+    if sample_n > 0:
+        try:
+            final_book = gamestate.output_files.get_final_book_name("base", compression)
+            out_path = gamestate.output_files.get_sample_events_name("base")
+            n = write_sample_events(final_book, out_path, limit=sample_n)
+            print(f"[sample] wrote {n} readable rounds -> {out_path}")
+        except Exception as err:  # never let a dev-aid failure sink a valid build
+            print(f"[sample] WARNING: could not write events sample: {type(err).__name__}: {err}")
