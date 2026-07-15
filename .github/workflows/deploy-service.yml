@@ -64,7 +64,7 @@ jobs:
           REG="${{ steps.ecr.outputs.registry }}"
           CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
-            --document-name AWS-RunShellCommand \
+            --document-name AWS-RunShellScript \
             --comment "deploy $IMG" \
             --parameters commands="[
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REG\",

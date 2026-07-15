@@ -105,7 +105,7 @@ thumbprint for GitHub, but the CLI still requires the flag.)
     { "Sid": "SsmDeploy", "Effect": "Allow",
       "Action": ["ssm:SendCommand","ssm:GetCommandInvocation","ssm:ListCommandInvocations"],
       "Resource": ["arn:aws:ec2:<REGION>:<ACCOUNT_ID>:instance/<INSTANCE_ID>",
-                   "arn:aws:ssm:<REGION>::document/AWS-RunShellCommand",
+                   "arn:aws:ssm:<REGION>::document/AWS-RunShellScript",
                    "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:*"] }
   ]
 }
@@ -199,7 +199,7 @@ jobs:
         run: |
           CMD_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
-            --document-name AWS-RunShellCommand \
+            --document-name AWS-RunShellScript \
             --comment "deploy $IMG" \
             --parameters commands="[
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REG\",
@@ -251,7 +251,7 @@ docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service
 Deploy any prior tag (SHAs are immutable):
 
 ```sh
-aws ssm send-command --instance-ids <INSTANCE_ID> --document-name AWS-RunShellCommand \
+aws ssm send-command --instance-ids <INSTANCE_ID> --document-name AWS-RunShellScript \
   --parameters commands='["docker pull <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:<OLD_SHA>",
     "docker rm -f mbs || true",
     "docker run -d --name mbs --restart unless-stopped -p 127.0.0.1:8000:8000 --cpus 2 --memory 2g --env-file /home/forge/math-sdk/.env <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/mysterybox-build-service-staging:<OLD_SHA>"]' \
