@@ -50,7 +50,9 @@ All `/builds` and `/manifests` routes require the `X-API-Key` header. `/healthz`
 2. **Simplified box** → `POST /manifests` with just name/price/prize-rows; the service
    assembles the full manifest (auto `game_id`, `criteria`, `wincap`, `rtp`, `num_sims`),
    validates it, and returns it — add `?build=true` to build in the same call. This is the
-   path a backoffice "create a mystery box" form should use. See [`API.md`](API.md).
+   path a backoffice "create a mystery box" form should use. Prize rows may include an
+   optional `sku` — the returned `prizes` are keyed by it (auto `P1..Pn` if omitted). See
+   [`API.md`](API.md).
 
 ### `POST /builds?mode=prod|dev`
 

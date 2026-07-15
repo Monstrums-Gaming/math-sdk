@@ -77,9 +77,9 @@ builds it in the same call.
   "box_cost": 2.00,
   "cost_model": "unit",              // default "unit" (ACP-valid); or "box_cost"
   "prizes": [                         // 'payout' = catalog multiplier (value at box price)
-    { "name": "Nothing",      "payout": 0,   "prob": 0.65 },
-    { "name": "$1 Prize",     "payout": 1,   "prob": 0.28 },
-    { "name": "$200 Jackpot", "payout": 200, "prob": 0.005 }
+    { "sku": "P1", "name": "Nothing",      "payout": 0,   "prob": 0.65 },   // 'sku' optional
+    { "sku": "P2", "name": "$1 Prize",     "payout": 1,   "prob": 0.28 },
+    {              "name": "$200 Jackpot", "payout": 200, "prob": 0.005 }   // omitted -> auto "P3"
   ]
   // optional: game_id, working_name, win_type, num_sims, build{}
 }
@@ -87,6 +87,8 @@ builds it in the same call.
 
 **What the service derives** (you don't send these):
 - `game_id` → `<provider_number>_<slug(game_name)>` unless you pass one.
+- **prize keys** → the returned `manifest.prizes` is a **dict keyed by each prize's `sku`**
+  (must be unique); when a row omits `sku` it is auto-keyed `P1`, `P2`, … by position.
 - `criteria` → highest-paying prize = `"wincap"`; any prize that snaps to 0 on the RGS
   `0.1×` grid = `"0"`; every other distinct payout gets its own bucket.
 - `wincap` = max catalog payout; `rtp` = expected payout ÷ cost (must be `< 1.0`).

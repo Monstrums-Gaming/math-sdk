@@ -152,10 +152,13 @@ class BuildMysteryBox implements ShouldQueue
             'box_cost'        => (float) $box->price,           // your price/box_cost field
             'cost_model'      => 'unit',                        // ACP-valid
             'prizes'          => $box->prizes->map(fn ($p) => [
+                'sku'    => $p->sku,                            // optional; omit -> auto P1..Pn
                 'name'   => $p->name,                           // your prize label
                 'payout' => (float) $p->payout,                 // your catalog value/multiplier
                 'prob'   => (float) $p->probability,            // your odds — see note below
             ])->values()->all(),
+            // The assembled manifest's `prizes` come back keyed by these `sku`s (unique;
+            // auto-keyed P1..Pn when a row omits `sku`).
         ];
         // ──────────────────────────────────────────────────────────────────────────
 
