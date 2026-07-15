@@ -13,6 +13,7 @@ manifest's ``build`` block, not this file.
 
 import argparse
 import os
+import sys
 
 from gamestate import GameState
 from game_config import GameConfig
@@ -49,20 +50,45 @@ def _assert_integral_quotas(config, num_sims: int) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", default=os.environ.get("GAME_MANIFEST"))
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Load and validate the manifest (prize table, RGS grid, integral quotas) "
+        "without running any sims, then exit. Used by the build service for a fast "
+        "pre-flight check; a normal build never passes this flag.",
+    )
     args, _ = parser.parse_known_args()
 
-    config = GameConfig(args.manifest, os.environ.get("GAME_ID_SUFFIX", ""))
-    gamestate = GameState(config)
+    # Load config + resolve build knobs. Under --validate we convert any authoring error
+    # into a clean one-line stderr message (exit 2) so the build service can surface it
+    # verbatim as an HTTP 400 instead of parsing a traceback. A normal build re-raises.
+    try:
+        config = GameConfig(args.manifest, os.environ.get("GAME_ID_SUFFIX", ""))
 
-    # Build knobs come from the manifest's "build" block, overridable via env vars
-    # (build.sh dev/prod modes set these).
-    build = config.build_opts
-    num_sims = int(os.environ.get("NUM_SIMS", build.get("num_sims", 100000)))
-    compression = _env_bool("COMPRESSION", bool(build.get("compression", True)))
-    run_format_checks = _env_bool("RUN_FORMAT_CHECKS", bool(build.get("run_format_checks", True)))
-    num_threads = int(build.get("num_threads", 1))
-    batching_size = int(build.get("batching_size", 50000))
-    profiling = False
+        # Build knobs come from the manifest's "build" block, overridable via env vars
+        # (build.sh dev/prod modes set these).
+        build = config.build_opts
+        num_sims = int(os.environ.get("NUM_SIMS", build.get("num_sims", 100000)))
+        compression = _env_bool("COMPRESSION", bool(build.get("compression", True)))
+        run_format_checks = _env_bool("RUN_FORMAT_CHECKS", bool(build.get("run_format_checks", True)))
+        num_threads = int(build.get("num_threads", 1))
+        batching_size = int(build.get("batching_size", 50000))
+        profiling = False
+
+        # --validate: GameConfig() above already ran the prize-table/RGS-grid checks; the
+        # only remaining production gate is integral quotas at this num_sims. Assert it and
+        # exit (no sims, no output beyond the reels/BR0.csv that GameConfig writes).
+        if args.validate:
+            _assert_integral_quotas(config, num_sims)
+            print(f"[validate] OK: {config.game_id} manifest is valid at num_sims={num_sims}.")
+            raise SystemExit(0)
+    except (RuntimeError, FileNotFoundError, ValueError, KeyError, TypeError) as err:
+        if args.validate:
+            print(f"[validate] INVALID: {err}", file=sys.stderr)
+            raise SystemExit(2)
+        raise
+
+    gamestate = GameState(config)
 
     # Non-integral quotas drift the published odds — fatal for a production build,
     # tolerated (warned) for a fast dev smoke test where format checks are off.

@@ -20,10 +20,10 @@ __pycache__
 **release/*
 **/optimization_files/**
 
+.env
 /env
 *.env
 *.DS_Store
 *.toml
 
 **/site/*
-

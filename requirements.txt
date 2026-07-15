@@ -17,3 +17,6 @@ xlsxwriter==3.2.0
 zstandard==0.23.0
 toml
 matplotlib
+# Build service (service/) — HTTP API around the dynamic mystery-box generator.
+fastapi
+uvicorn[standard]
