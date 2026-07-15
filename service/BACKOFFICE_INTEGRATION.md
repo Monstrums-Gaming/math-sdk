@@ -28,9 +28,9 @@ web request.
 `.env`:
 ```
 # pick ONE, depending on how you reach the service (see Notes):
-MATHSDK_URL=http://mbs:8000                                   # same Docker network (local/dev)
-# MATHSDK_URL=http://127.0.0.1:8000                           # Laravel native on the same host
-# MATHSDK_URL=https://staging-builds.builds.theboxforge.com   # public custom domain + TLS
+MATHSDK_URL=http://mbs:8000                            # same Docker network (local/dev)
+# MATHSDK_URL=http://127.0.0.1:8000                    # Laravel native on the same host
+# MATHSDK_URL=https://staging.builds.theboxforge.com   # public custom domain + TLS
 MATHSDK_KEY=the-same-API_KEY-that-is-in-the-container-.env
 ```
 Over a real HTTPS custom domain, keep full cert verification (don't disable it) — it's a valid

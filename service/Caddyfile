@@ -17,13 +17,13 @@
 #     -v caddy_data:/data caddy:2
 #
 # Requirements:
-#   - DNS A record: staging-builds.builds.theboxforge.com -> the box's public IP.
+#   - DNS A record: staging.builds.theboxforge.com -> the box's public IP.
 #   - Security group: allow inbound 80 + 443.
 #
-# Per environment, change the site address:  staging-builds.builds.theboxforge.com (staging),
+# Per environment, change the site address:  staging.builds.theboxforge.com (staging),
 # builds.theboxforge.com (prod, or your chosen prod hostname).
 
-staging-builds.builds.theboxforge.com {
+staging.builds.theboxforge.com {
 	encode zstd gzip
 
 	# A prod build can take a while; don't cut the connection early.

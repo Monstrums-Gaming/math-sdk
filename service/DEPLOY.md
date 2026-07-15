@@ -249,7 +249,7 @@ backoffice, skip this — call `http://<private-ip>:8000` with the API key. See
 To call the service over `https://<your-domain>` with a real cert (e.g. so a Laravel app on
 another host — or a browser tool — reaches it): terminate TLS at a reverse proxy on a
 hostname you own, and keep `mbs` plain HTTP behind it (bound to `127.0.0.1:8000`, never
-exposed directly). Example hostnames: `staging-builds.builds.theboxforge.com` (staging),
+exposed directly). Example hostnames: `staging.builds.theboxforge.com` (staging),
 `builds.theboxforge.com` (prod).
 
 **Prereqs (both paths):** a DNS **A record** for the hostname → the box's public IP, and the
@@ -265,7 +265,7 @@ sudo ss -ltnp '( sport = :443 or sport = :80 )'   # anything listening on 80/443
 The staging box runs the Forge backoffice, so **nginx already owns 80/443** — don't add
 Caddy (it can't bind those ports). Reuse the existing edge as the proxy:
 
-1. **Forge → New Site**, domain `staging-builds.builds.theboxforge.com`, "no application" /
+1. **Forge → New Site**, domain `staging.builds.theboxforge.com`, "no application" /
    static — you only want its nginx vhost. Enable **Let's Encrypt** on the site (Forge
    provisions + renews the cert).
 2. Edit that site's Nginx config → replace the `location /` block with a proxy to the
@@ -283,7 +283,7 @@ Caddy (it can't bind those ports). Reuse the existing edge as the proxy:
    nginx reaches it over loopback. No Docker-network or workflow changes.
 
 Plain-nginx (non-Forge) equivalent: create the vhost by hand and run `certbot --nginx -d
-staging-builds.builds.theboxforge.com`.
+staging.builds.theboxforge.com`.
 
 ### Path B — a standalone Docker box with 80/443 free → Caddy
 
@@ -300,7 +300,7 @@ docker run -d --name mbs-proxy --restart unless-stopped --network host \
 
 ### Then point the caller at it
 
-In the backoffice `.env`: `MATHSDK_URL=https://staging-builds.builds.theboxforge.com` (full
+In the backoffice `.env`: `MATHSDK_URL=https://staging.builds.theboxforge.com` (full
 cert verification — no `verify=false`; it's a real cert). The API key still travels in the
 `X-API-Key` header. This also resolves the *"`cURL error 7` from a containerized Laravel"*
 problem — the app just calls the public HTTPS URL instead of an unreachable `localhost:8000`.
