@@ -100,7 +100,7 @@ def create_build(
         )
 
     job = builder.enqueue_build(manifest, mode=mode, publishable=(mode == "prod"))
-    return BuildAccepted(job_id=job.id, game_id=job.game_id, mode=job.mode, status=job.status)
+    return BuildAccepted(job_id=job.id, game_id=job.game_id, mode=job.mode, status=job.status, num_sims=job.num_sims)
 
 
 @app.post(
@@ -149,7 +149,7 @@ def create_manifest(
                 f"game_id '{manifest['game_id']}' already has a prod build; pass overwrite=true.",
             )
         job = builder.enqueue_build(manifest, mode=mode, publishable=(mode == "prod"))
-        result.job = BuildAccepted(job_id=job.id, game_id=job.game_id, mode=job.mode, status=job.status)
+        result.job = BuildAccepted(job_id=job.id, game_id=job.game_id, mode=job.mode, status=job.status, num_sims=job.num_sims)
 
     return result
 

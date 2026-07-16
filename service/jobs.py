@@ -36,6 +36,7 @@ class Job:
     mode: str             # "prod" | "dev"
     status: str = "queued"  # queued -> running -> succeeded | failed
     publishable: bool = False  # only prod builds that ran format checks are publishable
+    num_sims: Optional[int] = None  # sims the build ran (dev forces 1000; prod uses build.num_sims)
     created_at: str = field(default_factory=_now_iso)
     finished_at: Optional[str] = None
     error: Optional[str] = None       # one-line failure reason (build stderr tail)
@@ -93,8 +94,8 @@ class JobRegistry:
     def _to_job(data_json: str) -> Job:
         return Job(**json.loads(data_json))
 
-    def create(self, game_id: str, mode: str, publishable: bool) -> Job:
-        job = Job(id=uuid.uuid4().hex, game_id=game_id, mode=mode, publishable=publishable)
+    def create(self, game_id: str, mode: str, publishable: bool, num_sims: Optional[int] = None) -> Job:
+        job = Job(id=uuid.uuid4().hex, game_id=game_id, mode=mode, publishable=publishable, num_sims=num_sims)
         with self._lock:
             self._conn.execute(
                 "INSERT INTO jobs (id, created_at, data) VALUES (?, ?, ?)",

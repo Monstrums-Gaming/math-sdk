@@ -139,9 +139,21 @@ def validate_manifest(manifest: dict) -> tuple[bool, str]:
     return False, _last_line(proc.stderr) or _last_line(proc.stdout) or "manifest validation failed"
 
 
+def _effective_num_sims(manifest: dict, mode: str) -> int:
+    """The sim count the build will actually run, mirroring run.py's resolution: a mode NUM_SIMS
+    env override wins (dev forces 1000), else the manifest build block, else 100000."""
+    override = _mode_env(mode).get("NUM_SIMS")
+    if override is not None:
+        return int(override)
+    return int(manifest.get("build", {}).get("num_sims", 100000))
+
+
 def enqueue_build(manifest: dict, mode: str, publishable: bool) -> Job:
     """Create a job and schedule the build on the pool. Returns immediately."""
-    job = registry.create(game_id=manifest["game_id"], mode=mode, publishable=publishable)
+    job = registry.create(
+        game_id=manifest["game_id"], mode=mode, publishable=publishable,
+        num_sims=_effective_num_sims(manifest, mode),
+    )
     _pool.submit(_run_job, job.id, manifest, mode)
     return job
 
