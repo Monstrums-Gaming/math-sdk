@@ -22,7 +22,7 @@ pytest tests/win_calculations/test_linespay.py::<name> # single test
 
 There is no configured linter/formatter (no ruff/black/flake8/pyproject) — don't go looking for a lint command. `make test` is pytest-only and covers just the win-calculation math (see "Conventions & gotchas").
 
-The games that currently exist are `3_2_mystery_box_cash_paradise`, `mystery_box`, `mystery_box_dynamic` (the JSON-manifest generator — see "Dynamic mystery-box generator" below), and `template`. The `0_0_*` slot samples and `fifty_fifty` were removed (commit `155c385`); `make test_run`'s `TEST_NAMES` is trimmed to `mystery_box` and `3_2_mystery_box_cash_paradise`. Reference-only mentions of the deleted slot games below are kept because they illustrate the reel-slot model.
+The games that currently exist are `3_2_mystery_box_cash_paradise`, `mystery_box`, `mystery_box_dynamic` (the JSON-manifest generator — see "Dynamic mystery-box generator" below), `2_4_kong_climb` (a Stake-style dice game — roll over/under; see the `stake-dice-game` skill), and `template`. The `0_0_*` slot samples and `fifty_fifty` were removed (commit `155c385`); `make test_run`'s `TEST_NAMES` is trimmed to `mystery_box` and `3_2_mystery_box_cash_paradise`. Reference-only mentions of the deleted slot games below are kept because they illustrate the reel-slot model.
 
 Running a game directly (equivalent to `make run`, useful for flags): `python games/<game_id>/run.py`. The venv is required because the project is installed as an editable package (`pip install -e .`) exposing `src`, `optimization_program`, `uploads`, and `utils` as importable top-level modules — game files import e.g. `from src.state.run_sims import create_books`.
 
