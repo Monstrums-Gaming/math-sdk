@@ -145,4 +145,8 @@ def min_dist_difference(dist: dict):
     for i in range(len(wins) - 2):
         if diff is None or (diff > abs(wins[i + 1]) - wins[i]):
             diff = abs(wins[i + 1]) - wins[i]
+    # Distributions with fewer than three distinct payouts (e.g. a two-outcome
+    # dice mode: {0, m}) have no gap to measure; report 0 instead of crashing.
+    if diff is None:
+        return 0
     return int(round(diff * 100))

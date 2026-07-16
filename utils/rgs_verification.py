@@ -85,8 +85,14 @@ class WinStatistics:
         return map_object
 
 
-def verify_lookup_format(filename: str) -> list:
-    "Duplicate RGS verification before upload."
+def verify_lookup_format(filename: str, grid_exempt: bool = False) -> list:
+    """Duplicate RGS verification before upload.
+
+    `grid_exempt` skips the 0.1× grid check (`payout % 10 == 0`) for
+    direct-probability games whose true payouts cannot sit on that grid — e.g. a
+    dice game where `payout = RTP / winChance`. Payouts are still required to be
+    non-negative integer "cents". Defaults to False (strict) for slot games.
+    """
     integer_payouts = []
     running_weight_total = 0
     min_win, max_win = None, None
@@ -102,7 +108,8 @@ def verify_lookup_format(filename: str) -> list:
             assert payout.is_integer() and payout >= 0, "Payout mult be uint64 format:"
             if payout > 0:
                 assert payout >= 10, "Minimum non-zero payout is 10 (RGS accepts 'cents' increments)."
-            assert payout % 10 == 0, "Payout values must be in increments of 10."
+            if not grid_exempt:
+                assert payout % 10 == 0, "Payout values must be in increments of 10."
             integer_payouts.append(int(payout))
 
             if (min_win is None) or (payout < min_win):
@@ -214,7 +221,10 @@ def execute_all_tests(config, excluded_modes=[]):
             if not (os.path.exists(book_file)) or not (os.path.exists(lut_file)):
                 raise RuntimeError("Books/Lookup file does not exist.")
 
-            win_dist, lut_payouts, weights_range, min_win, max_win = verify_lookup_format(lut_file)
+            grid_exempt = getattr(config, "lut_grid_exempt", False)
+            win_dist, lut_payouts, weights_range, min_win, max_win = verify_lookup_format(
+                lut_file, grid_exempt=grid_exempt
+            )
             # Fast path: use verification.json sidecar if available
             verification_file = os.path.join(
                 os.path.join(config.library_path, "configs"), f"books_{name}.verification.json"
