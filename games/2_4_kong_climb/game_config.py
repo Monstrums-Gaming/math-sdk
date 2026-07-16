@@ -15,21 +15,31 @@ target `NN`, in each direction.
     under_NN  wins if the roll < NN   ->  winChance = NN%
     over_NN   wins if the roll > NN   ->  winChance = (100 - NN)%
 
-The payout is the **true dice multiplier** `RTP / winChance`, rounded to whole
-"cents" (payout×100). This is the honest way to author a dice game — the win
-chance is an integer the player sees and the multiplier follows from it — but the
-resulting multiplier almost never lands on the ACP 0.1× LUT grid (e.g. 50% →
-1.94×, 3% → 32.33×). A genuine dice multiplier *cannot* satisfy that grid, and
-Stake's own reference dice (50% → 1.88×) doesn't either, so this game is flagged
-`lut_grid_exempt` and the SDK's grid check is skipped for it (see
-`utils/rgs_verification.py::verify_lookup_format`).
+The two ACP rules the payouts must satisfy (both enforced server-side, learned
+the hard way from upload rejections):
 
-### Range (192 modes)
+1. **0.1× LUT grid** — every non-zero payout is an integer number of "cents" that
+   is a multiple of 10 (a whole multiple of 0.1×).
+2. **RTP** — two dashboard validators, both enforced:
+     a. per-mode band: *"Return to Player must be between 90% and 96.70%"*.
+     b. cross-mode consistency: *"RTP across all modes must be within ±0.5% of each
+        other"* — i.e. variance (max−min) ≤ 1.00%.
+   There is **no** volatility/hit-rate rule (compliant modes span 14–69% hit).
 
-We keep every payout ≥ 1.00× (no sub-stake "wins"), i.e. winChance ≤ 97%:
-`under_02…under_97` and `over_03…over_98`. The ladder spans 1.00× (97% chance)
-up to 48.50× (2% chance), so `wincap = 48.5×`. The two 2%-chance modes
-(`under_02`, `over_98`) carry the `"wincap"` criteria.
+The *true* dice multiplier `0.97 / winChance` sits at 97% RTP — just over the
+96.70% cap — and rarely lands on the grid. So we **floor-snap** each multiplier
+onto the 0.1× grid to the largest value with RTP ≤ 96.70%
+(`_grid_mult_below_ceiling`) and keep the mode only if payable and inside a tight
+band that satisfies BOTH RTP rules at once:
+
+    payout > 1.00×                 (no no-upside modes)
+    RTP    in [95.70%, 96.70%]      (>= 90%, <= 96.70%, and a 0.90% spread so the
+                                    cross-mode variance stays under 1.00%)
+
+The realised max is 96.60%, so the floor is pinned at 95.70% (`RTP_FLOOR`) to hold
+the whole set inside a 0.90% spread. Volatility is unrestricted, but the tight RTP
+window is what bounds the count: **72 modes** survive (36 win chances × over/under,
+winChance 2–48%), spanning 1.1×…48.3× (`wincap = 48.3×`), realised RTP 95.7–96.6%.
 
 ### Exact integer book counts
 
@@ -37,9 +47,9 @@ For `winChance = c%`, reduce `c/100 = W/N` in lowest terms (`g = gcd(c, 100)`,
 `W = c/g`, `N = 100/g`). The mode's `num_sims = N` (≤ 100) yields exactly `W`
 winning books, so the published odds (= book counts, optimiser off) equal the
 win chance. Quotas use the floor-safe `+0.5` trick because `get_sim_splits` does
-`int(num_sims·quota)` and fills any leftover with weighted-random picks. RTP is
-`(c/100)·(payout_cents/100)` — exactly 0.97 where `c` divides 9700, else within
-cent-rounding (~±0.05%), as with any real dice game.
+`int(num_sims·quota)` and fills any leftover with weighted-random picks. The
+snap moves the multiplier, never the win chance, so `W`/`N`/`num_sims`/quotas are
+unchanged; realised RTP is `(c/100)·(snapped multiplier)`, floored to ≤ 96.70%.
 """
 
 import os
@@ -49,13 +59,31 @@ from src.config.config import Config
 from src.config.distributions import Distribution
 from src.config.betmode import BetMode
 
-RTP = 0.97
-# Highest multiplier tier doubles as the win cap.
-WINCAP = 48.5
+# Stake ACP RTP requirement (from the dashboard validator, verbatim):
+#   "Return to Player must be between 90% and 96.70%".
+# It is an ABSOLUTE per-mode band — there is NO "within X% of each other" rule
+# (confirmed empirically: 96.60% modes passed while siblings sat at 97.50%) and
+# NO volatility/hit-rate rule (compliant modes span 14–69% hit). So every mode's
+# realised RTP simply has to land in [RTP_FLOOR, RTP_CEIL].
+RTP_CEIL = 0.967  # 96.70% — hard maximum (inclusive; grid keeps realised max at 96.60%)
+# The ACP also enforces CROSS-MODE RTP consistency: "RTP across all modes must be within
+# ±0.5% of each other" i.e. variance (max−min) ≤ 1.00%. Realised max is 96.60%, so floor at
+# 95.7% keeps the whole set within a 0.90% spread — safely under the 1.00% cap.
+RTP_FLOOR = 0.957
+MIN_MULT = 1.1  # payout must beat the stake; also the smallest on-grid win > 1.0x
+_EPS = 1e-9  # absorb float noise at the band edges (e.g. 0.75*1.2 == 0.8999999…)
+
+
+def _grid_mult_below_ceiling(win_chance: int, ceil: float) -> float:
+    """Largest 0.1x-grid multiplier whose realised RTP (win_chance% * mult) does NOT
+    exceed `ceil`. Floor-snapping (not nearest) guarantees RTP <= ceil for every mode —
+    the true dice multiplier 0.97/winChance would land at 97% RTP, above the cap."""
+    max_cents = int((ceil / (win_chance / 100.0)) * 100 + _EPS)  # 0.01x upper bound
+    return ((max_cents // 10) * 10) / 100.0  # floor onto the 0.1x grid
 
 
 class GameConfig(Config):
-    """Kong Climb configuration — 102 dice modes, one forced win/lose outcome each."""
+    """Kong Climb configuration — grid-snapped dice modes (RTP 90–96.70%), one forced win/lose each."""
 
     _instance = None
 
@@ -71,20 +99,21 @@ class GameConfig(Config):
         self.provider_name = "monstrum"
         self.game_name = "Kong Climb"
         self.working_name = "Kong Climb"
-        self.wincap = WINCAP
         self.win_type = "scatter"
-        self.rtp = RTP
-        # Dice payouts (RTP / winChance) never sit on the ACP 0.1× LUT grid, so
-        # the SDK's grid check is skipped for this direct-probability game.
-        self.lut_grid_exempt = True
+        # Payouts are floor-snapped onto the ACP 0.1× LUT grid so realised RTP never
+        # exceeds 96.70%; the SDK grid check stays ON as a regression guard.
+        self.lut_grid_exempt = False
         self.construct_paths()
 
         # No board mechanic: model a single revealed cell (1 reel x 1 row).
         self.num_reels = 1
         self.num_rows = [1] * self.num_reels
 
-        # Build the tier ladder and per-mode parameters.
+        # Build the tier ladder and per-mode parameters. wincap and the advertised
+        # RTP are derived from the surviving modes (they follow the RTP-band filter).
         self.tiers = self._build_tiers()
+        self.wincap = max(t["multiplier"] for t in self.tiers)
+        self.rtp = max(t["rtp"] for t in self.tiers)
         self.mode_params = {}
 
         # Minimal boardless scaffolding (mirrors mystery_box). A single dummy
@@ -110,16 +139,21 @@ class GameConfig(Config):
 
     # ------------------------------------------------------------------ ladder
     def _build_tiers(self) -> list:
-        """Return the ordered list of dice modes (canonical `over_NN`/`under_NN`).
+        """Return the ordered list of ACP-compliant dice modes (`over_NN`/`under_NN`).
 
-        One row per integer slider target `NN` in each direction, restricted to
-        payouts ≥ 1.00× (winChance ≤ 97%):
+        One row per integer slider target `NN` in each direction:
 
             under_NN -> winChance = NN%          (NN = 02..97)
             over_NN  -> winChance = (100 - NN)%  (NN = 03..98)
 
-        Each row carries the true dice multiplier `RTP / winChance` as integer
-        cents, plus the exact `(W winners / N sims)` split for that win chance.
+        The true dice multiplier `0.97 / winChance` sits at 97% RTP, above Stake's
+        96.70% cap, so each multiplier is FLOOR-snapped onto the 0.1× grid to the
+        largest value with RTP <= 96.70%. A mode is kept only if it stays payable and
+        in band (payout > 1.00×, RTP in [90%, 96.70%]). Volatility is unrestricted —
+        every integer target survives except the highest win chances, where no
+        on-grid payout above 1.0× keeps RTP <= 96.70%. Each kept row carries the
+        snapped multiplier as integer cents, its realised RTP, and the exact
+        `(W winners / N sims)` split for that win chance.
         """
         rows = []
         for direction in ("under", "over"):
@@ -127,7 +161,18 @@ class GameConfig(Config):
                 win_chance = nn if direction == "under" else 100 - nn
                 if not (2 <= win_chance <= 97):
                     continue
-                payout_cents = round(RTP * 100 * 100 / win_chance)  # round(9700 / c)
+
+                # Floor-snap onto the 0.1× grid so realised RTP never exceeds the cap.
+                multiplier = _grid_mult_below_ceiling(win_chance, RTP_CEIL)
+                realised_rtp = (win_chance / 100.0) * multiplier
+
+                # Keep only payable modes whose RTP lands inside Stake's absolute band.
+                if multiplier < MIN_MULT:
+                    continue
+                if not (RTP_FLOOR - _EPS <= realised_rtp <= RTP_CEIL + _EPS):
+                    continue
+
+                payout_cents = round(multiplier * 100)  # on-grid: a multiple of 10
                 g = gcd(win_chance, 100)  # c/100 = W/N in lowest terms
                 W = win_chance // g
                 N = 100 // g
@@ -136,8 +181,9 @@ class GameConfig(Config):
                         "direction": direction,
                         "target": nn,
                         "win_chance": win_chance,
-                        "multiplier": payout_cents / 100,
+                        "multiplier": multiplier,
                         "payout_cents": payout_cents,
+                        "rtp": realised_rtp,
                         "W": W,
                         "N": N,
                     }
@@ -159,6 +205,7 @@ class GameConfig(Config):
             m = row["multiplier"]
             W, N = row["W"], row["N"]
             wc = row["win_chance"]
+            mode_rtp = row["rtp"]
             direction = row["direction"]
             nn = row["target"]
 
@@ -166,7 +213,7 @@ class GameConfig(Config):
             win_quota = (W + 0.5) / N
             lose_quota = (N - W + 0.5) / N
 
-            # The 2%-chance modes pay the win cap -> "wincap" criteria.
+            # The top-multiplier mode(s) pay the win cap -> "wincap" criteria.
             if m >= self.wincap:
                 win_criteria_name = "wincap"
                 win_conditions = {**dummy_reels, "force_wincap": True, "force_freegame": False}
@@ -203,7 +250,7 @@ class GameConfig(Config):
                 BetMode(
                     name=name,
                     cost=1.0,
-                    rtp=RTP,
+                    rtp=mode_rtp,
                     max_win=self.wincap,
                     auto_close_disabled=False,
                     is_feature=False,
@@ -217,20 +264,24 @@ class GameConfig(Config):
     def _validate(self) -> None:
         """Guard the mode list before the engine consumes it."""
         assert self.wincap == max(t["multiplier"] for t in self.tiers), "wincap must equal the top mode"
-        # under_02..under_97 + over_03..over_98 = 96 + 96 modes.
-        assert len(self.bet_modes) == len(self.tiers) == 192, "expected 192 dice modes"
+        assert len(self.bet_modes) == len(self.tiers) >= 2, "empty / mismatched dice mode set"
 
         for row in self.tiers:
             m = row["multiplier"]
             W, N = row["W"], row["N"]
             cents = row["payout_cents"]
+            wc = row["win_chance"]
 
-            # Payout is a positive integer number of cents, >= 1.00x (no sub-stake win).
-            assert isinstance(cents, int) and cents >= 100, f"payout {m} must be an integer >= 100 cents"
+            # Payout is a positive integer number of cents, strictly above the stake.
+            assert isinstance(cents, int) and cents > 100, f"payout {m} must be an integer > 100 cents"
             assert round(m * 100) == cents, f"multiplier {m} disagrees with cents {cents}"
 
-            # RTP ~= 0.97 (exact where the win chance divides 9700, else cent-rounded).
-            assert abs((W / N) * m - RTP) <= 0.01, f"mode RTP {(W / N) * m} too far from {RTP}"
+            # ACP compliance, guaranteed at build time (not just at upload):
+            #   on the 0.1× grid, and realised RTP inside Stake's 90%–96.70% band.
+            assert cents % 10 == 0, f"payout {m} off the 0.1x grid ({cents} cents)"
+            assert RTP_FLOOR - _EPS <= (W / N) * m <= RTP_CEIL + _EPS, (
+                f"mode {row['direction']}_{row['target']:02d} RTP {(W / N) * m:.4f} outside [{RTP_FLOOR}, {RTP_CEIL}]"
+            )
 
             # Deterministic, float-safe split (no get_sim_splits leftover).
             win_quota = (W + 0.5) / N

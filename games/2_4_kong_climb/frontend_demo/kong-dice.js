@@ -108,6 +108,9 @@ const state = {
   hasOpenRound: false,
   modesByName: {},
   ranges: { under: { min: 2, max: 97 }, over: { min: 3, max: 98 } },
+  // Sorted list of published slider targets per direction. The ACP-compliant
+  // mode set is sparse (gaps), so the slider snaps to the nearest one of these.
+  targets: { under: [], over: [] },
   betLevels: null,
   auto: {
     running: false, stopRequested: false,
@@ -186,7 +189,11 @@ const modeName = (direction, nn) => `${direction}_${pad2(nn)}`;
 
 function clampTarget(direction, nn) {
   const r = state.ranges[direction];
-  return Math.max(r.min, Math.min(r.max, Math.round(nn)));
+  const clamped = Math.max(r.min, Math.min(r.max, Math.round(nn)));
+  // Snap to the nearest published target — the compliant mode set is sparse.
+  const list = state.targets[direction];
+  if (!list || !list.length) return clamped;
+  return list.reduce((best, t) => (Math.abs(t - clamped) < Math.abs(best - clamped) ? t : best), list[0]);
 }
 function currentMode() {
   return state.modesByName[modeName(state.direction, clampTarget(state.direction, state.target))];
@@ -650,16 +657,19 @@ async function loadBundle() {
   if (!data?.modes?.length) throw new Error("empty data bundle");
   state.modesByName = {};
   const range = { under: { min: Infinity, max: -Infinity }, over: { min: Infinity, max: -Infinity } };
+  const targets = { under: [], over: [] };
   for (const m of data.modes) {
     state.modesByName[m.name] = m;
     const r = range[m.direction];
     if (r) {
       r.min = Math.min(r.min, m.target);
       r.max = Math.max(r.max, m.target);
+      targets[m.direction].push(m.target);
     }
   }
   for (const d of ["under", "over"]) {
     if (Number.isFinite(range[d].min)) state.ranges[d] = range[d];
+    state.targets[d] = targets[d].sort((a, b) => a - b);
   }
 }
 

@@ -28,10 +28,14 @@ frontend_demo/
 ## How this game works
 
 Not a slot. Each round is one dice roll (roll **over** / **under** a point on 0–100). The math-sdk
-generates **102 modes** = 51 multiplier tiers × {over, under}. Each mode is defined by a valid
-0.1× multiplier with the win chance **derived** so RTP is exactly **97%**
-(`winChance% = 97 / multiplier`). The slider selects the tier; the multiplier / decimal win chance
-shown are the real generated values.
+generates **72 ACP-compliant modes** = 36 integer win-chance targets × {over, under}. Each mode's
+true dice multiplier (`0.97 / winChance`) is **floor-snapped onto the RGS 0.1× grid** to the largest
+value with RTP ≤ 96.70%. Only modes inside the tight RTP window that satisfies both ACP RTP rules
+are published — per-mode RTP between 90% and 96.70%, **and** all modes within a 1.0% variance of
+each other (realised **95.7–96.6%**, a 0.9% spread). Multipliers span **1.1×–48.3×**
+(`wincap = 48.3×`). The published target set is sparse, so the slider snaps to the nearest available
+target; the multiplier and win chance shown are the real generated values. See the game's
+`readme.txt` for the full rationale.
 
 ## The RGS contract this implements
 

@@ -20,26 +20,39 @@ NN, in each direction.
     under_NN  wins if roll < NN   ->  winChance = NN%
     over_NN   wins if roll > NN   ->  winChance = (100 - NN)%
 
-The payout is the true dice multiplier, rounded to whole cents:
+The ACP enforces three math rules server-side (all learned from upload rejections):
 
-    payoutCents = round(9700 / winChance%)     (RTP 0.97)
-    multiplier  = payoutCents / 100
+  1. 0.1x LUT grid: every non-zero payout is an integer number of cents that is a
+     multiple of 10 (a whole multiple of 0.1x).
+  2. RTP band (per-mode): "Return to Player must be between 90% and 96.70%".
+  3. RTP consistency (cross-mode): "RTP across all modes must be within +/-0.5% of
+     each other", i.e. variance (max-min) <= 1.00%.
+  There is NO volatility/hit-rate rule (compliant modes span 14-69% hit).
 
-A genuine dice multiplier (RTP/winChance) almost never lands on ACP's 0.1x LUT
-grid (50% -> 1.94x, 3% -> 32.33x), and Stake's own reference dice (50% -> 1.88x)
-doesn't either. So this game is flagged lut_grid_exempt and the SDK's grid check
-is skipped for it (utils/rgs_verification.py::verify_lookup_format). RTP is
-0.97 exactly where the win chance divides 9700, else within cent-rounding
-(~+/-0.05%), as with any real dice game.
+The true dice multiplier 0.97 / winChance sits at 97% RTP -- just over the 96.70%
+cap -- and rarely lands on the grid. So we FLOOR-snap each multiplier onto the
+0.1x grid to the largest value with RTP <= 96.70%:
 
-Range (192 modes)
------------------
-Every payout is kept >= 1.00x (no sub-stake "win"), i.e. winChance <= 97%:
+    multiplier  = largest 0.1x-grid value with (winChance% * mult) <= 96.70%
+    payoutCents = multiplier * 100                  (a multiple of 10)
 
-    under_02 .. under_97   and   over_03 .. over_98
+The SDK grid check (utils/rgs_verification.py::verify_lookup_format) stays ON as a
+regression guard -- lut_grid_exempt = False.
 
-Range: 1.0x (97% chance) up to 48.5x (2% chance). wincap = 48.5x. The two
-2%-chance modes (under_02, over_98) carry the "wincap" criteria.
+Compliance filter (72 modes)
+----------------------------
+A mode is kept only when, after floor-snapping:
+
+    payout > 1.00x                 (drop no-upside modes)
+    RTP    in [95.7%, 96.70%]      (>= 90%, <= 96.70%, AND a 0.90% spread so the
+                                    cross-mode variance stays under the 1.00% cap)
+
+The realised max RTP is 96.60%, so the floor is pinned at 95.70% to hold the whole
+set inside a 0.90% spread. This yields 72 modes (36 win chances x over/under,
+winChance 2-48%) spanning 1.1x .. 48.3x. wincap = 48.3x, carried by the 2%-chance
+modes under_02 / over_98. Realised RTP ranges 95.7-96.6%, every mode on-grid and
+inside all three rules. The tight RTP window (rule 3), not volatility, is what
+bounds the mode count.
 
 Exact integer book counts
 -------------------------

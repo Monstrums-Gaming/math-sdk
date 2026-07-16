@@ -5,7 +5,7 @@ math output, so the browser demo replays the published lookup tables instead of
 faking outcomes client-side.
 
 It reads the game's published library:
-    library/publish_files/index.json          -> the 192 modes + their lookup tables
+    library/publish_files/index.json          -> the 72 modes + their lookup tables
     library/publish_files/lookUpTable_<mode>_0.csv  -> the weighted payout distribution
     library/configs/event_config_<mode>.json  -> the engine's per-mode event template
     library/configs/config.json               -> per-mode cost / maxWin
@@ -26,7 +26,9 @@ import csv
 import json
 import os
 
-RTP = 0.97
+# Stake's ACP RTP band (per-mode). Modes are floor-snapped so realised RTP lands
+# inside this; the demo just checks each mode stays within it.
+RTP_FLOOR, RTP_CEIL = 0.90, 0.967
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIBRARY = os.path.join(HERE, "..", "library")
@@ -89,9 +91,11 @@ def main():
         assert abs(win_chance - win_rows / total * 100) < 0.01, (
             f"{name}: winChance {win_chance} != LUT {win_rows}/{total}"
         )
-        # RTP is ~0.97 (exact where winChance divides 9700, else cent-rounded).
+        # Realised RTP must sit inside Stake's ACP band (payouts are floor-snapped).
         rtp_mode = round((win_rows / total) * multiplier, 6)
-        assert abs(rtp_mode - RTP) <= 0.01, f"{name}: RTP {rtp_mode} too far from {RTP}"
+        assert RTP_FLOOR - 1e-9 <= rtp_mode <= RTP_CEIL + 1e-9, (
+            f"{name}: RTP {rtp_mode} outside [{RTP_FLOOR}, {RTP_CEIL}]"
+        )
 
         shelf = by_name[name]
         modes.append(
@@ -103,7 +107,7 @@ def main():
                 "winChance": win_chance,
                 "target": target,
                 "cost": shelf.get("cost", 1.0),
-                "maxWin": shelf.get("maxWin", 48.5),
+                "maxWin": shelf.get("maxWin", 48.3),
                 "outcomes": [
                     {"payoutCents": win_payout, "weight": win_rows},
                     {"payoutCents": 0, "weight": loss_rows},
@@ -111,19 +115,19 @@ def main():
             }
         )
 
-    bundle = {"game_id": game_id, "rtp": RTP, "modes": modes}
+    rtps = [
+        round((m["outcomes"][0]["weight"] / (m["outcomes"][0]["weight"] + m["outcomes"][1]["weight"])) * m["multiplier"], 6)
+        for m in modes
+    ]
+    bundle = {"game_id": game_id, "rtp": round(max(rtps), 4), "modes": modes}
     with open(OUT_FILE, "w", encoding="UTF-8") as fh:
         json.dump(bundle, fh, indent=1)
 
     tiers = sorted({m["tier"] for m in modes})
     mults = sorted({m["multiplier"] for m in modes})
-    rtps = [
-        round((m["outcomes"][0]["weight"] / (m["outcomes"][0]["weight"] + m["outcomes"][1]["weight"])) * m["multiplier"], 6)
-        for m in modes
-    ]
     print(f"Wrote {OUT_FILE}")
     print(f"  modes={len(modes)}  targets={len(tiers)}  multipliers {mults[0]}x..{mults[-1]}x")
-    print(f"  RTP range: {min(rtps)}..{max(rtps)} (target {RTP})")
+    print(f"  RTP range: {min(rtps)}..{max(rtps)} (Stake band 0.90-0.967)")
 
 
 if __name__ == "__main__":
