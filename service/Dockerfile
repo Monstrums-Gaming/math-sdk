@@ -15,9 +15,10 @@ RUN pip install --no-cache-dir \
       "uvicorn[standard]" \
       numpy==2.2.5 \
       zstandard==0.23.0 \
-      python-dotenv==1.1.0 \
+      python-dotenv==1.2.2 \
       xlsxwriter==3.2.0 \
-      boto3==1.35.97
+      boto3==1.35.97 \
+      urllib3==2.7.0
 
 COPY . .
 RUN pip install --no-cache-dir -e .
