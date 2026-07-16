@@ -12,6 +12,7 @@ class BuildAccepted(BaseModel):
     game_id: str
     mode: str
     status: str
+    num_sims: Optional[int] = None  # sims the build will run (dev forces 1000; else build.num_sims)
 
 
 # --- POST /manifests: simplified box spec the backoffice sends ---
@@ -53,6 +54,7 @@ class JobStatus(BaseModel):
     mode: str
     status: str
     publishable: bool
+    num_sims: Optional[int] = None  # sims this build ran (dev forces 1000; else manifest build.num_sims)
     created_at: str
     finished_at: Optional[str] = None
     error: Optional[str] = None
