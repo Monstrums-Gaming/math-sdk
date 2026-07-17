@@ -22,7 +22,7 @@ pytest tests/win_calculations/test_linespay.py::<name> # single test
 
 There is no configured linter/formatter (no ruff/black/flake8/pyproject) — don't go looking for a lint command. `make test` is pytest-only and covers just the win-calculation math (see "Conventions & gotchas").
 
-The games that currently exist are `3_2_mystery_box_cash_paradise`, `mystery_box`, `mystery_box_dynamic` (the JSON-manifest generator — see "Dynamic mystery-box generator" below), `2_4_kong_climb` (a Stake-style dice game — roll over/under; see the `stake-dice-game` skill), and `template`. The `0_0_*` slot samples and `fifty_fifty` were removed (commit `155c385`); `make test_run`'s `TEST_NAMES` is trimmed to `mystery_box` and `3_2_mystery_box_cash_paradise`. Reference-only mentions of the deleted slot games below are kept because they illustrate the reel-slot model.
+The games that currently exist are `3_2_mystery_box_cash_paradise`, `mystery_box`, `mystery_box_dynamic` (the JSON-manifest generator — see "Dynamic mystery-box generator" below), `2_4_dice_kong_climb` (a Stake-style **dice** game — roll over/under; folder renamed from `2_4_kong_climb`, but its internal `game_id` is still `2_4_kong_climb`; see the `stake-dice-game` skill), `2_5_limbo_frankenstein` (a Stake-style **Limbo** game — pick target `T`, win `T×` if the crash roll ≥ `T`; direct-probability like the dice game, base-only ladder capped at 100× per Stake's ETL/CVaR risk validators, with a `frontend_demo/` that replays the published math), and `template`. The `0_0_*` slot samples and `fifty_fifty` were removed (commit `155c385`); `make test_run`'s `TEST_NAMES` is trimmed to `mystery_box` and `3_2_mystery_box_cash_paradise`. Reference-only mentions of the deleted slot games below are kept because they illustrate the reel-slot model.
 
 Running a game directly (equivalent to `make run`, useful for flags): `python games/<game_id>/run.py`. The venv is required because the project is installed as an editable package (`pip install -e .`) exposing `src`, `optimization_program`, `uploads`, and `utils` as importable top-level modules — game files import e.g. `from src.state.run_sims import create_books`.
 
@@ -102,6 +102,15 @@ ACP validation rules the **math must satisfy** but the SDK does **not** enforce 
 - **Bet levels** are applied in the ACP dashboard (bet-level template; Stake US requires a `us_` prefix), NOT emitted by the math-sdk — a missing template is the "Bet Level Validator: no valid levels" error. The SDK only writes `minDenomination`/`betDenomination`, both derived from `config.min_denomination`.
 
 `config.json` carries sha256 hashes of the published files, and `execute_all_tests` cross-checks book↔LUT payout arrays (fast path via the `books_<mode>.verification.json` sidecar) before upload. A worked runbook lives at `games/3_2_mystery_box_cash_paradise/docs/PRODUCTION.md`.
+
+### Skills (`.claude/skills/`)
+
+Two repo-local Claude skills encode the hard-won ACP/build knowledge — invoke them (or read their `SKILL.md`) instead of re-deriving the rules:
+
+- **`publish-stake-game`** — the build-and-publish workflow: generate `publish_files`, run the `run.py` pipeline for release, verify with `execute_all_tests` / `rgs_verification`, and fix ACP **upload** rejections (`"Base Mode Cost must be 1.0x"`, `"Bet Level Validator: no valid levels"`). Covers both reel-slot and direct-probability (mystery-box) games; owns the ACP dashboard upload steps.
+- **`stake-dice-game`** — build/fix/ACP-check a Stake-style **dice** game (`over_NN`/`under_NN`): floor-snapping payouts onto the 0.1× LUT grid, the per-mode (90–96.70%) and cross-mode (±0.5%) RTP rules, exact-integer book counts, and the build/verify loop. Reference game `games/2_4_kong_climb` (dir since renamed to `games/2_4_dice_kong_climb`; internal `game_id` still `2_4_kong_climb`). Complements `publish-stake-game`.
+
+The **Limbo** game (`games/2_5_limbo_frankenstein`) follows the same direct-probability model as the dice skill (target `T` → grid-aligned payout, simplest-fraction exact books, RTP pinned into [96.00%, 96.70%]). Note its ACP twist: Stake's **risk / star-rating** validators (ETL-40x / CVaR) reject an all-or-nothing Limbo mode above ~100×, so its ladder is **base-only, capped at 100×** — bet-size scaling (streak/high cost tiers) belongs in the ACP bet-level template, not in separate published modes.
 
 ## Core engine concepts (src/)
 
