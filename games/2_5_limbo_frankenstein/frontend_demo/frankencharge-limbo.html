@@ -43,7 +43,7 @@
 
   .app{
     max-width:1280px;margin:0 auto;
-    display:grid;grid-template-columns:300px 1fr 250px;gap:14px;
+    display:grid;grid-template-columns:300px 1fr;gap:14px;
     align-items:stretch;
   }
 
@@ -180,7 +180,10 @@
 
   /* ---------- CENTER: STAGE ---------- */
   .stage{display:flex;flex-direction:column}
-  .stage-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .stage-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap}
+  .stage-top-left{display:flex;gap:8px;flex-wrap:wrap}
+  /* Win-chances modal: constrain the list and let it scroll if targets are dense */
+  #winModal #multRows{max-height:60vh;overflow-y:auto}
   .ghost-btn{
     display:inline-flex;align-items:center;gap:7px;
     font-size:.7rem;letter-spacing:.16em;color:var(--ink-dim);font-weight:600;
@@ -235,6 +238,19 @@
   }
   .readout small.win{color:var(--green)}
   .readout small.loss{color:var(--ink-faint)}
+
+  /* Recent-results bar (Stake-style pills): newest on the right, wins green / losses red */
+  .rolls-bar{display:flex;justify-content:flex-end;align-items:center;gap:6px;
+    min-height:32px;margin-bottom:6px;overflow:hidden}
+  .roll-pill{flex:0 0 auto;padding:5px 11px;border-radius:9px;
+    font-weight:700;font-size:.82rem;font-variant-numeric:tabular-nums;white-space:nowrap;
+    animation:pillIn .28s cubic-bezier(.2,.9,.3,1.2)}
+  .roll-pill.win{background:linear-gradient(180deg,#4de75b,#33cf46);color:#062910;
+    box-shadow:0 1px 7px rgba(64,217,79,.26)}
+  .roll-pill.loss{background:linear-gradient(180deg,#ec5a60,#d23a41);color:#2b0709;
+    box-shadow:0 1px 7px rgba(224,64,72,.24)}
+  @keyframes pillIn{from{opacity:0;transform:translateX(10px) scale(.9)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.roll-pill{animation:none}}
 
   .stage-chips{display:flex;gap:10px;margin-top:14px}
   .stage-chip{
@@ -477,9 +493,14 @@
   <!-- ============ CENTER: STAGE ============ -->
   <section class="panel stage" id="stage" aria-label="Game stage">
     <div class="stage-top">
-      <button class="ghost-btn" id="howBtn"><span class="ico">i</span> HOW TO PLAY</button>
+      <div class="stage-top-left">
+        <button class="ghost-btn" id="howBtn"><span class="ico">i</span> HOW TO PLAY</button>
+        <button class="ghost-btn" id="winBtn"><span class="ico">%</span> WIN CHANCES</button>
+      </div>
       <button class="ghost-btn on" id="soundBtn" aria-pressed="true">🔊 SOUND: ON</button>
     </div>
+
+    <div class="rolls-bar" id="recentRolls" aria-label="Recent results"></div>
 
     <div class="machine">
       <div class="capsule-wrap" id="capsule"></div>
@@ -494,28 +515,16 @@
       </div>
     </div>
   </section>
-
-  <!-- ============ RIGHT: SIDE PANELS ============ -->
-  <aside class="side">
-    <div class="card">
-      <h3><span class="dot"></span> Win chances</h3>
-      <div id="multRows"></div>
-    </div>
-
-    <div class="card">
-      <h3><span class="dot"></span> Recent rolls</h3>
-      <div id="recentRows"><div class="empty-note">No rolls yet — charge the machine.</div></div>
-    </div>
-
-    <div class="card">
-      <button class="side-btn" id="rulesBtn">RULES</button>
-      <button class="side-btn" id="dblBtn">2× BET</button>
-      <button class="side-btn" id="halfBtn">½ BET</button>
-    </div>
-  </aside>
 </div>
 
 <!-- ============ MODALS ============ -->
+<dialog id="winModal">
+  <h2>WIN CHANCES</h2>
+  <p>Win probability for each published target (BASE tier). Higher targets pay more but hit less often — payouts are the RGS math (~96.6% RTP).</p>
+  <div id="multRows"></div>
+  <button class="close" data-close>CLOSE</button>
+</dialog>
+
 <dialog id="howModal">
   <h2>HOW TO PLAY — LIMBO</h2>
   <ul>
@@ -525,18 +534,6 @@
     <li>Higher targets pay more but hit less often. Win chances are the <b>published RGS math</b> (~96.6% RTP); the tier only scales your stake.</li>
   </ul>
   <p>This is a demo with play money that replays the real math-sdk build (limbo_rgs.json). Reset your balance any time.</p>
-  <button class="close" data-close>CLOSE</button>
-</dialog>
-
-<dialog id="rulesModal">
-  <h2>RULES</h2>
-  <ul>
-    <li>Each target is a published base mode. You win if result ≥ target; a win pays <b>stake × target</b> (stake = bet × tier: ×1 / ×2 / ×100).</li>
-    <li>Win/lose is drawn against the mode's <b>published win probability</b> from the RGS lookup table (so realised RTP ≈ 96.6%), then a provably-fair crash number is shown consistent with the outcome.</li>
-    <li>Only the BASE tier is published; STREAK/HIGH just scale your stake over the same odds (bet-size scaling is an ACP bet-level concern, not a separate mode). The slider snaps to the nearest published target.</li>
-    <li>Every mode's RTP sits in Stake's 96.00%–96.70% band; payouts are on the 0.1x grid.</li>
-    <li>Stake (bet × tier) is deducted when you charge. Minimum bet 1.00.</li>
-  </ul>
   <button class="close" data-close>CLOSE</button>
 </dialog>
 
@@ -806,15 +803,13 @@ function refreshMath() {
   }).join("");
 }
 
-/* Rebuild the quick-pick target chips (up to 6 spread across the base targets). */
+/* Quick-pick target chips: round presets snapped to the nearest published target,
+   deduped, capped at 5 so they sit on a single row of the chip grid. */
 function rebuildTargetChips() {
-  const list = baseTargets();
-  if (!list.length) return;
-  const n = Math.min(6, list.length);
-  const picks = [];
-  for (let i = 0; i < n; i++) picks.push(list[Math.round(i * (list.length - 1) / (n - 1))]);
-  const uniq = [...new Set(picks)];
-  $("tgtChips").innerHTML = uniq.map(t =>
+  if (!baseTargets().length) return;
+  const preferred = [1.5, 2, 5, 10, 100];
+  const picks = [...new Set(preferred.map((p) => snapTarget(p)))].slice(0, 5);
+  $("tgtChips").innerHTML = picks.map((t) =>
     `<button class="chip${t === S.target ? " active" : ""}" data-v="${t}">${fmtX(t).replace(".00x", "x")}</button>`
   ).join("");
 }
@@ -936,13 +931,15 @@ async function charge() {
   refreshBalance();
 
   S.history.unshift({ result, target: S.target, win });
-  S.history = S.history.slice(0, 6);
-  $("recentRows").innerHTML = S.history.map(h => `
-    <div class="row ${h.win ? "win" : "loss"}">
-      <span class="mult">${fmtX(h.result)}</span>
-      <span class="tag">@ ${fmtX(h.target)}</span>
-      <span>${h.win ? "WIN" : "LOSS"}</span>
-    </div>`).join("");
+  S.history = S.history.slice(0, 8);
+  renderRolls();
+}
+
+/* Recent-results pill bar — newest rendered rightmost (history is newest-first). */
+function renderRolls() {
+  $("recentRolls").innerHTML = [...S.history].reverse()
+    .map((h) => `<div class="roll-pill ${h.win ? "win" : "loss"}">${fmtX(h.result)}</div>`)
+    .join("");
 }
 
 /* ============================== AUTOPLAY ============================== */
@@ -950,7 +947,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* Config controls are locked while a sequence runs; only the STOP button stays live. */
 const AUTO_LOCK_IDS = [
-  "betMinus", "betPlus", "betInput", "betChips", "dblBtn", "halfBtn",
+  "betMinus", "betPlus", "betInput", "betChips",
   "tgtMinus", "tgtPlus", "targetInput", "tgtChips", "targetRange", "tierChips",
   "resetBtn", "chargeBtn", "tabManual", "tabAuto",
   "autoRoundsChips", "onWinSeg", "onLossSeg", "onWinMinus", "onWinPlus",
@@ -1158,13 +1155,11 @@ $("betInput").addEventListener("change", (e) => {
   const v = parseFloat(e.target.value.replace(/[^0-9.]/g, ""));
   setBet(isNaN(v) ? 1 : v, true);
 });
-$("dblBtn").addEventListener("click", () => setBet(Math.min(S.bet * 2, Math.max(1, S.balance))));
-$("halfBtn").addEventListener("click", () => setBet(S.bet / 2));
 
 $("resetBtn").addEventListener("click", () => {
   S.balance = 1000; refreshBalance();
   S.history = [];
-  $("recentRows").innerHTML = '<div class="empty-note">No rolls yet — charge the machine.</div>';
+  renderRolls();
   setState("neutral", "NEUTRAL");
   $("rollDisplay").textContent = "1.00x";
   $("lastRollChip").textContent = "RESULT --";
@@ -1185,7 +1180,7 @@ $("soundBtn").addEventListener("click", () => {
 // modals
 const openModal = (id) => $(id).showModal();
 $("howBtn").addEventListener("click", () => openModal("howModal"));
-$("rulesBtn").addEventListener("click", () => openModal("rulesModal"));
+$("winBtn").addEventListener("click", () => openModal("winModal"));
 $("rotateSeed").addEventListener("click", () => rotateSeeds(true));
 document.querySelectorAll("[data-close]").forEach(b =>
   b.addEventListener("click", () => b.closest("dialog").close()));
