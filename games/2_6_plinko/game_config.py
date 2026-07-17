@@ -85,7 +85,13 @@ RTP_TARGET = 0.9635
 _EPS = 1e-9
 
 ROWS = list(range(8, 17))  # 8..16
-DIFFICULTIES = ["low", "medium", "high", "expert"]
+# low / medium / high only. An "expert" tier was tried and REMOVED: its near
+# all-or-nothing shape (~99% of drops at the 0.1x floor, a rare huge edge) breaks
+# Stake's 2-star risk validators (CVaR / ETL / volatility) for rows 11..16 — high
+# already sits at the top of the 2-star volatility envelope (high_r16 = 970x passes
+# while expert_r11 = 340x failed, so it's the SHAPE, not the edge). There is no
+# 2-star room above `high`, the same wall that capped limbo. See readme.txt.
+DIFFICULTIES = ["low", "medium", "high"]
 
 # Per-difficulty shape parameters (starting point; the solver re-tunes RTP):
 #   edge8   — edge multiplier at 8 rows (the corner bins).
@@ -98,7 +104,6 @@ _DIFFICULTY = {
     "low":    {"edge8": 5.0,  "growth": 1.15, "gamma": 1.8, "floor": 0.5},
     "medium": {"edge8": 13.0, "growth": 1.30, "gamma": 2.5, "floor": 0.3},
     "high":   {"edge8": 29.0, "growth": 1.55, "gamma": 3.2, "floor": 0.2},
-    "expert": {"edge8": 58.0, "growth": 1.80, "gamma": 4.2, "floor": 0.1},
 }
 
 

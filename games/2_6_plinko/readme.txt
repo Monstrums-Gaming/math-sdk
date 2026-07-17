@@ -16,13 +16,23 @@ odds equal the per-criteria book counts.
 
 Modes: base product only (1 ball, cost 1.0)
 -------------------------------------------
-36 bet modes = rows {8..16} x difficulty {low, medium, high, expert}, each named
-base_r{NN}_{difficulty} (e.g. base_r08_low, base_r16_expert). All cost 1.0.
+27 bet modes = rows {8..16} x difficulty {low, medium, high}, each named
+base_r{NN}_{difficulty} (e.g. base_r08_low, base_r16_high). All cost 1.0.
 
   RTP = EV / cost = (1/2**N) * sum(C(N,k) * cells[k])
 
-wincap = the single largest edge across all modes (carried by base_r16_expert).
+wincap = the single largest edge across all modes (carried by base_r16_high = 970x).
 Each mode's own max_win = its edge (the corner bins).
+
+An "expert" 4th tier was TRIED and REMOVED. Its near all-or-nothing shape (~99% of
+drops at the 0.1x floor, a rare huge edge up to ~6400x) breaks Stake's 2-star risk
+validators (CVaR / ETL / volatility) for rows 11..16: high_r16 = 970x PASSES 2-star
+while expert_r11 = 340x FAILED it, so the reject is driven by the tail SHAPE, not the
+edge magnitude. `high` already sits at the top of the 2-star volatility envelope, so
+there is no 2-star room for a more-extreme tier -- the same wall that capped limbo at
+100x. To add a spicier tier you must either target a higher star rating or reshape it
+to high's risk discipline (raise the floor, spread the mid-tiers) so it is no more
+volatile than high.
 
 DEFERRED: the balls100 product
 -------------------------------
@@ -38,7 +48,7 @@ Payout-cell tables (game_config.py)
 -----------------------------------
 Each mode's payout_cells (length N+1) is symmetric, monotone toward the centre, on
 the ACP 0.1x grid, and RTP-tuned:
-  1. a difficulty-scaled edge sets the volatility (low..expert = bigger edges),
+  1. a difficulty-scaled edge sets the volatility (low..high = bigger edges),
      rounded to ~2 significant figures for clean multipliers;
   2. a coordinate-descent solver (_fit_cells) nudges the higher-weight inner bins on
      the 0.1x grid so the realised RTP lands near a shared 96.35% target;
@@ -46,8 +56,8 @@ the ACP 0.1x grid, and RTP-tuned:
      to the largest grid value that admits one.
 
 The real Stake tables run ~99% RTP (r16 "high" [1000,130,26,9,4,2,0.2,...] = 98.98%)
-and the reference base_r16_expert "100000x" edge alone is +305% RTP under a binomial
--- both impossible under ACP's 96.70% ceiling, hence the re-tune / edge caps.
+and the reference base_r16_expert "100000x" edge alone would be +305% RTP under a
+binomial -- both impossible under ACP's 96.70% ceiling, hence the re-tune / edge caps.
 
 ACP math rules (enforced server-side)
 -------------------------------------
@@ -56,13 +66,13 @@ ACP math rules (enforced server-side)
   2. RTP band (per-mode): 90%..96.70%. Every mode is pinned into [96.00%, 96.70%];
      the built set spans ~96.17-96.64% (a <= 0.47% spread), inside all three RTP rules.
   3. RTP consistency (cross-mode): variance (max-min) <= 1.00%.
-  4. Risk / star-rating (Max Payout, Tail Probability, ETL, CVaR): the big high/expert
-     edges (up to ~6400x at r16 expert) are an UPLOAD-TIME UNKNOWN -- these are the
-     validators that capped limbo at 100x. A Plinko edge is extremely rare (the corner
-     bin is 2/2**N, e.g. 1/32768 at r16), so the tail MASS is tiny, but Max-Payout is an
-     absolute cap. If ACP rejects a difficulty's edge, lower _DIFFICULTY[<d>]["edge8"]
-     (and/or "growth") in game_config.py and rebuild -- the same empirical loop limbo
-     used. Reduce difficulties before shipping if a validator pass fails for all rows.
+  4. Risk / star-rating (Max Payout, Tail Probability, ETL, CVaR): CONFIRMED at upload
+     -- the low/medium/high set (top edge high_r16 = 970x) PASSES 2-star on every row;
+     the removed "expert" tier FAILED 2-star for rows 11..16 (see the tier note above).
+     The reject is tail SHAPE, not edge size (high_r16 970x passes, expert_r11 340x did
+     not). If a future tweak-ing of the tables trips these again, lower that difficulty's
+     _DIFFICULTY[<d>]["edge8"]/"growth" and/or raise its "floor" (less all-or-nothing) in
+     game_config.py and rebuild -- the same empirical loop limbo used.
 
 Exact integer book counts
 --------------------------
