@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plinko — 2_6 demo</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --panel2:#0e141c; --line:#1e2836;
+    --ink:#e8eef6; --mut:#7f8ea3; --acc:#c6ff3a; --acc2:#5ad1ff;
+    --hot:#ff4d6d; --amber:#ffb03a; --lime:#4fd66b; --slate:#3a4a60;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#152233 0,var(--bg) 55%);
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:20px;
+    display:flex;justify-content:center}
+  .wrap{width:100%;max-width:1000px}
+
+  header{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .brand{font-weight:800;letter-spacing:.22em;font-size:1.4rem}
+  .brand b{color:var(--acc)}
+  .tag{font-family:var(--mono);font-size:.7rem;color:var(--mut);letter-spacing:.14em}
+  .rtp-badge{margin-left:auto;font-family:var(--mono);font-size:.72rem;color:var(--acc);
+    border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--panel2)}
+
+  .app{display:grid;grid-template-columns:280px 1fr;gap:16px}
+  @media(max-width:820px){.app{grid-template-columns:1fr}}
+
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:16px;padding:16px}
+  .label{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;color:var(--mut);
+    text-transform:uppercase;margin-bottom:8px;display:block}
+  .row{margin-bottom:16px}
+
+  .seg{display:grid;grid-auto-flow:column;gap:4px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:4px}
+  .seg button{font-family:var(--mono);font-size:.72rem;color:var(--mut);background:none;
+    border:0;border-radius:7px;padding:8px 0;cursor:pointer;text-transform:capitalize;letter-spacing:.04em}
+  .seg button.on{background:var(--acc);color:#0a0d12;font-weight:700}
+  .seg.diff button.on{background:var(--acc2);color:#04121a}
+
+  .stepper{display:flex;align-items:center;justify-content:space-between;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px}
+  .stepper button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);
+    background:#0a0f16;color:var(--ink);font-size:1.1rem;cursor:pointer}
+  .stepper button:active{transform:translateY(1px)}
+  .stepper .val{font-family:var(--mono);font-size:1rem;font-weight:700}
+
+  .stat{display:flex;justify-content:space-between;align-items:baseline;
+    padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+  .stat .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--mut)}
+  .stat .v{font-family:var(--mono);font-size:1.15rem;font-weight:700}
+  .stat .v.win{color:var(--acc)}
+
+  .drop-btn{width:100%;padding:15px;border:0;border-radius:12px;cursor:pointer;
+    font-family:var(--mono);font-weight:800;letter-spacing:.14em;font-size:.95rem;
+    background:var(--acc);color:#0a0d12;text-transform:uppercase}
+  .drop-btn:disabled{opacity:.4;cursor:not-allowed}
+  .drop-btn.batch{background:var(--panel2);color:var(--acc);border:1px solid var(--acc);margin-top:8px}
+
+  /* ---- board ---- */
+  .stage{position:relative;background:
+    radial-gradient(120% 90% at 50% -10%,#16202e 0,var(--panel2) 60%);
+    border:1px solid var(--line);border-radius:16px;padding:22px 18px 14px;overflow:hidden}
+  .board{position:relative;width:100%}
+  .peg{position:absolute;width:6px;height:6px;border-radius:50%;
+    background:#2b3a4e;box-shadow:0 0 0 3px rgba(90,209,255,.05);transform:translate(-50%,-50%)}
+  .peg.lit{background:var(--acc2);box-shadow:0 0 10px var(--acc2)}
+  .ball{position:absolute;width:15px;height:15px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,var(--acc) 70%);
+    box-shadow:0 0 14px rgba(198,255,58,.7);transform:translate(-50%,-50%);
+    transition:left .09s linear,top .09s cubic-bezier(.4,0,.9,.5);z-index:5}
+  .ball.mini{width:9px;height:9px;box-shadow:0 0 7px rgba(198,255,58,.5);
+    background:radial-gradient(circle at 35% 30%,#fff,var(--acc2) 75%);z-index:4}
+
+  .bins{position:relative;display:flex;margin-top:6px;gap:3px}
+  .bin{flex:1;min-width:0;text-align:center;font-family:var(--mono);font-weight:700;
+    font-size:.62rem;padding:8px 1px;border-radius:0 0 7px 7px;color:#06120a;
+    position:relative;transition:transform .12s}
+  .bin .hist{position:absolute;left:0;right:0;bottom:100%;margin-bottom:3px;
+    display:flex;align-items:flex-end;justify-content:center;height:60px;pointer-events:none}
+  .bin .hbar{width:70%;background:var(--acc2);opacity:.85;border-radius:3px 3px 0 0;height:0;transition:height .25s}
+  .bin.hit{transform:translateY(-4px);box-shadow:0 0 16px currentColor}
+
+  .rolls{display:flex;gap:6px;margin-top:14px;overflow:hidden;height:30px}
+  .pill{flex:0 0 auto;font-family:var(--mono);font-size:.72rem;font-weight:700;
+    padding:6px 10px;border-radius:7px;min-width:46px;text-align:center}
+  .pill.win{background:linear-gradient(180deg,#2f5d38,#1c3a24);color:var(--lime);border:1px solid #2f6b3c}
+  .pill.loss{background:var(--panel2);color:var(--mut);border:1px solid var(--line)}
+
+  .msg{font-family:var(--mono);font-size:.72rem;color:var(--mut);margin-top:10px;min-height:1.1em;text-align:center}
+  .note{font-family:var(--mono);font-size:.6rem;color:var(--mut);letter-spacing:.06em;margin-top:12px;line-height:1.6}
+  a{color:var(--acc2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">PL<b>I</b>NKO</div>
+    <div class="tag">2_6 · GALTON BOARD · PUBLISHED-MATH REPLAY</div>
+    <div class="rtp-badge" id="rtpBadge">RTP —</div>
+  </header>
+
+  <div class="app">
+    <!-- controls -->
+    <div class="panel">
+      <div class="row">
+        <span class="label">Rows</span>
+        <div class="stepper">
+          <button id="rowDn">−</button>
+          <span class="val" id="rowVal">16</span>
+          <button id="rowUp">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label">Risk</span>
+        <div class="seg diff" id="diffSeg"></div>
+      </div>
+      <div class="row">
+        <span class="label">Bet</span>
+        <div class="stepper">
+          <button id="betDn">−</button>
+          <span class="val" id="betVal">1.00</span>
+          <button id="betUp">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="stat"><span class="k">BALANCE</span><span class="v" id="bal">1000.00</span></div>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <div class="stat"><span class="k">LAST WIN</span><span class="v win" id="lastWin">0.00</span></div>
+      </div>
+      <button class="drop-btn" id="dropBtn">Drop ball</button>
+      <button class="drop-btn batch" id="batchBtn">Drop 100 balls</button>
+      <div class="note" id="note"></div>
+    </div>
+
+    <!-- board -->
+    <div>
+      <div class="stage">
+        <div class="board" id="board"></div>
+        <div class="bins" id="bins"></div>
+      </div>
+      <div class="rolls" id="rolls"></div>
+      <div class="msg" id="msg">Loading published odds…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtX = n => (n>=100? n.toFixed(0) : n>=10? n.toFixed(1) : n.toFixed(n<1?1:2)) + "×";
+
+const S = {
+  bundle:null, rows:16, difficulty:"high", bet:1.00, balance:1000,
+  busy:false, history:[],
+  betLevels:[0.10,0.20,0.50,1.00,2.00,5.00,10.00,25.00,50.00,100.00],
+};
+
+// ---- payout-cell colour by magnitude ----
+function binColor(m){
+  if(m < 1)   return "#3a4a60";      // slate  (sub-1x, "loss")
+  if(m < 3)   return "#4fd66b";      // lime
+  if(m < 12)  return "#a6e22e";
+  if(m < 60)  return "#ffb03a";      // amber
+  if(m < 300) return "#ff7a45";
+  return "#ff4d6d";                  // hot edge
+}
+
+function currentMode(){ return S.bundle.modes[`base_r${String(S.rows).padStart(2,"0")}_${S.difficulty}`]; }
+
+// weighted pick of a bin index by published binomial weights
+function pickBin(w){
+  let r = Math.random(), c = 0;
+  for(let k=0;k<w.length;k++){ c += w[k]; if(r <= c) return k; }
+  return w.length - 1;
+}
+
+// ---- geometry ----
+function xFrac(offsetHalfSteps, N){ return 0.5 + offsetHalfSteps * (0.5/(N+1)); }
+function yFrac(row, N){ return (row+0.6)/(N+1.2); }        // peg rows 0..N-1
+
+function buildBoard(){
+  const N = S.rows, mode = currentMode();
+  const board = $("board"), bins = $("bins");
+  // board height scales with rows
+  const h = Math.round(150 + N*22);
+  board.style.height = h + "px";
+  board.innerHTML = ""; bins.innerHTML = "";
+
+  for(let r=0;r<N;r++){
+    for(let o=-r;o<=r;o+=2){
+      const p = document.createElement("div");
+      p.className = "peg";
+      p.style.left = (xFrac(o,N)*100) + "%";
+      p.style.top  = (yFrac(r,N)*100) + "%";
+      board.appendChild(p);
+    }
+  }
+  for(let k=0;k<=N;k++){
+    const m = mode.cells[k];
+    const b = document.createElement("div");
+    b.className = "bin"; b.id = "bin"+k;
+    b.style.background = binColor(m);
+    b.innerHTML = `<div class="hist"><div class="hbar" id="hb${k}"></div></div>${fmtX(m)}`;
+    bins.appendChild(b);
+  }
+  $("rtpBadge").textContent = "RTP " + (mode.rtp*100).toFixed(2) + "%";
+  $("note").innerHTML =
+    `${N} rows · ${N+1} bins · risk <b style="color:var(--ink)">${S.difficulty}</b><br>`+
+    `bins weighted C(${N},k)/2^${N} · max win ${fmtX(mode.edge)}`;
+}
+
+function binX(N, k){ return xFrac(2*k - N, N); }  // final offset for bin k
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+// animate one ball down to bin k. opts: {stepMs, cls, bump}
+function dropBall(k, opts={}){
+  const stepMs = opts.stepMs || 90;
+  const cls = opts.cls || "ball";
+  const bump = opts.bump !== false;
+  return new Promise(res=>{
+    const N = S.rows, board = $("board");
+    const ball = document.createElement("div");
+    ball.className = cls;
+    ball.style.left = "50%"; ball.style.top = "0%";
+    board.appendChild(ball);
+    // build a path of ±1 half-steps with exactly k rights
+    const steps = Array(k).fill(1).concat(Array(N-k).fill(-1));
+    for(let i=steps.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[steps[i],steps[j]]=[steps[j],steps[i]];}
+    ball.style.transitionDuration = (stepMs/1000)+"s";
+    let off = 0, r = 0;
+    requestAnimationFrame(()=>{ ball.style.left = (xFrac(0,N)*100)+"%"; ball.style.top=(yFrac(0,N)*100)+"%"; });
+    const iv = setInterval(()=>{
+      off += steps[r]; r++;
+      ball.style.left = (xFrac(off,N)*100)+"%";
+      ball.style.top  = (yFrac(Math.min(r,N-1),N)*100 + (r>=N?12:0))+"%";
+      if(r>=N){
+        clearInterval(iv);
+        ball.style.top = "100%";
+        const bin = $("bin"+k);
+        setTimeout(()=>{ if(bump){ bin.classList.add("hit"); setTimeout(()=>bin.classList.remove("hit"),200); }
+          ball.remove(); res(); }, stepMs);
+      }
+    }, stepMs);
+  });
+}
+
+function pushRoll(mult){
+  S.history.unshift(mult);
+  if(S.history.length>40) S.history.pop();
+  $("rolls").innerHTML = S.history.map(m=>
+    `<div class="pill ${m>=1?"win":"loss"}">${fmtX(m)}</div>`).join("");
+}
+
+function setBalance(v){ S.balance = Math.max(0, Math.round(v*100)/100); $("bal").textContent = fmt(S.balance); }
+function setLastWin(v){ $("lastWin").textContent = fmt(v); }
+
+async function drop(){
+  if(S.busy || !S.bundle) return;
+  const mode = currentMode();
+  if(S.bet > S.balance){ $("msg").textContent = "Insufficient balance."; return; }
+  S.busy = true; lock(true);
+  setBalance(S.balance - S.bet);
+  const k = pickBin(mode.binWeights);
+  await dropBall(k);
+  const mult = mode.cells[k];
+  const win = Math.round(mult * S.bet * 100)/100;
+  setBalance(S.balance + win);
+  setLastWin(win);
+  pushRoll(mult);
+  $("msg").textContent = `Bin ${k} · ${fmtX(mult)} → +${fmt(win)}`;
+  S.busy = false; lock(false);
+}
+
+async function batch(){
+  if(S.busy || !S.bundle) return;
+  const mode = currentMode(), balls = 100;
+  const cost = Math.round(S.bet * balls * 100)/100;
+  if(cost > S.balance){ $("msg").textContent = "Insufficient balance for 100 balls."; return; }
+  S.busy = true; lock(true);
+  setBalance(S.balance - cost);
+
+  // Pre-pick every ball's bin from the published weights, then RAIN them down the
+  // board (staggered spawns, faster/smaller balls) so the drop is actually visible.
+  const bins = Array.from({length:balls}, ()=>pickBin(mode.binWeights));
+  let totalWin = 0, landed = 0;
+  const falling = [];
+  for(let i=0;i<balls;i++){
+    const k = bins[i];
+    falling.push(dropBall(k, {stepMs:34, cls:"ball mini", bump:true}).then(()=>{
+      totalWin += mode.cells[k] * S.bet;
+      landed++;
+      $("msg").textContent = `100 balls · ${landed}/${balls} landed · running +${fmt(Math.round(totalWin*100)/100)}`;
+    }));
+    await sleep(20);                       // spawn cadence (≈2s of rain)
+  }
+  await Promise.all(falling);
+
+  totalWin = Math.round(totalWin*100)/100;
+  setBalance(S.balance + totalWin);
+  setLastWin(totalWin);
+  const roundMult = Math.round(totalWin / cost * 100)/100;   // net multiplier vs 100-ball stake
+  pushRoll(roundMult);
+  $("msg").textContent = `100 balls · staked ${fmt(cost)} → +${fmt(totalWin)}  (${roundMult.toFixed(2)}×)`;
+  S.busy = false; lock(false);
+}
+
+function lock(dis){
+  ["dropBtn","batchBtn","rowUp","rowDn","betUp","betDn"].forEach(id=>$(id).disabled=dis);
+  $("diffSeg").querySelectorAll("button").forEach(b=>b.disabled=dis);
+}
+
+// ---- controls ----
+function setRows(n){ S.rows = Math.min(16, Math.max(8, n)); $("rowVal").textContent = S.rows; buildBoard(); }
+function setDiff(d){ S.difficulty = d;
+  $("diffSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.d===d));
+  buildBoard(); }
+function setBet(v){ S.bet = v; $("betVal").textContent = fmt(S.bet); }
+function stepBet(dir){
+  const i = S.betLevels.findIndex(x=>Math.abs(x-S.bet)<1e-9);
+  const j = Math.min(S.betLevels.length-1, Math.max(0, (i<0?3:i)+dir));
+  setBet(S.betLevels[j]);
+}
+
+function wire(){
+  $("dropBtn").onclick = drop;
+  $("batchBtn").onclick = batch;
+  $("rowUp").onclick = ()=>setRows(S.rows+1);
+  $("rowDn").onclick = ()=>setRows(S.rows-1);
+  $("betUp").onclick = ()=>stepBet(1);
+  $("betDn").onclick = ()=>stepBet(-1);
+  addEventListener("keydown", e=>{ if(e.code==="Space"){ e.preventDefault(); drop(); }});
+}
+
+async function init(){
+  try{
+    const res = await fetch("plinko_rgs.json", {cache:"no-store"});
+    S.bundle = await res.json();
+  }catch(err){
+    $("msg").textContent = "Could not load plinko_rgs.json — serve over http (./run.sh).";
+    return;
+  }
+  const diffs = S.bundle.difficulties;
+  $("diffSeg").innerHTML = diffs.map(d=>`<button data-d="${d}">${d}</button>`).join("");
+  $("diffSeg").querySelectorAll("button").forEach(b=> b.onclick=()=>setDiff(b.dataset.d));
+  if(!diffs.includes(S.difficulty)) S.difficulty = diffs[diffs.length-1];
+  setDiff(S.difficulty);
+  setRows(S.rows); setBet(S.bet); setBalance(S.balance);
+  wire();
+  $("msg").textContent = "Ready — drop a ball (or press space).";
+}
+init();
+</script>
+</body>
+</html>
