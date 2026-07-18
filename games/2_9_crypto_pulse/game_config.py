@@ -53,10 +53,13 @@ RTP_FLOOR = 0.960
 RTP_CEIL = 0.967
 _EPS = 1e-9
 
-# Published payout multiplier(s). The mockup's 1.87x is off the 0.1x grid; 1.90x is
-# the nearest grid-legal value (190 cents). One symmetric multiplier covers HIGH and
-# LOW. (Add more entries here to offer a payout ladder as extra modes — see readme.)
-_MULTIPLIERS = [1.90]
+# Published payout multiplier(s) — one per difficulty tier. Each becomes its own
+# dot-free mode "call_<cents>" with an independently-derived win probability that pins
+# realised RTP into [96.00%, 96.70%]. One symmetric multiplier covers HIGH and LOW.
+# Difficulty ladder: Easy 1.40x / Medium 1.90x / Hard 3.00x / Expert 5.00x. Every value
+# is a multiple of 0.10 (0.1x LUT grid); the lowest (1.40x, std 0.649) clears the ACP
+# volatility floor and the highest (5.00x) stays well under the all-or-nothing tail cap.
+_MULTIPLIERS = [1.40, 1.90, 3.00, 5.00]
 
 
 def _simplest_fraction_in(lo: Fraction, hi: Fraction) -> Fraction:

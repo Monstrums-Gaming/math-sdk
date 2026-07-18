@@ -75,22 +75,27 @@ def main():
             ],
         }
 
-    base = modes["base"]
+    # Top-level scalars mirror a single representative (default) mode for back-compat with
+    # consumers that read the flat fields. Prefer the Medium tier (call_190), then a legacy
+    # single "base" mode, else the first published mode.
+    default_name = next((n for n in ("call_190", "base") if n in modes), next(iter(modes)))
+    default = modes[default_name]
     bundle = {
         "game_id": game_id,
-        "rtp": round(base["rtp"], 4),
-        "multiplier": base["multiplier"],
-        "winChance": base["winChance"],
+        "rtp": round(default["rtp"], 4),
+        "multiplier": default["multiplier"],
+        "winChance": default["winChance"],
+        "defaultMode": default_name,
         "disabledAutoplay": False,
         "modes": modes,
     }
     with open(OUT_FILE, "w", encoding="UTF-8") as fh:
         json.dump(bundle, fh, indent=1)
 
-    print(f"Wrote {OUT_FILE}")
-    print(f"  base: {base['multiplier']}x  winChance={base['winChance']}  rtp={base['rtp']}  books={base['totalWeight']}")
-    if base["rtp"] > ACP_CEIL + 1e-9:
-        print(f"  NOTICE: RTP {base['rtp']:.4f} exceeds the ACP ceiling {ACP_CEIL}.")
+    print(f"Wrote {OUT_FILE}  (default mode: {default_name})")
+    for name, m in modes.items():
+        flag = "  <-- exceeds ACP ceiling" if m["rtp"] > ACP_CEIL + 1e-9 else ""
+        print(f"  {name}: {m['multiplier']}x  winChance={m['winChance']}  rtp={m['rtp']}  books={m['totalWeight']}{flag}")
 
 
 if __name__ == "__main__":

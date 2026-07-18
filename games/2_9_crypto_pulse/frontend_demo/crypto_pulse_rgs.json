@@ -3,9 +3,26 @@
  "rtp": 0.9667,
  "multiplier": 1.9,
  "winChance": 0.508772,
+ "defaultMode": "call_190",
  "disabledAutoplay": false,
  "modes": {
-  "base": {
+  "call_140": {
+   "multiplier": 1.4,
+   "winChance": 0.6875,
+   "rtp": 0.9625,
+   "totalWeight": 16,
+   "outcomes": [
+    {
+     "payoutCents": 140,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 5
+    }
+   ]
+  },
+  "call_190": {
    "multiplier": 1.9,
    "winChance": 0.508772,
    "rtp": 0.966667,
@@ -18,6 +35,38 @@
     {
      "payoutCents": 0,
      "weight": 28
+    }
+   ]
+  },
+  "call_300": {
+   "multiplier": 3.0,
+   "winChance": 0.32,
+   "rtp": 0.96,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 300,
+     "weight": 8
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  "call_500": {
+   "multiplier": 5.0,
+   "winChance": 0.192308,
+   "rtp": 0.961538,
+   "totalWeight": 26,
+   "outcomes": [
+    {
+     "payoutCents": 500,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
     }
    ]
   }
