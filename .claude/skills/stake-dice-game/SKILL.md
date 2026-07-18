@@ -7,8 +7,8 @@ description: >-
   Player must be between 90% and 96.70%", "RTP across all modes must be within
   ±0.5% of each other", or off-grid payout errors. Covers the over_NN/under_NN
   model, floor-snapping payouts onto the 0.1x LUT grid, the per-mode + cross-mode
-  RTP rules, and the build/verify loop. Reference game: games/2_4_kong_climb (Kong
-  Climb). Complements the publish-stake-game skill, which owns the ACP upload steps.
+  RTP rules, and the build/verify loop. Reference game: games/2_4_dice_kong_climb
+  (Kong Climb). Complements the publish-stake-game skill, which owns the ACP upload steps.
 ---
 
 # Build an ACP-compliant Stake dice game (math-sdk)
@@ -25,13 +25,16 @@ under_NN   wins if roll < NN    ->  winChance = NN%
 over_NN    wins if roll > NN    ->  winChance = (100 - NN)%
 ```
 
-**Reference implementation:** `games/2_4_kong_climb/` (Kong Climb). It is the only dice
-game and the source of truth — read its `game_config.py` module docstring and `readme.txt`
-first. Almost everything below is already implemented there.
+**Reference implementation:** `games/2_4_dice_kong_climb/` (Kong Climb). It is the only
+dice game and the source of truth — read its `game_config.py` module docstring and
+`readme.txt` first. Almost everything below is already implemented there. (The folder was
+renamed from `2_4_kong_climb`, but its internal `game_id` is still `"2_4_kong_climb"` — so
+build/verify commands that take a `game_id`, like `python -m utils.rgs_verification -g
+2_4_kong_climb`, use the old string while the path uses the new one.)
 
 ## Start a new dice game
 
-Copy **`games/2_4_kong_climb/`** (NOT `games/template/`, which is slot-oriented), then:
+Copy **`games/2_4_dice_kong_climb/`** (NOT `games/template/`, which is slot-oriented), then:
 
 - Set `game_id` (`<provider>_<num>_<name>`), `provider_name`, `game_name`, `working_name`,
   and `provider_number` in `game_config.py`. `provider_number` is a **placeholder** — set
