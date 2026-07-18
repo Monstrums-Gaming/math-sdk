@@ -1,0 +1,25 @@
+{
+ "game_id": "2_9_crypto_pulse",
+ "rtp": 0.9667,
+ "multiplier": 1.9,
+ "winChance": 0.508772,
+ "disabledAutoplay": false,
+ "modes": {
+  "base": {
+   "multiplier": 1.9,
+   "winChance": 0.508772,
+   "rtp": 0.966667,
+   "totalWeight": 57,
+   "outcomes": [
+    {
+     "payoutCents": 190,
+     "weight": 29
+    },
+    {
+     "payoutCents": 0,
+     "weight": 28
+    }
+   ]
+  }
+ }
+}
