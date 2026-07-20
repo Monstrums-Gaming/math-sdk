@@ -11,8 +11,10 @@ description: >-
   be within ±0.5% of each other", or off-0.1x-grid payout errors. Reference games:
   games/2_5_limbo_frankenstein (win/lose), games/2_9_crypto_pulse (win/lose, HIGH/LOW
   with a small difficulty ladder = one mode per multiplier), games/2_6_plinko +
-  games/2_7_chicken_crossing (multi-outcome), games/2_8_chicken_run (win/lose).
-  Complements stake-dice-game (the
+  games/2_7_chicken_crossing (multi-outcome), games/2_8_chicken_run (win/lose),
+  games/2_8_chicken_war (win/lose, 4-tier difficulty ladder with per-difficulty lane
+  counts — a DELIBERATE, pre-negotiated exception to the 96.70% ceiling / grid rules
+  below, see "Approved exceptions"). Complements stake-dice-game (the
   over_NN/under_NN slider variant), stake-risk-validators (the ETL/CVaR/star-rating
   caps that bound how high a payout can go), and publish-stake-game (the ACP upload).
 ---
@@ -31,6 +33,7 @@ the rest of the family:
 | Limbo | `games/2_5_limbo_frankenstein` | win `T×` or lose (2-outcome) | one per target `T` |
 | Crypto Pulse | `games/2_9_crypto_pulse` | win `mult×` or lose (2-outcome), HIGH/LOW | one per multiplier in `_MULTIPLIERS` (`call_<cents>`), a 4-tier difficulty ladder |
 | Chicken Run | `games/2_8_chicken_run` | win lane-mult or lose (2-outcome) | 72 = 3 diff × 24 lanes |
+| Chicken War | `games/2_8_chicken_war` | win lane-mult or lose (2-outcome), **RTP-exempt** (see below) | 81 = easy 24 + medium 22 + hard 20 + daredevil 15 |
 | Plinko | `games/2_6_plinko` | **multi-outcome** (one payout per bin) | rows × difficulty |
 | Chicken Crossing | `games/2_7_chicken_crossing` | **multi-outcome** cash-out ladder | one per difficulty |
 
@@ -112,6 +115,30 @@ RTP_TARGET = 0.9635 # plinko  (0.965 for chicken_crossing — 0.967 can round a 
 
 This differs from the dice skill's `RTP_FLOOR = 0.957`; the family runs a tighter,
 higher window.
+
+### Approved exceptions to the 96.70% ceiling / grid rules — `2_8_chicken_war`
+
+`games/2_8_chicken_war` intentionally does **not** follow the `[96.00%, 96.70%]` pin or
+the 0.1× grid rule above. It exists to reproduce a game-design spreadsheet exactly
+(EDGE 0.03, 25 pumps, per-difficulty risk, RTP ≈ 0.97 at every single lane) rather than
+to fit the family's usual ACP band:
+
+- `RTP_FLOOR = 0.960`, `RTP_CEIL = 0.980` (not `0.967`) — every mode targets ≈97%,
+  verified against 13 spot-check values transcribed from the source spreadsheet
+  (`_SHEET_CHECKS` in `game_config.py`, asserted in `_validate()`).
+- `self.lut_grid_exempt = True` — payouts are the spreadsheet's exact cent values, not
+  snapped to the 0.1× grid (e.g. `daredevil_15` pays `3,170,697.20×`, derived from
+  `round(Fraction(97, 100) / prob) / 100`, not floor/round-snapped).
+- Probabilities are closed-form per difficulty, not `_simplest_fraction_in`:
+  `cum[r] = prod((PUMPS - risk - i) / (PUMPS - i) for i in range(lane))`, `risk =
+  {"easy": 1, "medium": 3, "hard": 5, "daredevil": 10}`, `PUMPS = 25`.
+
+**Both deviations require explicit Stake ACP approval before publish** — this is not a
+loophole to reuse for other games without the same negotiation. If you're tempted to
+copy `2_8_chicken_war` as a template because it looks like a "looser" chicken_run, stop
+and use `2_8_chicken_run` instead unless your game also has a pre-approved RTP/grid
+exception. See `math-sdk/games/2_8_chicken_war/library/rtp_report.md` for the full
+per-mode RTP table used in that approval conversation.
 
 ### Exact integer book counts — `_simplest_fraction_in` (2-outcome games)
 
