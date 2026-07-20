@@ -1,0 +1,513 @@
+{
+ "game_id": "2_11_price_grid",
+ "rtpMin": 0.96,
+ "rtpMax": 0.9655172413793104,
+ "ladder": [
+  140,
+  150,
+  160,
+  180,
+  200,
+  220,
+  250,
+  280,
+  320,
+  360,
+  400,
+  450,
+  500,
+  600,
+  700,
+  800,
+  900,
+  1000,
+  1200,
+  1500,
+  2000,
+  2500,
+  3000,
+  4000,
+  5000,
+  6500,
+  8000,
+  10000
+ ],
+ "modes": {
+  "call_140": {
+   "multiplier": 1.4,
+   "multiplierCents": 140,
+   "winChance": 0.6875,
+   "rtp": 0.9625,
+   "numSims": 16,
+   "outcomes": [
+    {
+     "payoutCents": 140,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 5
+    }
+   ]
+  },
+  "call_150": {
+   "multiplier": 1.5,
+   "multiplierCents": 150,
+   "winChance": 0.6428571428571429,
+   "rtp": 0.9642857142857143,
+   "numSims": 14,
+   "outcomes": [
+    {
+     "payoutCents": 150,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 5
+    }
+   ]
+  },
+  "call_160": {
+   "multiplier": 1.6,
+   "multiplierCents": 160,
+   "winChance": 0.6,
+   "rtp": 0.96,
+   "numSims": 5,
+   "outcomes": [
+    {
+     "payoutCents": 160,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  "call_180": {
+   "multiplier": 1.8,
+   "multiplierCents": 180,
+   "winChance": 0.5333333333333333,
+   "rtp": 0.9600000000000001,
+   "numSims": 15,
+   "outcomes": [
+    {
+     "payoutCents": 180,
+     "weight": 8
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  "call_200": {
+   "multiplier": 2.0,
+   "multiplierCents": 200,
+   "winChance": 0.48,
+   "rtp": 0.96,
+   "numSims": 25,
+   "outcomes": [
+    {
+     "payoutCents": 200,
+     "weight": 12
+    },
+    {
+     "payoutCents": 0,
+     "weight": 13
+    }
+   ]
+  },
+  "call_220": {
+   "multiplier": 2.2,
+   "multiplierCents": 220,
+   "winChance": 0.4375,
+   "rtp": 0.9625,
+   "numSims": 16,
+   "outcomes": [
+    {
+     "payoutCents": 220,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  "call_250": {
+   "multiplier": 2.5,
+   "multiplierCents": 250,
+   "winChance": 0.38461538461538464,
+   "rtp": 0.9615384615384616,
+   "numSims": 13,
+   "outcomes": [
+    {
+     "payoutCents": 250,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8
+    }
+   ]
+  },
+  "call_280": {
+   "multiplier": 2.8,
+   "multiplierCents": 280,
+   "winChance": 0.3448275862068966,
+   "rtp": 0.9655172413793104,
+   "numSims": 29,
+   "outcomes": [
+    {
+     "payoutCents": 280,
+     "weight": 10
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  "call_320": {
+   "multiplier": 3.2,
+   "multiplierCents": 320,
+   "winChance": 0.3,
+   "rtp": 0.96,
+   "numSims": 10,
+   "outcomes": [
+    {
+     "payoutCents": 320,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  "call_360": {
+   "multiplier": 3.6,
+   "multiplierCents": 360,
+   "winChance": 0.26666666666666666,
+   "rtp": 0.9600000000000001,
+   "numSims": 15,
+   "outcomes": [
+    {
+     "payoutCents": 360,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  "call_400": {
+   "multiplier": 4.0,
+   "multiplierCents": 400,
+   "winChance": 0.24,
+   "rtp": 0.96,
+   "numSims": 25,
+   "outcomes": [
+    {
+     "payoutCents": 400,
+     "weight": 6
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  "call_450": {
+   "multiplier": 4.5,
+   "multiplierCents": 450,
+   "winChance": 0.21428571428571427,
+   "rtp": 0.9642857142857143,
+   "numSims": 14,
+   "outcomes": [
+    {
+     "payoutCents": 450,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  "call_500": {
+   "multiplier": 5.0,
+   "multiplierCents": 500,
+   "winChance": 0.19230769230769232,
+   "rtp": 0.9615384615384616,
+   "numSims": 26,
+   "outcomes": [
+    {
+     "payoutCents": 500,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  "call_600": {
+   "multiplier": 6.0,
+   "multiplierCents": 600,
+   "winChance": 0.16,
+   "rtp": 0.96,
+   "numSims": 25,
+   "outcomes": [
+    {
+     "payoutCents": 600,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  "call_700": {
+   "multiplier": 7.0,
+   "multiplierCents": 700,
+   "winChance": 0.13793103448275862,
+   "rtp": 0.9655172413793104,
+   "numSims": 29,
+   "outcomes": [
+    {
+     "payoutCents": 700,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 25
+    }
+   ]
+  },
+  "call_800": {
+   "multiplier": 8.0,
+   "multiplierCents": 800,
+   "winChance": 0.12,
+   "rtp": 0.96,
+   "numSims": 25,
+   "outcomes": [
+    {
+     "payoutCents": 800,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 22
+    }
+   ]
+  },
+  "call_900": {
+   "multiplier": 9.0,
+   "multiplierCents": 900,
+   "winChance": 0.10714285714285714,
+   "rtp": 0.9642857142857143,
+   "numSims": 28,
+   "outcomes": [
+    {
+     "payoutCents": 900,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 25
+    }
+   ]
+  },
+  "call_1000": {
+   "multiplier": 10.0,
+   "multiplierCents": 1000,
+   "winChance": 0.09615384615384616,
+   "rtp": 0.9615384615384616,
+   "numSims": 52,
+   "outcomes": [
+    {
+     "payoutCents": 1000,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 47
+    }
+   ]
+  },
+  "call_1200": {
+   "multiplier": 12.0,
+   "multiplierCents": 1200,
+   "winChance": 0.08,
+   "rtp": 0.96,
+   "numSims": 25,
+   "outcomes": [
+    {
+     "payoutCents": 1200,
+     "weight": 2
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  "call_1500": {
+   "multiplier": 15.0,
+   "multiplierCents": 1500,
+   "winChance": 0.0641025641025641,
+   "rtp": 0.9615384615384616,
+   "numSims": 78,
+   "outcomes": [
+    {
+     "payoutCents": 1500,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 73
+    }
+   ]
+  },
+  "call_2000": {
+   "multiplier": 20.0,
+   "multiplierCents": 2000,
+   "winChance": 0.04819277108433735,
+   "rtp": 0.963855421686747,
+   "numSims": 83,
+   "outcomes": [
+    {
+     "payoutCents": 2000,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 79
+    }
+   ]
+  },
+  "call_2500": {
+   "multiplier": 25.0,
+   "multiplierCents": 2500,
+   "winChance": 0.038461538461538464,
+   "rtp": 0.9615384615384616,
+   "numSims": 26,
+   "outcomes": [
+    {
+     "payoutCents": 2500,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 25
+    }
+   ]
+  },
+  "call_3000": {
+   "multiplier": 30.0,
+   "multiplierCents": 3000,
+   "winChance": 0.032,
+   "rtp": 0.96,
+   "numSims": 125,
+   "outcomes": [
+    {
+     "payoutCents": 3000,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 121
+    }
+   ]
+  },
+  "call_4000": {
+   "multiplier": 40.0,
+   "multiplierCents": 4000,
+   "winChance": 0.024096385542168676,
+   "rtp": 0.963855421686747,
+   "numSims": 83,
+   "outcomes": [
+    {
+     "payoutCents": 4000,
+     "weight": 2
+    },
+    {
+     "payoutCents": 0,
+     "weight": 81
+    }
+   ]
+  },
+  "call_5000": {
+   "multiplier": 50.0,
+   "multiplierCents": 5000,
+   "winChance": 0.019230769230769232,
+   "rtp": 0.9615384615384616,
+   "numSims": 52,
+   "outcomes": [
+    {
+     "payoutCents": 5000,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 51
+    }
+   ]
+  },
+  "call_6500": {
+   "multiplier": 65.0,
+   "multiplierCents": 6500,
+   "winChance": 0.014814814814814815,
+   "rtp": 0.9629629629629629,
+   "numSims": 135,
+   "outcomes": [
+    {
+     "payoutCents": 6500,
+     "weight": 2
+    },
+    {
+     "payoutCents": 0,
+     "weight": 133
+    }
+   ]
+  },
+  "call_8000": {
+   "multiplier": 80.0,
+   "multiplierCents": 8000,
+   "winChance": 0.012048192771084338,
+   "rtp": 0.963855421686747,
+   "numSims": 83,
+   "outcomes": [
+    {
+     "payoutCents": 8000,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 82
+    }
+   ]
+  },
+  "call_10000": {
+   "multiplier": 100.0,
+   "multiplierCents": 10000,
+   "winChance": 0.009615384615384616,
+   "rtp": 0.9615384615384616,
+   "numSims": 104,
+   "outcomes": [
+    {
+     "payoutCents": 10000,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 103
+    }
+   ]
+  }
+ }
+}

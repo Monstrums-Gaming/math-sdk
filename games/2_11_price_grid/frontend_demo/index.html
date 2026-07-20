@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Price Grid — demo</title>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;
+    background:#170a10; color:#f3e9ee;
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    user-select:none; -webkit-user-select:none}
+  .num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  #game{position:absolute; inset:0; width:100%; height:100%; cursor:crosshair}
+
+  #balancePill{position:absolute; top:14px; left:14px; display:flex; align-items:center; gap:8px;
+    padding:7px 14px; background:#0d0509; border:1px solid #3a1c2a; border-radius:999px;
+    font-size:14px; font-weight:600; cursor:pointer; z-index:10}
+  #balancePill .dot{width:8px; height:8px; border-radius:50%; background:#35d07f; box-shadow:0 0 6px #35d07f}
+  #balancePill:hover{border-color:#5a2c42}
+  #balancePill .badge{font-size:10px; padding:1px 7px; border-radius:10px;
+    border:1px solid #3a1c2a; color:#8d7a84; margin-left:4px}
+  #balancePill .badge.live{color:#35d07f; border-color:#1e7a4f}
+
+  #betSizes{position:absolute; right:20px; bottom:36px; display:flex; gap:6px;
+    padding:6px; background:#0d0509; border:1px solid #3a1c2a; border-radius:12px; z-index:10}
+  #betSizes .label{align-self:center; font-size:10px; letter-spacing:.14em; color:#8d7a84;
+    text-transform:uppercase; padding:0 4px 0 8px}
+  #betSizes button{min-width:46px; padding:8px 10px; border-radius:8px; border:1px solid #3a1c2a;
+    background:#150810; color:#c9aab8; font:inherit; font-size:13px; font-weight:700; cursor:pointer}
+  #betSizes button:hover{border-color:#5a2c42; color:#f3e9ee}
+  #betSizes button.on{background:#e8dd4e; border-color:#e8dd4e; color:#4a4310}
+  #betSizes button:focus-visible{outline:2px solid #e8dd4e; outline-offset:2px}
+
+  #toastContainer{position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px; z-index:20; pointer-events:none}
+  .toast{display:flex; align-items:center; gap:8px; padding:9px 18px;
+    background:rgba(20,9,14,.92); border:1px solid #3a1c2a; border-radius:8px;
+    color:#e8d6de; font-size:13px; font-weight:600; white-space:nowrap;
+    animation:toast-in .25s ease-out, toast-out .3s ease-in forwards;
+    animation-delay:0s, var(--ttl,2.2s); box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  .toast.warn::before{content:"⚠"; color:#f0b429}
+  .toast.win::before{content:"✔"; color:#ffe94a}
+  .toast.win{color:#fff6c0; border-color:#6b5e1a}
+  @keyframes toast-in{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
+  @keyframes toast-out{to{opacity:0; transform:translateY(-8px)}}
+
+  #hint{position:absolute; top:32%; left:50%; transform:translateX(-50%);
+    color:rgba(233,190,206,.6); font-size:15px; letter-spacing:.02em; z-index:5;
+    pointer-events:none; transition:opacity .8s ease; white-space:nowrap;
+    text-shadow:0 2px 8px rgba(0,0,0,.7)}
+  #hint.gone{opacity:0}
+
+  #sessionStrip{position:absolute; top:56px; left:14px; display:none; align-items:center;
+    gap:12px; padding:6px 12px; background:#0d0509; border:1px solid #3a1c2a;
+    border-radius:10px; font-size:12px; z-index:10}
+  #sessionStrip.show{display:flex}
+  #sessionStrip .pl{font-weight:700}
+  #sessionStrip .pl.up{color:#7fe0a8}
+  #sessionStrip .pl.down{color:#ff8ba0}
+  #sessionStrip .risk{color:#8d7a84}
+  #sessionStrip .ticker{display:flex; gap:4px}
+  #sessionStrip .pip{padding:1px 6px; border-radius:6px; font-size:10px; font-weight:700}
+  #sessionStrip .pip.w{background:rgba(232,221,78,.16); color:#ffe94a}
+  #sessionStrip .pip.l{background:rgba(240,80,106,.14); color:#ff8ba0}
+
+  #muteBtn{min-width:40px; padding:8px; border-radius:8px; border:1px solid #3a1c2a;
+    background:#150810; color:#c9aab8; font:inherit; font-size:14px; cursor:pointer}
+  #muteBtn:hover{border-color:#5a2c42}
+  #muteBtn:focus-visible{outline:2px solid #e8dd4e; outline-offset:2px}
+
+  @media (prefers-reduced-motion: reduce){
+    .toast{animation:none}
+    #hint{transition:none}
+  }
+</style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="balancePill" title="LOCAL: click to reset balance">
+    <span class="dot"></span>
+    <span id="balanceValue" class="num">$2,000.00</span>
+    <span class="badge" id="modeBadge">LOCAL</span>
+  </div>
+
+  <div id="sessionStrip" class="num">
+    <span class="pl up" id="plValue">+$0.00</span>
+    <span class="risk" id="riskValue">nothing in play</span>
+    <span class="ticker" id="tickerPips"></span>
+  </div>
+
+  <div id="hint">Tap a square — if the line reaches it, you win that multiplier.</div>
+
+  <div id="toastContainer"></div>
+
+  <div id="betSizes" role="group" aria-label="Bet size">
+    <span class="label">Bet</span>
+    <button class="num" data-v="1">$1</button>
+    <button class="num on" data-v="5">$5</button>
+    <button class="num" data-v="10">$10</button>
+    <button class="num" data-v="25">$25</button>
+    <button id="muteBtn" aria-label="Toggle sound">🔊</button>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- RGS wiring
+  // LIVE mode: launch with ?rgs_url=https://...&sessionID=...&currency=USD
+  // Each chip = ONE /wallet/play at that cell's ladder mode (call_<cents>), exactly
+  // the 2_9/2_10 per-decision-bet pattern. LOCAL mode replays the published LUT odds.
+  var qs = new URLSearchParams(location.search);
+  var RGS_URL  = qs.get('rgs_url') || qs.get('rgsUrl') || '';
+  var SESSION  = qs.get('sessionID') || qs.get('session') || '';
+  var CURRENCY = qs.get('currency') || 'USD';
+  var IS_LIVE  = Boolean(RGS_URL && SESSION);
+  var MONEY = 1000000; // RGS integer money scale
+  var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function rgs(path, body) {
+    return fetch(RGS_URL + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+
+  // ---------------------------------------------------------------- config
+
+  var CFG = {
+    startPrice: 2993.0,
+    tick: 0.1,
+    velDamping: 1.4,
+    velNoise: 1.1,
+    meanRevert: 0.10,
+    anchorVol: 0.25,
+
+    cellSeconds: 5,
+    cellDollars: 0.5,
+    pxPerSec: 14,
+    pxPerDollar: 110,
+    nowFrac: 0.4,
+
+    minLeadSec: 2.5,       // chip must start at least this far in the future
+    guideLeadSec: 6,       // steering ramps in this long before the chip's column
+    resolveSec: 1.6,       // reveal window: a chip resolves within this many seconds
+                           // of its column reaching the now-line (the cell stays a
+                           // full grid cell wide — only the resolution moment is
+                           // early, so chips never drift into the history zone)
+    houseEdge: 0.035,      // display pricing only — true odds come from the ladder modes
+    betSizes: [1, 5, 10, 25],
+    startBalance: 2000,
+    historySeconds: 90
+  };
+
+  var MONO = 'ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+
+  var COLOR = {
+    bg: '#170a10',
+    gridLine: 'rgba(214,116,152,0.13)',
+    gridLineMajor: 'rgba(214,116,152,0.22)',
+    axisText: 'rgba(233,190,206,0.75)',
+    line: '#f6b9cf',
+    lineGlow: 'rgba(246,148,183,0.9)',
+    priceTagBg: '#c2447e',
+    betText: '#4a4310',
+    winFloat: '#f5ee7a',
+    lossFloat: '#ff6b81',
+    lossFill1: '#b03a50',
+    lossFill2: '#7c2032'
+  };
+
+  // ---------------------------------------------------------------- state
+
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var W = 0, H = 0, DPR = 1;
+
+  var LADDER = null;
+  var simTime = 0, viewTime = 0;
+  var startEpochMs = Date.now();
+  var price = CFG.startPrice, vel = 0, volEst = 0.5, dispPrice = CFG.startPrice;
+  var anchor = CFG.startPrice;
+  var history = [];
+  var camPrice = CFG.startPrice;
+
+  var balance = CFG.startBalance;
+  var betSize = 5;
+  var bets = [];                // {t1,t2,low,high,stake,mult,modeKey,outcome,state,stateAge,missTarget}
+  var floats = [];              // {x,y,text,kind:'win'|'loss',age}
+  var rejects = [];             // {t1,low,age} — red flash on an invalid tap
+  var mouse = { x: -1, y: -1, inside: false };
+  var betChain = Promise.resolve();  // serializes RGS rounds (one active round per session)
+  var gaussSpare = null;
+
+  var COARSE = matchMedia('(pointer: coarse)').matches;
+  var armed = null;                 // touch flow: first tap arms a cell, second confirms
+  var vignette = null;              // {age} — screen-edge flash for epic (>=20x) wins
+  var sessionPL = 0;                // net profit/loss since load
+  var results = [];                 // last 8 resolutions, newest first: {w, amt}
+
+  // ---------------------------------------------------------------- utils
+
+  function gauss() {
+    if (gaussSpare !== null) { var s = gaussSpare; gaussSpare = null; return s; }
+    var u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    var r = Math.sqrt(-2 * Math.log(u));
+    gaussSpare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  }
+
+  function phi(x) {
+    var sign = x < 0 ? -1 : 1;
+    x = Math.abs(x) / Math.SQRT2;
+    var t = 1 / (1 + 0.3275911 * x);
+    var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return 0.5 * (1 + sign * y);
+  }
+
+  function fmtMoney(v) {
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtAmt(v) { return '$' + (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)); }
+  function fmtMult(m) { return (m >= 10 ? m.toFixed(0) : m.toFixed(1)) + 'x'; }
+  function fmtClock(t) {
+    var d = new Date(startEpochMs + t * 1000);
+    var h = d.getHours(), mi = d.getMinutes(), s = d.getSeconds();
+    var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    var two = function (n) { return (n < 10 ? '0' : '') + n; };
+    return two(h) + ':' + two(mi) + ':' + two(s) + ' ' + ap;
+  }
+
+  function setBalance(v) {
+    balance = v;
+    document.getElementById('balanceValue').textContent = fmtMoney(balance);
+  }
+
+  function toast(text, kind, ttlSec) {
+    var el = document.createElement('div');
+    el.className = 'toast ' + (kind || '');
+    el.textContent = text;
+    el.style.setProperty('--ttl', (ttlSec || 2.2) + 's');
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(function () { el.remove(); }, ((ttlSec || 2.2) + 0.4) * 1000);
+  }
+
+  // ---------------------------------------------------------------- sound (synth, no assets)
+
+  var muted = false;
+  try { muted = localStorage.getItem('pricegrid.muted') === '1'; } catch (e) { /* ignore */ }
+  var audioCtx = null;
+
+  function synthNote(freq, t0, dur, type, gain) {
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    var at = audioCtx.currentTime + t0;
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(at); o.stop(at + dur + 0.02);
+  }
+
+  function sound(kind, tier) {
+    if (muted) return;
+    try {
+      // lazily created — first call always follows a user gesture (a click)
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (kind === 'place') synthNote(2500, 0, 0.04, 'square', 0.05);
+      else if (kind === 'loss') synthNote(120, 0, 0.14, 'sine', 0.12);
+      else if (kind === 'win') {
+        var notes = tier >= 2 ? [660, 990, 1320, 1760]
+                  : tier === 1 ? [660, 990, 1320] : [660, 990];
+        for (var i = 0; i < notes.length; i++) synthNote(notes[i], i * 0.09, 0.18, 'triangle', 0.08);
+      }
+    } catch (e) { /* audio unavailable — stay silent */ }
+  }
+
+  // ---------------------------------------------------------------- session strip + hint
+
+  var stripShown = false;
+  function updateStrip() {
+    var strip = document.getElementById('sessionStrip');
+    if (!stripShown) {
+      if (!results.length && !bets.length) return;
+      stripShown = true;
+      strip.classList.add('show');
+    }
+    var pl = document.getElementById('plValue');
+    pl.textContent = (sessionPL >= 0 ? '+' : '−') + fmtMoney(Math.abs(sessionPL));
+    pl.className = 'pl ' + (sessionPL >= 0 ? 'up' : 'down');
+    var live = bets.filter(function (b) {
+      return b.state === 'pending' || b.state === 'active' || b.state === 'hot';
+    });
+    var risk = live.reduce(function (a, b) { return a + b.stake; }, 0);
+    document.getElementById('riskValue').textContent = live.length
+      ? fmtAmt(risk) + ' in play · ' + live.length + (live.length === 1 ? ' chip' : ' chips')
+      : 'nothing in play';
+    document.getElementById('tickerPips').innerHTML = results.map(function (r) {
+      return '<span class="pip ' + (r.w ? 'w' : 'l') + '">' + (r.w ? '+' : '−') + fmtAmt(r.amt) + '</span>';
+    }).join('');
+  }
+
+  function recordResult(won, amt) {
+    results.unshift({ w: won, amt: amt });
+    if (results.length > 8) results.pop();
+    updateStrip();
+  }
+
+  var hintEl = document.getElementById('hint');
+  try { if (localStorage.getItem('pricegrid.seenHint') === '1') hintEl.style.display = 'none'; } catch (e) { /* ignore */ }
+  function dismissHint() {
+    if (!hintEl) return;
+    hintEl.classList.add('gone');
+    try { localStorage.setItem('pricegrid.seenHint', '1'); } catch (e) { /* ignore */ }
+    var el = hintEl; hintEl = null;
+    setTimeout(function () { el.remove(); }, 900);
+  }
+
+  // ---------------------------------------------------------------- odds bundle
+
+  fetch('price_grid_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
+    LADDER = Object.keys(b.modes).map(function (k) {
+      var m = b.modes[k];
+      return { modeKey: k, multiplier: m.multiplier, cents: m.multiplierCents,
+               winChance: m.winChance, outcomes: m.outcomes };
+    }).sort(function (a, c) { return a.cents - c.cents; });
+    if (IS_LIVE) {
+      var bd = document.getElementById('modeBadge');
+      bd.textContent = 'LIVE'; bd.classList.add('live');
+      rgs('/wallet/authenticate', { sessionID: SESSION }).then(function (res) {
+        if (res && res.balance && typeof res.balance.amount === 'number') {
+          setBalance(res.balance.amount / MONEY);
+        } else if (typeof res.balance === 'number') {
+          setBalance(res.balance / MONEY);
+        }
+      }).catch(function () { toast('RGS authenticate failed', 'warn', 3); });
+    }
+  }).catch(function () { toast('Failed to load price_grid_rgs.json', 'warn', 4); });
+
+  // The cell's displayed multiplier: fair pricing from the local vol model, snapped
+  // to the nearest ladder rung (log space) so every offered value is a real,
+  // published bet mode. True odds always come from the mode, never from this model.
+  function cellRung(low, high, t1, t2) {
+    if (!LADDER) return null;
+    var tMid = Math.max(0.5, (t1 + t2) / 2 - simTime);
+    var s = volEst * Math.sqrt(tMid);
+    var p = (phi((high - price) / s) - phi((low - price) / s)) * 1.55;
+    p = Math.min(0.95, Math.max(0.0098, p));
+    var fair = (1 - CFG.houseEdge) / p;
+    var best = LADDER[0], bestD = Infinity;
+    for (var i = 0; i < LADDER.length; i++) {
+      var d = Math.abs(Math.log(LADDER[i].multiplier) - Math.log(fair));
+      if (d < bestD) { bestD = d; best = LADDER[i]; }
+    }
+    return best;
+  }
+
+  // ---------------------------------------------------------------- outcome resolution
+
+  // Balance display is deferred to the REVEAL (the line reaching the cell) so the
+  // wallet movement never spoils the outcome early — even though the true result is
+  // frozen the moment the bet is drawn/settled.
+
+  // LOCAL: weighted pick over the published outcomes — the exact certified odds.
+  function localPlay(rung, stake) {
+    var total = 0, i;
+    for (i = 0; i < rung.outcomes.length; i++) total += rung.outcomes[i].weight;
+    var r = Math.random() * total, pick = rung.outcomes[rung.outcomes.length - 1];
+    for (i = 0; i < rung.outcomes.length; i++) {
+      if ((r -= rung.outcomes[i].weight) < 0) { pick = rung.outcomes[i]; break; }
+    }
+    var isWin = pick.payoutCents > 0;
+    return Promise.resolve({ isWin: isWin, payoutMult: rung.multiplier, finalBalance: null });
+  }
+
+  // LIVE: play at this rung's mode → the RGS draws a pre-frozen book → end-round.
+  function livePlay(rung, stake) {
+    return rgs('/wallet/play', {
+      sessionID: SESSION, mode: rung.modeKey, currency: CURRENCY,
+      amount: Math.round(stake * MONEY)
+    }).then(function (res) {
+      return rgs('/wallet/end-round', { sessionID: SESSION }).then(function (end) {
+        var bal = (end && typeof end.balance === 'number') ? end.balance
+                : (res && typeof res.balance === 'number') ? res.balance : null;
+        var mult = ((res && res.round && res.round.payoutMultiplier) ||
+                    (res && res.payoutMultiplier) || 0) / 100;
+        return { isWin: mult > 0, payoutMult: mult || rung.multiplier,
+                 finalBalance: bal !== null ? bal / MONEY : null };
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------- betting
+
+  // Up to TWO chips per time-column, on distinct cells. With at most two outcomes a
+  // single steered line can always render the combination (enter on the safe side,
+  // sweep between two winners); a third chip can create an impossible
+  // win-lose-win sandwich the line cannot draw. The cap is static so a rejection
+  // never leaks anything about outcomes already drawn.
+  function columnBlocked(c) {
+    var live = bets.filter(function (b) {
+      return b.t1 === c.t1 && b.state !== 'won' && b.state !== 'lost';
+    });
+    if (live.length >= 2) return true;
+    return live.some(function (b) { return Math.abs(b.low - c.low) < 1e-9; });
+  }
+
+  function cellAt(clientX, clientY) {
+    var t = timeForX(clientX), p = priceForY(clientY);
+    var t1 = Math.floor(t / CFG.cellSeconds) * CFG.cellSeconds;
+    var low = Math.floor(p / CFG.cellDollars) * CFG.cellDollars;
+    return { t1: t1, t2: t1 + CFG.cellSeconds, low: low, high: low + CFG.cellDollars };
+  }
+
+  function cellValid(c) {
+    return c.t1 >= simTime + CFG.minLeadSec && !columnBlocked(c);
+  }
+
+  function rejectCell(c, why) {
+    rejects.push({ t1: c.t1, low: c.low, age: 0 });
+    toast(why, 'warn');
+  }
+
+  function placeBet(clientX, clientY) {
+    if (!LADDER) { toast('Odds not loaded yet', 'warn'); return; }
+    var c = cellAt(clientX, clientY);
+
+    // Up to two chips per time-column (distinct cells): a single steered line must
+    // be able to render every outcome without contradiction (see readme.txt). Chips
+    // in OTHER columns are unrestricted — RGS rounds are serialized through
+    // betChain, not rejected.
+    if (c.t1 < simTime + CFG.minLeadSec) { rejectCell(c, 'Too close to the line'); return; }
+    var colLive = bets.filter(function (b) {
+      return b.t1 === c.t1 && b.state !== 'won' && b.state !== 'lost';
+    });
+    if (colLive.some(function (b) { return Math.abs(b.low - c.low) < 1e-9; })) {
+      rejectCell(c, 'Chip already there'); return;
+    }
+    if (colLive.length >= 2) { rejectCell(c, 'Column full — max 2 chips'); return; }
+    var stake = betSize;
+    if (stake > balance) { toast('Insufficient balance', 'warn'); return; }
+
+    var rung = cellRung(c.low, c.high, c.t1, c.t2);
+    var bet = {
+      t1: c.t1, t2: c.t2, low: c.low, high: c.high,
+      stake: stake, mult: rung.multiplier, modeKey: rung.modeKey,
+      outcome: null, state: 'pending', stateAge: 0,
+      missTarget: null
+    };
+    bets.push(bet);
+    setBalance(balance - stake); // stake leaves the display immediately, win credit at reveal
+    sessionPL -= stake;
+    sound('place');
+    dismissHint();
+    updateStrip();
+
+    // queue this chip's round behind any still-settling ones (RGS: one active
+    // round per session) — the chip pulses as "pending" until its turn settles
+    betChain = betChain.then(function () {
+      return (IS_LIVE ? livePlay(rung, stake) : localPlay(rung, stake)).then(function (out) {
+        bet.outcome = out;
+        bet.state = 'active';
+      });
+    }).catch(function (err) {
+      bets = bets.filter(function (b) { return b !== bet; });
+      setBalance(balance + stake); // refund the display — the bet never happened
+      sessionPL += stake;
+      updateStrip();
+      toast('RGS error: ' + (err && err.message ? err.message : 'bet rejected'), 'warn', 3);
+    });
+  }
+
+  // ---------------------------------------------------------------- feed + steering
+
+  function stepFeed(dt) {
+    anchor += CFG.anchorVol * Math.sqrt(dt) * gauss();
+    vel += (-CFG.velDamping * vel + CFG.meanRevert * (anchor - price)) * dt
+         + CFG.velNoise * Math.sqrt(dt) * gauss();
+
+    // Steer for the nearest column that has unresolved chips (up to two). The books'
+    // isWin flags decide the line's fate — the cells are presentation, the drawn
+    // books are the truth. Winners: converge on one, then sweep to the other.
+    // Losers: hold a miss lane clear of every losing band.
+    var colT1 = null;
+    for (var i = 0; i < bets.length; i++) {
+      var b = bets[i];
+      if (!b.outcome || simTime > b.t1 + CFG.resolveSec) continue;
+      if (b.state !== 'active' && b.state !== 'hot') continue;
+      if (colT1 === null || b.t1 < colT1) colT1 = b.t1;
+    }
+    if (colT1 !== null) {
+      var col = bets.filter(function (b) {
+        return b.t1 === colT1 && b.outcome &&
+               (b.state === 'active' || b.state === 'hot' || b.state === 'won');
+      });
+      var center = function (b) { return (b.low + b.high) / 2; };
+      var nearest = function (list) {
+        return list.reduce(function (a, b) {
+          return Math.abs(center(a) - price) <= Math.abs(center(b) - price) ? a : b;
+        });
+      };
+      var winners = col.filter(function (b) { return b.outcome.isWin; });
+      var losers = col.filter(function (b) { return !b.outcome.isWin; });
+      var goal = null;
+      if (winners.length) {
+        // aim at the closest not-yet-revealed winner; once it fills, the goal
+        // switches to the other one and the line sweeps over
+        var pendingW = winners.filter(function (b) { return b.state !== 'won'; });
+        goal = center(nearest(pendingW.length ? pendingW : winners));
+      } else if (losers.length) {
+        if (losers[0].missTarget === null) {
+          // a miss lane clear of EVERY losing band, on the side the price favours
+          var hiEdge = Math.max.apply(null, losers.map(function (b) { return b.high; }));
+          var loEdge = Math.min.apply(null, losers.map(function (b) { return b.low; }));
+          var up = hiEdge + CFG.cellDollars * 1.5, down = loEdge - CFG.cellDollars * 1.5;
+          losers[0].missTarget = Math.abs(price - up) <= Math.abs(price - down) ? up : down;
+        }
+        goal = losers[0].missTarget;
+      }
+      if (goal !== null) {
+        var tau = colT1 - simTime;
+        if (tau < CFG.guideLeadSec) {
+          var w = 1 - Math.max(0, tau) / CFG.guideLeadSec;   // 0 → 1 as the column nears
+          // critically-damped pull: converge on a proportional approach velocity
+          // instead of accumulating raw force (no overshoot dive past the goal)
+          var desiredVel = (goal - price) * (0.6 + 1.6 * w);
+          vel += (desiredVel - vel) * w * w * 5 * dt;
+        }
+        // inside the reveal window: hard-guarantee the outcome before resolveSec
+        if (simTime >= colT1) {
+          var prog = Math.min(1, (simTime - colT1) / (CFG.resolveSec * 0.5));
+          price += (goal - price) * prog * 0.35;
+          // never let any losing chip's cell be touched
+          var margin = CFG.cellDollars * 0.12;
+          for (var li = 0; li < losers.length; li++) {
+            var L = losers[li];
+            if (price > L.low - margin && price < L.high + margin) {
+              price = goal >= center(L) ? L.high + margin : L.low - margin;
+              vel = 0;
+            }
+          }
+        }
+      }
+    }
+    price += vel * dt;
+  }
+
+  function updateVolEst() {
+    var samples = [], nextT = history.length ? history[0].t : 0;
+    for (var i = 0; i < history.length; i++) {
+      if (history[i].t >= nextT) { samples.push(history[i].p); nextT += 1; }
+    }
+    if (samples.length < 8) return;
+    var sum = 0, sum2 = 0, n = samples.length - 1;
+    for (var j = 1; j < samples.length; j++) {
+      var d = samples[j] - samples[j - 1];
+      sum += d; sum2 += d * d;
+    }
+    var varr = Math.max(0, sum2 / n - (sum / n) * (sum / n));
+    volEst = Math.min(1.5, Math.max(0.15, Math.sqrt(varr)));
+  }
+
+  var volEstCountdown = 0;
+
+  function stepSim(dt) {
+    stepFeed(dt);
+    simTime += dt;
+    history.push({ t: simTime, p: price });
+    while (history.length && history[0].t < simTime - CFG.historySeconds) history.shift();
+    volEstCountdown -= dt;
+    if (volEstCountdown <= 0) { updateVolEst(); volEstCountdown = 1; }
+
+    for (var i = 0; i < bets.length; i++) {
+      var b = bets[i];
+      if (b.state === 'won' || b.state === 'lost' || b.state === 'pending') continue;
+      var resolveT = b.t1 + CFG.resolveSec;
+      var touched = simTime >= b.t1 && simTime < resolveT && price >= b.low && price < b.high;
+      // A won book always reveals as a win: normally when the steered line enters the
+      // cell, or at the reveal window's end as a fallback (e.g. the outcome arrived late).
+      if (b.outcome.isWin && (touched || simTime >= resolveT)) {
+        b.state = 'won'; b.stateAge = 0;
+        var payout = b.stake * b.outcome.payoutMult;
+        // celebration scales with rarity: <5x normal, 5–20x big, >=20x epic
+        b.tier = b.outcome.payoutMult >= 20 ? 2 : b.outcome.payoutMult >= 5 ? 1 : 0;
+        if (b.outcome.finalBalance !== null) setBalance(b.outcome.finalBalance);
+        else setBalance(balance + payout);
+        sessionPL += payout;
+        floats.push({ x: (b.t1 + b.t2) / 2, y: (b.low + b.high) / 2,
+                      text: '+' + fmtAmt(payout), kind: 'win', tier: b.tier, age: 0 });
+        toast((b.tier === 2 ? 'Big win ' : 'You won ') + fmtMoney(payout), 'win', b.tier ? 3.2 : 2.6);
+        if (b.tier === 2 && !REDUCED) vignette = { age: 0 };
+        sound('win', b.tier);
+        recordResult(true, payout);
+      } else if (simTime >= resolveT) {
+        b.state = 'lost'; b.stateAge = 0;
+        if (b.outcome.finalBalance !== null) setBalance(b.outcome.finalBalance);
+        floats.push({ x: (b.t1 + b.t2) / 2, y: (b.low + b.high) / 2,
+                      text: '−' + fmtAmt(b.stake), kind: 'loss', age: 0 });
+        sound('loss');
+        recordResult(false, b.stake);
+      } else {
+        b.state = (b.t1 - simTime) < CFG.guideLeadSec * 0.8 ? 'hot' : 'active';
+      }
+    }
+  }
+
+  function stepVisuals(dt) {
+    viewTime = simTime + acc;
+    dispPrice += (price - dispPrice) * Math.min(1, dt * 12);
+    // frame the line AND the nearest chip (through its resolution beat), so a
+    // resolving bet never slides off-screen while the camera chases the price
+    var frameT1 = null;
+    var isFramable = function (b) {
+      var live = b.state === 'active' || b.state === 'hot' || b.state === 'pending';
+      var justResolved = (b.state === 'won' || b.state === 'lost') && b.stateAge < 1.0;
+      return (live || justResolved) && b.t1 - simTime <= 9;
+    };
+    for (var fb = 0; fb < bets.length; fb++) {
+      if (!isFramable(bets[fb])) continue;
+      if (frameT1 === null || bets[fb].t1 < frameT1) frameT1 = bets[fb].t1;
+    }
+    var camTarget = price;
+    if (frameT1 !== null) {
+      var mids = bets.filter(function (b) { return b.t1 === frameT1 && isFramable(b); })
+                     .map(function (b) { return (b.low + b.high) / 2; });
+      var colMid = mids.reduce(function (a, v) { return a + v; }, 0) / mids.length;
+      camTarget = (price + colMid) / 2;
+    }
+    camPrice += (camTarget - camPrice) * Math.min(1, dt * 2.5);
+    for (var i = 0; i < bets.length; i++) {
+      if (bets[i].state === 'won' || bets[i].state === 'lost') bets[i].stateAge += dt;
+    }
+    bets = bets.filter(function (b) {
+      return !((b.state === 'won' || b.state === 'lost') && b.stateAge > 1.3);
+    });
+    for (var j = 0; j < floats.length; j++) floats[j].age += dt;
+    floats = floats.filter(function (f) { return f.age < 1.8; });
+    for (var k = 0; k < rejects.length; k++) rejects[k].age += dt;
+    rejects = rejects.filter(function (r) { return r.age < 0.5; });
+    if (vignette) {
+      vignette.age += dt;
+      if (vignette.age > 0.8) vignette = null;
+    }
+  }
+
+  // ---------------------------------------------------------------- coords
+
+  function nowX() { return W * CFG.nowFrac; }
+  function xForTime(t) { return nowX() + (t - viewTime) * CFG.pxPerSec; }
+  function yForPrice(p) { return H / 2 - (p - camPrice) * CFG.pxPerDollar; }
+  function timeForX(x) { return viewTime + (x - nowX()) / CFG.pxPerSec; }
+  function priceForY(y) { return camPrice + (H / 2 - y) / CFG.pxPerDollar; }
+
+  // ---------------------------------------------------------------- render
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function chipRect(b) {
+    return {
+      x: xForTime(b.t1) + 3,
+      y: yForPrice(b.high) + 3,
+      w: CFG.cellSeconds * CFG.pxPerSec - 6,
+      h: CFG.cellDollars * CFG.pxPerDollar - 6
+    };
+  }
+
+  function drawChip(b, tSec) {
+    var r = chipRect(b), bx = r.x, by = r.y, bw = r.w, bh = r.h;
+    var age = b.stateAge;
+    var alpha = 1, shakeX = 0, dropY = 0;
+
+    if (b.state === 'won') {
+      alpha = age < 0.45 ? 1 : Math.max(0, 1 - (age - 0.45) / 0.7);
+    } else if (b.state === 'lost') {
+      // the loss beat: red flash + shake (0–0.35s), then the chip drops away
+      alpha = age < 0.35 ? 1 : Math.max(0, 1 - (age - 0.35) / 0.8);
+      if (!REDUCED) {
+        if (age < 0.35) shakeX = Math.sin(age * 55) * 3.5 * (1 - age / 0.35);
+        else dropY = (age - 0.35) * (age - 0.35) * 90;
+      }
+    }
+    if (alpha <= 0) return;
+
+    ctx.save();
+    ctx.translate(shakeX, dropY);
+    ctx.globalAlpha = b.state === 'pending'
+      ? alpha * (REDUCED ? 0.6 : 0.45 + 0.2 * Math.sin(tSec * 5))
+      : alpha;
+
+    var grad = ctx.createLinearGradient(bx, by, bx, by + bh);
+    if (b.state === 'lost') {
+      grad.addColorStop(0, COLOR.lossFill1); grad.addColorStop(1, COLOR.lossFill2);
+      ctx.shadowColor = age < 0.35 ? 'rgba(240,70,100,0.9)' : 'transparent';
+    } else if (b.state === 'hot') {
+      grad.addColorStop(0, '#ffb35c'); grad.addColorStop(1, '#f2853a');
+      ctx.shadowColor = 'rgba(255,160,70,' + (REDUCED ? 0.8 : (0.6 + 0.3 * Math.sin(tSec * 6))) + ')';
+    } else {
+      grad.addColorStop(0, '#f7f28c'); grad.addColorStop(1, '#e8dd4e');
+      ctx.shadowColor = 'rgba(240,230,90,0.75)';
+    }
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = grad;
+    roundRect(bx, by, bw, bh, 7);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // hot chip: a thin depleting bar — empties exactly at the resolution beat
+    if (b.state === 'hot') {
+      var frac = Math.max(0, Math.min(1,
+        (b.t1 + CFG.resolveSec - simTime) / (CFG.guideLeadSec * 0.8 + CFG.resolveSec)));
+      ctx.fillStyle = 'rgba(74,32,10,0.55)';
+      ctx.fillRect(bx + 4, by + bh - 7, bw - 8, 3);
+      ctx.fillStyle = '#fff6c0';
+      ctx.fillRect(bx + 4, by + bh - 7, (bw - 8) * frac, 3);
+    }
+
+    // win ring pulse — an expanding stroke marking the exact fill moment,
+    // wider for rarer wins
+    if (b.state === 'won' && !REDUCED && age < 0.6) {
+      var ringT = age / 0.6;
+      var ext = 18 + (b.tier || 0) * 14;
+      ctx.globalAlpha = (1 - ringT) * 0.9;
+      ctx.strokeStyle = '#fff6c0';
+      ctx.lineWidth = 2 + (b.tier || 0);
+      roundRect(bx - ringT * ext, by - ringT * ext, bw + ringT * ext * 2, bh + ringT * ext * 2, 7 + ringT * 12);
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+    }
+
+    ctx.textAlign = 'center';
+    if (b.state === 'lost') {
+      ctx.fillStyle = '#ffe3e8';
+      ctx.font = 'bold 13px ' + MONO;
+      ctx.fillText('−$' + b.stake, bx + bw / 2, by + bh / 2 - 7);
+      ctx.font = '10px ' + MONO;
+      ctx.fillText('MISS', bx + bw / 2, by + bh / 2 + 8);
+    } else {
+      ctx.fillStyle = COLOR.betText;
+      ctx.font = 'bold 13px ' + MONO;
+      ctx.fillText('$' + b.stake, bx + bw / 2, by + bh / 2 - 7);
+      ctx.font = '10px ' + MONO;
+      ctx.fillText(fmtMult(b.mult), bx + bw / 2, by + bh / 2 + 8);
+    }
+    ctx.restore();
+  }
+
+  function render(tSec) {
+    ctx.fillStyle = COLOR.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    var pTop = priceForY(0), pBot = priceForY(H);
+    var tLeft = timeForX(0), tRight = timeForX(W);
+    var nx = nowX();
+
+    ctx.lineWidth = 1;
+    var row0 = Math.floor(pBot / CFG.cellDollars) * CFG.cellDollars;
+    for (var pr = row0; pr <= pTop + CFG.cellDollars; pr += CFG.cellDollars) {
+      var gy = Math.round(yForPrice(pr)) + 0.5;
+      ctx.strokeStyle = COLOR.gridLine;
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+    var col0 = Math.floor(tLeft / CFG.cellSeconds) * CFG.cellSeconds;
+    for (var tc = col0; tc <= tRight + CFG.cellSeconds; tc += CFG.cellSeconds) {
+      var gx = Math.round(xForTime(tc)) + 0.5;
+      ctx.strokeStyle = Math.round(tc) % 15 === 0 ? COLOR.gridLineMajor : COLOR.gridLine;
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+
+    // the "now" line + the too-late zone (cells there can't be bet)
+    var firstValidT1 = Math.ceil((simTime + CFG.minLeadSec) / CFG.cellSeconds) * CFG.cellSeconds;
+    var deadRight = xForTime(firstValidT1);
+    if (deadRight > nx) {
+      ctx.fillStyle = 'rgba(23,10,16,0.55)';
+      ctx.fillRect(nx, 0, deadRight - nx, H);
+    }
+    ctx.strokeStyle = 'rgba(246,185,207,0.35)';
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(Math.round(nx) + 0.5, 0); ctx.lineTo(Math.round(nx) + 0.5, H); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // hovered cell — where the tap would land, with the exact offer. On touch,
+    // the armed cell (first tap) plays the hover role until the confirming tap.
+    var hover = null, armedMode = false;
+    if (LADDER) {
+      if (COARSE && armed) {
+        if (cellValid(armed)) { hover = armed; armedMode = true; }
+        else armed = null; // slid into the dead zone or got taken — disarm
+      } else if (mouse.inside && mouse.x > deadRight) {
+        var hc = cellAt(mouse.x, mouse.y);
+        if (cellValid(hc)) hover = hc;
+      }
+    }
+
+    // cell multipliers (ladder-snapped) — future zone only
+    if (LADDER) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '11px ' + MONO;
+      var firstCol = Math.max(col0, Math.ceil(simTime / CFG.cellSeconds) * CFG.cellSeconds);
+      for (var ct = firstCol; ct < tRight; ct += CFG.cellSeconds) {
+        var cx = xForTime(ct + CFG.cellSeconds / 2);
+        if (cx < nx) continue;
+        var dead = ct < firstValidT1;
+        for (var cp = row0; cp <= pTop; cp += CFG.cellDollars) {
+          var cy = yForPrice(cp + CFG.cellDollars / 2);
+          if (cy < 14 || cy > H - 30) continue;
+          var rung = cellRung(cp, cp + CFG.cellDollars, ct, ct + CFG.cellSeconds);
+          var bright = dead ? 0.12 : 0.32 + 0.35 * Math.min(1, rung.multiplier / 100);
+          ctx.fillStyle = 'rgba(233,168,194,' + bright.toFixed(2) + ')';
+          ctx.fillText(fmtMult(rung.multiplier), cx, cy);
+        }
+      }
+    }
+
+    // hover highlight: cell outline + concrete payout preview
+    if (hover) {
+      var hx = xForTime(hover.t1), hy = yForPrice(hover.high);
+      var hw = CFG.cellSeconds * CFG.pxPerSec, hh = CFG.cellDollars * CFG.pxPerDollar;
+      var hRung = cellRung(hover.low, hover.high, hover.t1, hover.t2);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(247,242,140,0.85)';
+      ctx.lineWidth = 1.5;
+      roundRect(hx + 2, hy + 2, hw - 4, hh - 4, 6);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(247,242,140,0.10)';
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,246,192,0.95)';
+      ctx.font = 'bold 11px ' + MONO;
+      ctx.fillText(fmtMult(hRung.multiplier) + ' · win ' + fmtAmt(betSize * hRung.multiplier)
+                   + (armedMode ? ' · tap again to confirm' : ''),
+                   hx + hw / 2, hy - 9);
+      ctx.restore();
+    }
+
+    // rejected-tap flashes
+    for (var ri = 0; ri < rejects.length; ri++) {
+      var rj = rejects[ri];
+      var rx = xForTime(rj.t1), ry = yForPrice(rj.low + CFG.cellDollars);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - rj.age / 0.5);
+      ctx.strokeStyle = '#f0506a';
+      ctx.lineWidth = 1.5;
+      roundRect(rx + 2, ry + 2, CFG.cellSeconds * CFG.pxPerSec - 4, CFG.cellDollars * CFG.pxPerDollar - 4, 6);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // axis labels (skip the ones the current-price tag would cover)
+    var tagYv = yForPrice(dispPrice);
+    ctx.fillStyle = COLOR.axisText;
+    ctx.font = '11px ' + MONO;
+    ctx.textAlign = 'right';
+    for (var lp = row0; lp <= pTop + CFG.cellDollars; lp += CFG.cellDollars) {
+      var ly = yForPrice(lp);
+      if (ly < 20 || ly > H - 24) continue;
+      if (Math.abs((ly - 7) - tagYv) < 17) continue;
+      ctx.fillText('$' + lp.toFixed(1), W - 8, ly - 7);
+    }
+    ctx.textAlign = 'center';
+    for (var lt = col0; lt <= tRight; lt += CFG.cellSeconds) {
+      if (Math.round(lt) % 15 !== 0) continue;
+      ctx.fillText(fmtClock(lt), xForTime(lt), H - 12);
+    }
+
+    // bet chips
+    for (var bi = 0; bi < bets.length; bi++) drawChip(bets[bi], tSec);
+
+    // hovering a live chip shows what it pays
+    if (!COARSE && mouse.inside) {
+      for (var hb = 0; hb < bets.length; hb++) {
+        var cb = bets[hb];
+        if (cb.state === 'won' || cb.state === 'lost') continue;
+        var cr = chipRect(cb);
+        if (mouse.x >= cr.x && mouse.x <= cr.x + cr.w && mouse.y >= cr.y && mouse.y <= cr.y + cr.h) {
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(255,246,192,0.95)';
+          ctx.font = 'bold 11px ' + MONO;
+          ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 4;
+          ctx.fillText('pays ' + fmtAmt(cb.stake * cb.mult), cr.x + cr.w / 2, cr.y - 9);
+          ctx.restore();
+          break;
+        }
+      }
+    }
+
+    // price line
+    if (history.length > 1) {
+      ctx.save();
+      ctx.strokeStyle = COLOR.line;
+      ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      ctx.shadowColor = COLOR.lineGlow; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      var started = false;
+      for (var hi = 0; hi < history.length; hi++) {
+        var hxp = xForTime(history[hi].t);
+        if (hxp < -10) continue;
+        var hyp = yForPrice(history[hi].p);
+        if (!started) { ctx.moveTo(hxp, hyp); started = true; } else ctx.lineTo(hxp, hyp);
+      }
+      var dx = nowX(), dy = yForPrice(dispPrice);
+      ctx.lineTo(dx, dy);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(dx, dy, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // current price tag
+    var tagY = yForPrice(dispPrice);
+    var tagText = '$' + price.toFixed(1);
+    ctx.font = 'bold 12px ' + MONO;
+    var tw = ctx.measureText(tagText).width + 16;
+    ctx.fillStyle = COLOR.priceTagBg;
+    roundRect(W - tw - 4, tagY - 11, tw, 22, 5);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+    ctx.fillText(tagText, W - tw / 2 - 4, tagY);
+
+    // floating payout texts: wins rise in gold (bigger for rarer wins), losses sink in red
+    for (var fi = 0; fi < floats.length; fi++) {
+      var f = floats[fi];
+      var isLoss = f.kind === 'loss';
+      var drift = REDUCED ? 0 : f.age * 26 * (isLoss ? -0.8 : 1);
+      var size = isLoss ? 15 : f.tier === 2 ? 26 : f.tier === 1 ? 22 : 17;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - f.age / (isLoss ? 1.4 : 1.5));
+      ctx.fillStyle = isLoss ? COLOR.lossFloat : COLOR.winFloat;
+      ctx.font = 'bold ' + size + 'px ' + MONO;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+      ctx.fillText(f.text, xForTime(f.x), yForPrice(f.y) - 24 - drift);
+      ctx.restore();
+    }
+
+    // epic-win vignette: a brief golden flush from the screen edges
+    if (vignette) {
+      var vT = vignette.age / 0.8;
+      var vAlpha = (vT < 0.25 ? vT / 0.25 : 1 - (vT - 0.25) / 0.75) * 0.5;
+      var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35,
+                                        W / 2, H / 2, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, 'rgba(255,220,90,0)');
+      vg.addColorStop(1, 'rgba(255,220,90,' + vAlpha.toFixed(3) + ')');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ---------------------------------------------------------------- loop
+
+  var lastFrame = performance.now();
+  var acc = 0;
+
+  function frame(nowMs) {
+    var dt = (nowMs - lastFrame) / 1000;
+    lastFrame = nowMs;
+    acc += Math.min(dt, 2);
+    while (acc >= CFG.tick) { stepSim(CFG.tick); acc -= CFG.tick; }
+    stepVisuals(Math.min(dt, 0.1));
+    render(nowMs / 1000);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------------------------------------------------------- wiring
+
+  function resize() {
+    DPR = window.devicePixelRatio || 1;
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  canvas.addEventListener('click', function (e) {
+    if (COARSE) {
+      // touch: first tap arms the cell (shows the offer), second tap confirms
+      var c = cellAt(e.clientX, e.clientY);
+      if (armed && armed.t1 === c.t1 && Math.abs(armed.low - c.low) < 1e-9) {
+        armed = null;
+        placeBet(e.clientX, e.clientY);
+      } else {
+        armed = cellValid(c) ? c : null;
+        if (!armed) placeBet(e.clientX, e.clientY); // invalid cell → the usual rejection
+      }
+      return;
+    }
+    placeBet(e.clientX, e.clientY);
+  });
+  canvas.addEventListener('mousemove', function (e) {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
+  });
+  canvas.addEventListener('mouseleave', function () { mouse.inside = false; });
+
+  var muteBtn = document.getElementById('muteBtn');
+  function renderMute() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.title = muted ? 'Sound off' : 'Sound on';
+    muteBtn.setAttribute('aria-pressed', String(muted));
+  }
+  muteBtn.addEventListener('click', function () {
+    muted = !muted;
+    try { localStorage.setItem('pricegrid.muted', muted ? '1' : '0'); } catch (e) { /* ignore */ }
+    renderMute();
+  });
+  renderMute();
+
+  document.getElementById('betSizes').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-v]');
+    if (!b) return;
+    betSize = Number(b.dataset.v);
+    this.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+  });
+
+  document.getElementById('balancePill').addEventListener('click', function () {
+    if (IS_LIVE) return; // live balance is the wallet's, not ours to reset
+    setBalance(CFG.startBalance);
+    toast('Balance reset', '', 1.6);
+  });
+
+  (function warmup() {
+    var t = -40;
+    while (t < 0) {
+      stepFeed(CFG.tick);
+      history.push({ t: t, p: price });
+      t += CFG.tick;
+    }
+    camPrice = price;
+    dispPrice = price;
+    updateVolEst();
+  })();
+
+  setBalance(balance);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
