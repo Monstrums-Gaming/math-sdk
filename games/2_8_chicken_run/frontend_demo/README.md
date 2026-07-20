@@ -31,6 +31,21 @@ Must be served over http:// (the page `fetch()`es `chicken_run_rgs.json`; `file:
 Optional params: `currency`, `lang`, `mode`. Money: wallet is integer ×1,000,000; event multipliers
 are raw (e.g. `1.1` = 1.1×). Currency win = `stake × multiplier`.
 
+**QA-only (LOCAL mode, ignored in LIVE):** `?forceWin=1` / `?forceLose=1` force every wager's
+outcome, to deterministically exercise the win-hop or the crash animation.
+
+## Animation notes
+
+All motion runs on one clock: `DUR` in the script is the single source of every duration, `t()`
+scales JS waits for turbo, and `syncDurations()` mirrors the same scaled values into CSS custom
+properties (`--brace-dur`, `--impact-dur`, `--shake-dur`) — so turbo can never desync CSS from JS.
+The chicken hop and the crash are WAAPI animations awaited via `animation.finished`. A crash is a
+**true-contact** sequence: the car's front bumper genuinely overlaps the chicken at the arrival
+frame, then impact burst + road shake + feather burst + a knock-away tumble fire together, and the
+car exits bottom (hit-and-run). Near-miss brace/whoosh reactions come from a single shared
+rAF loop doing geometric AABB checks on real car positions — purely cosmetic; the book result is
+the only authority on wins/losses.
+
 ## The model (honest & single-book)
 
 Stake Engine settles one pre-frozen book per `/wallet/play`, so there is no live cash-out. Chicken
