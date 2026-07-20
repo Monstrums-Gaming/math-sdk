@@ -154,6 +154,12 @@
   // the 2_9/2_10 per-decision-bet pattern. LOCAL mode replays the published LUT odds.
   var qs = new URLSearchParams(location.search);
   var RGS_URL  = qs.get('rgs_url') || qs.get('rgsUrl') || '';
+  // Stake passes rgs_url as a bare host (e.g. "rgsd.stake-engine.com"), no
+  // scheme — the consumer must supply it. Without this, fetch(RGS_URL + path)
+  // resolves as a RELATIVE url against the current page instead of an
+  // absolute cross-origin request, silently hitting the wrong host/path
+  // (a 405 whose HTML error body then fails response.json()).
+  if (RGS_URL && !/^https?:\/\//i.test(RGS_URL)) RGS_URL = 'https://' + RGS_URL;
   var SESSION  = qs.get('sessionID') || qs.get('session') || '';
   var CURRENCY = qs.get('currency') || 'USD';
   var IS_LIVE  = Boolean(RGS_URL && SESSION);
@@ -165,7 +171,10 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('RGS ' + path + ' -> HTTP ' + r.status);
+      return r.json();
+    });
   }
 
   // ---------------------------------------------------------------- config
