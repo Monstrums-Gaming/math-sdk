@@ -528,12 +528,20 @@
       var bd = document.getElementById('modeBadge');
       bd.textContent = 'LIVE'; bd.classList.add('live');
       rgs('/wallet/authenticate', { sessionID: SESSION }).then(function (res) {
+        // Many RGS backends return HTTP 200 with an {error, message} BODY for
+        // business-logic failures (bad session, wrong game slot, etc.) rather
+        // than a non-2xx status — rgs()'s !r.ok check can't catch that, so
+        // check explicitly and surface the real reason instead of continuing
+        // as if authentication succeeded.
+        if (res && res.error) throw new Error(res.message || res.error);
         if (res && res.balance && typeof res.balance.amount === 'number') {
           setBalance(res.balance.amount / MONEY);
         } else if (typeof res.balance === 'number') {
           setBalance(res.balance / MONEY);
         }
-      }).catch(function () { toast('RGS authenticate failed', 'warn', 3); });
+      }).catch(function (err) {
+        toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
+      });
     }
   }).catch(function () { toast('Failed to load price_grid_rgs.json', 'warn', 4); });
 
@@ -579,7 +587,17 @@
       sessionID: SESSION, mode: rung.modeKey, currency: CURRENCY,
       amount: Math.round(stake * MONEY)
     }).then(function (res) {
+      // A play failure (bad mode, no funds, wrong game slot, ...) commonly comes
+      // back as HTTP 200 with an {error, message} body, not a non-2xx status.
+      // Stop here — calling end-round after a failed play is what produces the
+      // confusing secondary "player does not have active round" error. Mirrors
+      // the production handleRequestBet check (packages/utils-xstate).
+      if (res && res.error) throw new Error(res.message || res.error);
+      if (!(res && res.round && res.round.state && res.round.state.length > 0)) {
+        throw new Error('Empty round state in play response: ' + JSON.stringify(res));
+      }
       return rgs('/wallet/end-round', { sessionID: SESSION }).then(function (end) {
+        if (end && end.error) throw new Error(end.message || end.error);
         var bal = (end && typeof end.balance === 'number') ? end.balance
                 : (res && typeof res.balance === 'number') ? res.balance : null;
         var mult = ((res && res.round && res.round.payoutMultiplier) ||
