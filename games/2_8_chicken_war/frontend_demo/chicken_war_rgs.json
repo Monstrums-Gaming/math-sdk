@@ -1,0 +1,1569 @@
+{
+ "game_id": "2_8_chicken_war",
+ "difficulties": [
+  "easy",
+  "medium",
+  "hard",
+  "daredevil"
+ ],
+ "lanes": 24,
+ "lanesPerDifficulty": {
+  "easy": 24,
+  "medium": 22,
+  "hard": 20,
+  "daredevil": 15
+ },
+ "rtp": 0.9728,
+ "disabledAutoplay": false,
+ "ladders": {
+  "easy": [
+   1.01,
+   1.05,
+   1.1,
+   1.15,
+   1.21,
+   1.28,
+   1.35,
+   1.43,
+   1.52,
+   1.62,
+   1.73,
+   1.87,
+   2.02,
+   2.2,
+   2.42,
+   2.69,
+   3.03,
+   3.46,
+   4.04,
+   4.85,
+   6.06,
+   8.08,
+   12.12,
+   24.25
+  ],
+  "medium": [
+   1.1,
+   1.26,
+   1.45,
+   1.68,
+   1.96,
+   2.3,
+   2.73,
+   3.28,
+   3.98,
+   4.9,
+   6.13,
+   7.8,
+   10.14,
+   13.52,
+   18.59,
+   26.56,
+   39.84,
+   63.74,
+   111.55,
+   223.1,
+   557.75,
+   2231.0
+  ],
+  "hard": [
+   1.21,
+   1.53,
+   1.96,
+   2.53,
+   3.32,
+   4.43,
+   6.01,
+   8.33,
+   11.8,
+   17.16,
+   25.74,
+   40.04,
+   65.07,
+   111.55,
+   204.51,
+   409.02,
+   920.29,
+   2454.1,
+   8589.35,
+   51536.1
+  ],
+  "daredevil": [
+   1.62,
+   2.77,
+   4.9,
+   8.99,
+   17.16,
+   34.32,
+   72.46,
+   163.03,
+   395.94,
+   1055.84,
+   3167.53,
+   11086.35,
+   48040.87,
+   288245.2,
+   3170697.2
+  ]
+ },
+ "modes": {
+  "easy_1": {
+   "difficulty": "easy",
+   "lane": 1,
+   "multiplier": 1.01,
+   "winChance": 0.96,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 101,
+     "weight": 24
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  "easy_2": {
+   "difficulty": "easy",
+   "lane": 2,
+   "multiplier": 1.05,
+   "winChance": 0.92,
+   "rtp": 0.966,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 105,
+     "weight": 23
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  "easy_3": {
+   "difficulty": "easy",
+   "lane": 3,
+   "multiplier": 1.1,
+   "winChance": 0.88,
+   "rtp": 0.968,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 110,
+     "weight": 22
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  "easy_4": {
+   "difficulty": "easy",
+   "lane": 4,
+   "multiplier": 1.15,
+   "winChance": 0.84,
+   "rtp": 0.966,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 115,
+     "weight": 21
+    },
+    {
+     "payoutCents": 0,
+     "weight": 4
+    }
+   ]
+  },
+  "easy_5": {
+   "difficulty": "easy",
+   "lane": 5,
+   "multiplier": 1.21,
+   "winChance": 0.8,
+   "rtp": 0.968,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 121,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  "easy_6": {
+   "difficulty": "easy",
+   "lane": 6,
+   "multiplier": 1.28,
+   "winChance": 0.76,
+   "rtp": 0.9728,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 128,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 6
+    }
+   ]
+  },
+  "easy_7": {
+   "difficulty": "easy",
+   "lane": 7,
+   "multiplier": 1.35,
+   "winChance": 0.72,
+   "rtp": 0.972,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 135,
+     "weight": 18
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  "easy_8": {
+   "difficulty": "easy",
+   "lane": 8,
+   "multiplier": 1.43,
+   "winChance": 0.68,
+   "rtp": 0.9724,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 143,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8
+    }
+   ]
+  },
+  "easy_9": {
+   "difficulty": "easy",
+   "lane": 9,
+   "multiplier": 1.52,
+   "winChance": 0.64,
+   "rtp": 0.9728,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 152,
+     "weight": 16
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  "easy_10": {
+   "difficulty": "easy",
+   "lane": 10,
+   "multiplier": 1.62,
+   "winChance": 0.6,
+   "rtp": 0.972,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 162,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  "easy_11": {
+   "difficulty": "easy",
+   "lane": 11,
+   "multiplier": 1.73,
+   "winChance": 0.56,
+   "rtp": 0.9688,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 173,
+     "weight": 14
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  "easy_12": {
+   "difficulty": "easy",
+   "lane": 12,
+   "multiplier": 1.87,
+   "winChance": 0.52,
+   "rtp": 0.9724,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 187,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 12
+    }
+   ]
+  },
+  "easy_13": {
+   "difficulty": "easy",
+   "lane": 13,
+   "multiplier": 2.02,
+   "winChance": 0.48,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 202,
+     "weight": 12
+    },
+    {
+     "payoutCents": 0,
+     "weight": 13
+    }
+   ]
+  },
+  "easy_14": {
+   "difficulty": "easy",
+   "lane": 14,
+   "multiplier": 2.2,
+   "winChance": 0.44,
+   "rtp": 0.968,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 220,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 14
+    }
+   ]
+  },
+  "easy_15": {
+   "difficulty": "easy",
+   "lane": 15,
+   "multiplier": 2.42,
+   "winChance": 0.4,
+   "rtp": 0.968,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 242,
+     "weight": 2
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  "easy_16": {
+   "difficulty": "easy",
+   "lane": 16,
+   "multiplier": 2.69,
+   "winChance": 0.36,
+   "rtp": 0.9684,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 269,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 16
+    }
+   ]
+  },
+  "easy_17": {
+   "difficulty": "easy",
+   "lane": 17,
+   "multiplier": 3.03,
+   "winChance": 0.32,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 303,
+     "weight": 8
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  "easy_18": {
+   "difficulty": "easy",
+   "lane": 18,
+   "multiplier": 3.46,
+   "winChance": 0.28,
+   "rtp": 0.9688,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 346,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 18
+    }
+   ]
+  },
+  "easy_19": {
+   "difficulty": "easy",
+   "lane": 19,
+   "multiplier": 4.04,
+   "winChance": 0.24,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 404,
+     "weight": 6
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  "easy_20": {
+   "difficulty": "easy",
+   "lane": 20,
+   "multiplier": 4.85,
+   "winChance": 0.2,
+   "rtp": 0.97,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 485,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 4
+    }
+   ]
+  },
+  "easy_21": {
+   "difficulty": "easy",
+   "lane": 21,
+   "multiplier": 6.06,
+   "winChance": 0.16,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 606,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  "easy_22": {
+   "difficulty": "easy",
+   "lane": 22,
+   "multiplier": 8.08,
+   "winChance": 0.12,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 808,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 22
+    }
+   ]
+  },
+  "easy_23": {
+   "difficulty": "easy",
+   "lane": 23,
+   "multiplier": 12.12,
+   "winChance": 0.08,
+   "rtp": 0.9696,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 1212,
+     "weight": 2
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  "easy_24": {
+   "difficulty": "easy",
+   "lane": 24,
+   "multiplier": 24.25,
+   "winChance": 0.04,
+   "rtp": 0.97,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 2425,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 24
+    }
+   ]
+  },
+  "medium_1": {
+   "difficulty": "medium",
+   "lane": 1,
+   "multiplier": 1.1,
+   "winChance": 0.88,
+   "rtp": 0.968,
+   "totalWeight": 25,
+   "outcomes": [
+    {
+     "payoutCents": 110,
+     "weight": 22
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  "medium_2": {
+   "difficulty": "medium",
+   "lane": 2,
+   "multiplier": 1.26,
+   "winChance": 0.77,
+   "rtp": 0.9702,
+   "totalWeight": 100,
+   "outcomes": [
+    {
+     "payoutCents": 126,
+     "weight": 77
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  "medium_3": {
+   "difficulty": "medium",
+   "lane": 3,
+   "multiplier": 1.45,
+   "winChance": 0.6695652174,
+   "rtp": 0.97087,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 145,
+     "weight": 77
+    },
+    {
+     "payoutCents": 0,
+     "weight": 38
+    }
+   ]
+  },
+  "medium_4": {
+   "difficulty": "medium",
+   "lane": 4,
+   "multiplier": 1.68,
+   "winChance": 0.5782608696,
+   "rtp": 0.971478,
+   "totalWeight": 230,
+   "outcomes": [
+    {
+     "payoutCents": 168,
+     "weight": 133
+    },
+    {
+     "payoutCents": 0,
+     "weight": 97
+    }
+   ]
+  },
+  "medium_5": {
+   "difficulty": "medium",
+   "lane": 5,
+   "multiplier": 1.96,
+   "winChance": 0.4956521739,
+   "rtp": 0.971478,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 196,
+     "weight": 57
+    },
+    {
+     "payoutCents": 0,
+     "weight": 58
+    }
+   ]
+  },
+  "medium_6": {
+   "difficulty": "medium",
+   "lane": 6,
+   "multiplier": 2.3,
+   "winChance": 0.4213043478,
+   "rtp": 0.969,
+   "totalWeight": 2300,
+   "outcomes": [
+    {
+     "payoutCents": 230,
+     "weight": 969
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1331
+    }
+   ]
+  },
+  "medium_7": {
+   "difficulty": "medium",
+   "lane": 7,
+   "multiplier": 2.73,
+   "winChance": 0.3547826087,
+   "rtp": 0.968557,
+   "totalWeight": 575,
+   "outcomes": [
+    {
+     "payoutCents": 273,
+     "weight": 204
+    },
+    {
+     "payoutCents": 0,
+     "weight": 371
+    }
+   ]
+  },
+  "medium_8": {
+   "difficulty": "medium",
+   "lane": 8,
+   "multiplier": 3.28,
+   "winChance": 0.2956521739,
+   "rtp": 0.969739,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 328,
+     "weight": 34
+    },
+    {
+     "payoutCents": 0,
+     "weight": 81
+    }
+   ]
+  },
+  "medium_9": {
+   "difficulty": "medium",
+   "lane": 9,
+   "multiplier": 3.98,
+   "winChance": 0.2434782609,
+   "rtp": 0.969043,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 398,
+     "weight": 28
+    },
+    {
+     "payoutCents": 0,
+     "weight": 87
+    }
+   ]
+  },
+  "medium_10": {
+   "difficulty": "medium",
+   "lane": 10,
+   "multiplier": 4.9,
+   "winChance": 0.197826087,
+   "rtp": 0.969348,
+   "totalWeight": 460,
+   "outcomes": [
+    {
+     "payoutCents": 490,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 369
+    }
+   ]
+  },
+  "medium_11": {
+   "difficulty": "medium",
+   "lane": 11,
+   "multiplier": 6.13,
+   "winChance": 0.1582608696,
+   "rtp": 0.970139,
+   "totalWeight": 575,
+   "outcomes": [
+    {
+     "payoutCents": 613,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 484
+    }
+   ]
+  },
+  "medium_12": {
+   "difficulty": "medium",
+   "lane": 12,
+   "multiplier": 7.8,
+   "winChance": 0.1243478261,
+   "rtp": 0.969913,
+   "totalWeight": 1150,
+   "outcomes": [
+    {
+     "payoutCents": 780,
+     "weight": 143
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1007
+    }
+   ]
+  },
+  "medium_13": {
+   "difficulty": "medium",
+   "lane": 13,
+   "multiplier": 10.14,
+   "winChance": 0.0956521739,
+   "rtp": 0.969913,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 1014,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 104
+    }
+   ]
+  },
+  "medium_14": {
+   "difficulty": "medium",
+   "lane": 14,
+   "multiplier": 13.52,
+   "winChance": 0.0717391304,
+   "rtp": 0.969913,
+   "totalWeight": 460,
+   "outcomes": [
+    {
+     "payoutCents": 1352,
+     "weight": 33
+    },
+    {
+     "payoutCents": 0,
+     "weight": 427
+    }
+   ]
+  },
+  "medium_15": {
+   "difficulty": "medium",
+   "lane": 15,
+   "multiplier": 18.59,
+   "winChance": 0.052173913,
+   "rtp": 0.969913,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 1859,
+     "weight": 6
+    },
+    {
+     "payoutCents": 0,
+     "weight": 109
+    }
+   ]
+  },
+  "medium_16": {
+   "difficulty": "medium",
+   "lane": 16,
+   "multiplier": 26.56,
+   "winChance": 0.0365217391,
+   "rtp": 0.970017,
+   "totalWeight": 575,
+   "outcomes": [
+    {
+     "payoutCents": 2656,
+     "weight": 21
+    },
+    {
+     "payoutCents": 0,
+     "weight": 554
+    }
+   ]
+  },
+  "medium_17": {
+   "difficulty": "medium",
+   "lane": 17,
+   "multiplier": 39.84,
+   "winChance": 0.0243478261,
+   "rtp": 0.970017,
+   "totalWeight": 575,
+   "outcomes": [
+    {
+     "payoutCents": 3984,
+     "weight": 14
+    },
+    {
+     "payoutCents": 0,
+     "weight": 561
+    }
+   ]
+  },
+  "medium_18": {
+   "difficulty": "medium",
+   "lane": 18,
+   "multiplier": 63.74,
+   "winChance": 0.0152173913,
+   "rtp": 0.969957,
+   "totalWeight": 460,
+   "outcomes": [
+    {
+     "payoutCents": 6374,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 453
+    }
+   ]
+  },
+  "medium_19": {
+   "difficulty": "medium",
+   "lane": 19,
+   "multiplier": 111.55,
+   "winChance": 0.0086956522,
+   "rtp": 0.97,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 11155,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 114
+    }
+   ]
+  },
+  "medium_20": {
+   "difficulty": "medium",
+   "lane": 20,
+   "multiplier": 223.1,
+   "winChance": 0.0043478261,
+   "rtp": 0.97,
+   "totalWeight": 230,
+   "outcomes": [
+    {
+     "payoutCents": 22310,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 229
+    }
+   ]
+  },
+  "medium_21": {
+   "difficulty": "medium",
+   "lane": 21,
+   "multiplier": 557.75,
+   "winChance": 0.0017391304,
+   "rtp": 0.97,
+   "totalWeight": 575,
+   "outcomes": [
+    {
+     "payoutCents": 55775,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 574
+    }
+   ]
+  },
+  "medium_22": {
+   "difficulty": "medium",
+   "lane": 22,
+   "multiplier": 2231.0,
+   "winChance": 0.0004347826,
+   "rtp": 0.97,
+   "totalWeight": 2300,
+   "outcomes": [
+    {
+     "payoutCents": 223100,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2299
+    }
+   ]
+  },
+  "hard_1": {
+   "difficulty": "hard",
+   "lane": 1,
+   "multiplier": 1.21,
+   "winChance": 0.8,
+   "rtp": 0.968,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 121,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  "hard_2": {
+   "difficulty": "hard",
+   "lane": 2,
+   "multiplier": 1.53,
+   "winChance": 0.6333333333,
+   "rtp": 0.969,
+   "totalWeight": 30,
+   "outcomes": [
+    {
+     "payoutCents": 153,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  "hard_3": {
+   "difficulty": "hard",
+   "lane": 3,
+   "multiplier": 1.96,
+   "winChance": 0.4956521739,
+   "rtp": 0.971478,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 196,
+     "weight": 57
+    },
+    {
+     "payoutCents": 0,
+     "weight": 58
+    }
+   ]
+  },
+  "hard_4": {
+   "difficulty": "hard",
+   "lane": 4,
+   "multiplier": 2.53,
+   "winChance": 0.3830039526,
+   "rtp": 0.969,
+   "totalWeight": 2530,
+   "outcomes": [
+    {
+     "payoutCents": 253,
+     "weight": 969
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1561
+    }
+   ]
+  },
+  "hard_5": {
+   "difficulty": "hard",
+   "lane": 5,
+   "multiplier": 3.32,
+   "winChance": 0.2918125353,
+   "rtp": 0.968818,
+   "totalWeight": 8855,
+   "outcomes": [
+    {
+     "payoutCents": 332,
+     "weight": 2584
+    },
+    {
+     "payoutCents": 0,
+     "weight": 6271
+    }
+   ]
+  },
+  "hard_6": {
+   "difficulty": "hard",
+   "lane": 6,
+   "multiplier": 4.43,
+   "winChance": 0.2188594015,
+   "rtp": 0.969547,
+   "totalWeight": 8855,
+   "outcomes": [
+    {
+     "payoutCents": 443,
+     "weight": 1938
+    },
+    {
+     "payoutCents": 0,
+     "weight": 6917
+    }
+   ]
+  },
+  "hard_7": {
+   "difficulty": "hard",
+   "lane": 7,
+   "multiplier": 6.01,
+   "winChance": 0.1612648221,
+   "rtp": 0.969202,
+   "totalWeight": 1265,
+   "outcomes": [
+    {
+     "payoutCents": 601,
+     "weight": 204
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1061
+    }
+   ]
+  },
+  "hard_8": {
+   "difficulty": "hard",
+   "lane": 8,
+   "multiplier": 8.33,
+   "winChance": 0.1164690382,
+   "rtp": 0.970187,
+   "totalWeight": 3795,
+   "outcomes": [
+    {
+     "payoutCents": 833,
+     "weight": 442
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3353
+    }
+   ]
+  },
+  "hard_9": {
+   "difficulty": "hard",
+   "lane": 9,
+   "multiplier": 11.8,
+   "winChance": 0.0822134387,
+   "rtp": 0.970119,
+   "totalWeight": 1265,
+   "outcomes": [
+    {
+     "payoutCents": 1180,
+     "weight": 104
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1161
+    }
+   ]
+  },
+  "hard_10": {
+   "difficulty": "hard",
+   "lane": 10,
+   "multiplier": 17.16,
+   "winChance": 0.0565217391,
+   "rtp": 0.969913,
+   "totalWeight": 230,
+   "outcomes": [
+    {
+     "payoutCents": 1716,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 217
+    }
+   ]
+  },
+  "hard_11": {
+   "difficulty": "hard",
+   "lane": 11,
+   "multiplier": 25.74,
+   "winChance": 0.0376811594,
+   "rtp": 0.969913,
+   "totalWeight": 345,
+   "outcomes": [
+    {
+     "payoutCents": 2574,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 332
+    }
+   ]
+  },
+  "hard_12": {
+   "difficulty": "hard",
+   "lane": 12,
+   "multiplier": 40.04,
+   "winChance": 0.0242236025,
+   "rtp": 0.969913,
+   "totalWeight": 1610,
+   "outcomes": [
+    {
+     "payoutCents": 4004,
+     "weight": 39
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1571
+    }
+   ]
+  },
+  "hard_13": {
+   "difficulty": "hard",
+   "lane": 13,
+   "multiplier": 65.07,
+   "winChance": 0.0149068323,
+   "rtp": 0.969988,
+   "totalWeight": 805,
+   "outcomes": [
+    {
+     "payoutCents": 6507,
+     "weight": 12
+    },
+    {
+     "payoutCents": 0,
+     "weight": 793
+    }
+   ]
+  },
+  "hard_14": {
+   "difficulty": "hard",
+   "lane": 14,
+   "multiplier": 111.55,
+   "winChance": 0.0086956522,
+   "rtp": 0.97,
+   "totalWeight": 115,
+   "outcomes": [
+    {
+     "payoutCents": 11155,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 114
+    }
+   ]
+  },
+  "hard_15": {
+   "difficulty": "hard",
+   "lane": 15,
+   "multiplier": 204.51,
+   "winChance": 0.004743083,
+   "rtp": 0.970008,
+   "totalWeight": 1265,
+   "outcomes": [
+    {
+     "payoutCents": 20451,
+     "weight": 6
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1259
+    }
+   ]
+  },
+  "hard_16": {
+   "difficulty": "hard",
+   "lane": 16,
+   "multiplier": 409.02,
+   "winChance": 0.0023715415,
+   "rtp": 0.970008,
+   "totalWeight": 1265,
+   "outcomes": [
+    {
+     "payoutCents": 40902,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1262
+    }
+   ]
+  },
+  "hard_17": {
+   "difficulty": "hard",
+   "lane": 17,
+   "multiplier": 920.29,
+   "winChance": 0.0010540184,
+   "rtp": 0.970003,
+   "totalWeight": 3795,
+   "outcomes": [
+    {
+     "payoutCents": 92029,
+     "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3791
+    }
+   ]
+  },
+  "hard_18": {
+   "difficulty": "hard",
+   "lane": 18,
+   "multiplier": 2454.1,
+   "winChance": 0.0003952569,
+   "rtp": 0.97,
+   "totalWeight": 2530,
+   "outcomes": [
+    {
+     "payoutCents": 245410,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2529
+    }
+   ]
+  },
+  "hard_19": {
+   "difficulty": "hard",
+   "lane": 19,
+   "multiplier": 8589.35,
+   "winChance": 0.0001129305,
+   "rtp": 0.97,
+   "totalWeight": 8855,
+   "outcomes": [
+    {
+     "payoutCents": 858935,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8854
+    }
+   ]
+  },
+  "hard_20": {
+   "difficulty": "hard",
+   "lane": 20,
+   "multiplier": 51536.1,
+   "winChance": 1.88218e-05,
+   "rtp": 0.97,
+   "totalWeight": 53130,
+   "outcomes": [
+    {
+     "payoutCents": 5153610,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 53129
+    }
+   ]
+  },
+  "daredevil_1": {
+   "difficulty": "daredevil",
+   "lane": 1,
+   "multiplier": 1.62,
+   "winChance": 0.6,
+   "rtp": 0.972,
+   "totalWeight": 5,
+   "outcomes": [
+    {
+     "payoutCents": 162,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  "daredevil_2": {
+   "difficulty": "daredevil",
+   "lane": 2,
+   "multiplier": 2.77,
+   "winChance": 0.35,
+   "rtp": 0.9695,
+   "totalWeight": 20,
+   "outcomes": [
+    {
+     "payoutCents": 277,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 13
+    }
+   ]
+  },
+  "daredevil_3": {
+   "difficulty": "daredevil",
+   "lane": 3,
+   "multiplier": 4.9,
+   "winChance": 0.197826087,
+   "rtp": 0.969348,
+   "totalWeight": 460,
+   "outcomes": [
+    {
+     "payoutCents": 490,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 369
+    }
+   ]
+  },
+  "daredevil_4": {
+   "difficulty": "daredevil",
+   "lane": 4,
+   "multiplier": 8.99,
+   "winChance": 0.1079051383,
+   "rtp": 0.970067,
+   "totalWeight": 2530,
+   "outcomes": [
+    {
+     "payoutCents": 899,
+     "weight": 273
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2257
+    }
+   ]
+  },
+  "daredevil_5": {
+   "difficulty": "daredevil",
+   "lane": 5,
+   "multiplier": 17.16,
+   "winChance": 0.0565217391,
+   "rtp": 0.969913,
+   "totalWeight": 230,
+   "outcomes": [
+    {
+     "payoutCents": 1716,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 217
+    }
+   ]
+  },
+  "daredevil_6": {
+   "difficulty": "daredevil",
+   "lane": 6,
+   "multiplier": 34.32,
+   "winChance": 0.0282608696,
+   "rtp": 0.969913,
+   "totalWeight": 460,
+   "outcomes": [
+    {
+     "payoutCents": 3432,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 447
+    }
+   ]
+  },
+  "daredevil_7": {
+   "difficulty": "daredevil",
+   "lane": 7,
+   "multiplier": 72.46,
+   "winChance": 0.0133867277,
+   "rtp": 0.970002,
+   "totalWeight": 8740,
+   "outcomes": [
+    {
+     "payoutCents": 7246,
+     "weight": 117
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8623
+    }
+   ]
+  },
+  "daredevil_8": {
+   "difficulty": "daredevil",
+   "lane": 8,
+   "multiplier": 163.03,
+   "winChance": 0.0059496568,
+   "rtp": 0.969973,
+   "totalWeight": 2185,
+   "outcomes": [
+    {
+     "payoutCents": 16303,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2172
+    }
+   ]
+  },
+  "daredevil_9": {
+   "difficulty": "daredevil",
+   "lane": 9,
+   "multiplier": 395.94,
+   "winChance": 0.0024498587,
+   "rtp": 0.969997,
+   "totalWeight": 37145,
+   "outcomes": [
+    {
+     "payoutCents": 39594,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 37054
+    }
+   ]
+  },
+  "daredevil_10": {
+   "difficulty": "daredevil",
+   "lane": 10,
+   "multiplier": 1055.84,
+   "winChance": 0.0009187094,
+   "rtp": 0.97001,
+   "totalWeight": 297156,
+   "outcomes": [
+    {
+     "payoutCents": 105584,
+     "weight": 273
+    },
+    {
+     "payoutCents": 0,
+     "weight": 296883
+    }
+   ]
+  },
+  "daredevil_11": {
+   "difficulty": "daredevil",
+   "lane": 11,
+   "multiplier": 3167.53,
+   "winChance": 0.0003062365,
+   "rtp": 0.970013,
+   "totalWeight": 297156,
+   "outcomes": [
+    {
+     "payoutCents": 316753,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 297065
+    }
+   ]
+  },
+  "daredevil_12": {
+   "difficulty": "daredevil",
+   "lane": 12,
+   "multiplier": 11086.35,
+   "winChance": 8.74961e-05,
+   "rtp": 0.970013,
+   "totalWeight": 148578,
+   "outcomes": [
+    {
+     "payoutCents": 1108635,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 148565
+    }
+   ]
+  },
+  "daredevil_13": {
+   "difficulty": "daredevil",
+   "lane": 13,
+   "multiplier": 48040.87,
+   "winChance": 2.01914e-05,
+   "rtp": 0.970013,
+   "totalWeight": 148578,
+   "outcomes": [
+    {
+     "payoutCents": 4804087,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 148575
+    }
+   ]
+  },
+  "daredevil_14": {
+   "difficulty": "daredevil",
+   "lane": 14,
+   "multiplier": 288245.2,
+   "winChance": 3.3652e-06,
+   "rtp": 0.970013,
+   "totalWeight": 297156,
+   "outcomes": [
+    {
+     "payoutCents": 28824520,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 297155
+    }
+   ]
+  },
+  "daredevil_15": {
+   "difficulty": "daredevil",
+   "lane": 15,
+   "multiplier": 3170697.2,
+   "winChance": 3.059e-07,
+   "rtp": 0.970012,
+   "totalWeight": 3268720,
+   "outcomes": [
+    {
+     "payoutCents": 317069720,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3268719
+    }
+   ]
+  }
+ }
+}
