@@ -5,73 +5,106 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Price Grid — demo</title>
 <style>
+  :root{
+    --bg:#170a10; --panel:#0d0509; --border:#3a1c2a; --text:#f3e9ee; --dim:#8d7a84;
+    --accent:#e8dd4e; --accent-text:#4a4310; --gain:#7fe0a8; --loss:#ff8ba0;
+    --win:#ffe94a; --toast-bg:rgba(20,9,14,0.92);
+  }
   *{box-sizing:border-box; margin:0; padding:0}
   html,body{width:100%;height:100%;overflow:hidden;
-    background:#170a10; color:#f3e9ee;
+    background:var(--bg); color:var(--text);
     font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     user-select:none; -webkit-user-select:none}
   .num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
   #game{position:absolute; inset:0; width:100%; height:100%; cursor:crosshair}
 
   #balancePill{position:absolute; top:14px; left:14px; display:flex; align-items:center; gap:8px;
-    padding:7px 14px; background:#0d0509; border:1px solid #3a1c2a; border-radius:999px;
+    padding:7px 14px; background:var(--panel); border:1px solid var(--border); border-radius:999px;
     font-size:14px; font-weight:600; cursor:pointer; z-index:10}
   #balancePill .dot{width:8px; height:8px; border-radius:50%; background:#35d07f; box-shadow:0 0 6px #35d07f}
-  #balancePill:hover{border-color:#5a2c42}
+  #balancePill:hover{filter:brightness(1.15)}
   #balancePill .badge{font-size:10px; padding:1px 7px; border-radius:10px;
-    border:1px solid #3a1c2a; color:#8d7a84; margin-left:4px}
+    border:1px solid var(--border); color:var(--dim); margin-left:4px}
   #balancePill .badge.live{color:#35d07f; border-color:#1e7a4f}
 
   #betSizes{position:absolute; right:20px; bottom:36px; display:flex; gap:6px;
-    padding:6px; background:#0d0509; border:1px solid #3a1c2a; border-radius:12px; z-index:10}
-  #betSizes .label{align-self:center; font-size:10px; letter-spacing:.14em; color:#8d7a84;
+    padding:6px; background:var(--panel); border:1px solid var(--border); border-radius:12px; z-index:10}
+  #betSizes .label{align-self:center; font-size:10px; letter-spacing:.14em; color:var(--dim);
     text-transform:uppercase; padding:0 4px 0 8px}
-  #betSizes button{min-width:46px; padding:8px 10px; border-radius:8px; border:1px solid #3a1c2a;
-    background:#150810; color:#c9aab8; font:inherit; font-size:13px; font-weight:700; cursor:pointer}
-  #betSizes button:hover{border-color:#5a2c42; color:#f3e9ee}
-  #betSizes button.on{background:#e8dd4e; border-color:#e8dd4e; color:#4a4310}
-  #betSizes button:focus-visible{outline:2px solid #e8dd4e; outline-offset:2px}
+  #betSizes button{min-width:46px; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--dim); font:inherit; font-size:13px; font-weight:700; cursor:pointer}
+  #betSizes button:hover{color:var(--text); filter:brightness(1.15)}
+  #betSizes button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  #betSizes button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
   #toastContainer{position:absolute; top:16px; left:50%; transform:translateX(-50%);
     display:flex; flex-direction:column; align-items:center; gap:8px; z-index:20; pointer-events:none}
   .toast{display:flex; align-items:center; gap:8px; padding:9px 18px;
-    background:rgba(20,9,14,.92); border:1px solid #3a1c2a; border-radius:8px;
-    color:#e8d6de; font-size:13px; font-weight:600; white-space:nowrap;
+    background:var(--toast-bg); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-size:13px; font-weight:600; white-space:nowrap;
     animation:toast-in .25s ease-out, toast-out .3s ease-in forwards;
-    animation-delay:0s, var(--ttl,2.2s); box-shadow:0 4px 18px rgba(0,0,0,.5)}
-  .toast.warn::before{content:"⚠"; color:#f0b429}
-  .toast.win::before{content:"✔"; color:#ffe94a}
-  .toast.win{color:#fff6c0; border-color:#6b5e1a}
+    animation-delay:0s, var(--ttl,2.2s); box-shadow:0 4px 18px rgba(0,0,0,.35)}
+  .toast .icon{flex:none; display:inline-flex}
+  .toast.warn .icon{color:#f0b429}
+  .toast.win .icon{color:var(--win)}
+  .toast.win{color:var(--win); border-color:color-mix(in srgb, var(--win) 45%, transparent)}
   @keyframes toast-in{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
   @keyframes toast-out{to{opacity:0; transform:translateY(-8px)}}
 
   #hint{position:absolute; top:32%; left:50%; transform:translateX(-50%);
-    color:rgba(233,190,206,.6); font-size:15px; letter-spacing:.02em; z-index:5;
+    color:var(--dim); font-size:15px; letter-spacing:.02em; z-index:5;
     pointer-events:none; transition:opacity .8s ease; white-space:nowrap;
-    text-shadow:0 2px 8px rgba(0,0,0,.7)}
+    text-shadow:0 2px 8px rgba(0,0,0,.4)}
   #hint.gone{opacity:0}
 
   #sessionStrip{position:absolute; top:56px; left:14px; display:none; align-items:center;
-    gap:12px; padding:6px 12px; background:#0d0509; border:1px solid #3a1c2a;
+    gap:12px; padding:6px 12px; background:var(--panel); border:1px solid var(--border);
     border-radius:10px; font-size:12px; z-index:10}
   #sessionStrip.show{display:flex}
   #sessionStrip .pl{font-weight:700}
-  #sessionStrip .pl.up{color:#7fe0a8}
-  #sessionStrip .pl.down{color:#ff8ba0}
-  #sessionStrip .risk{color:#8d7a84}
+  #sessionStrip .pl.up{color:var(--gain)}
+  #sessionStrip .pl.down{color:var(--loss)}
+  #sessionStrip .risk{color:var(--dim)}
   #sessionStrip .ticker{display:flex; gap:4px}
   #sessionStrip .pip{padding:1px 6px; border-radius:6px; font-size:10px; font-weight:700}
-  #sessionStrip .pip.w{background:rgba(232,221,78,.16); color:#ffe94a}
-  #sessionStrip .pip.l{background:rgba(240,80,106,.14); color:#ff8ba0}
+  #sessionStrip .pip.w{background:color-mix(in srgb, var(--win) 16%, transparent); color:var(--win)}
+  #sessionStrip .pip.l{background:color-mix(in srgb, var(--loss) 14%, transparent); color:var(--loss)}
 
-  #muteBtn{min-width:40px; padding:8px; border-radius:8px; border:1px solid #3a1c2a;
-    background:#150810; color:#c9aab8; font:inherit; font-size:14px; cursor:pointer}
-  #muteBtn:hover{border-color:#5a2c42}
-  #muteBtn:focus-visible{outline:2px solid #e8dd4e; outline-offset:2px}
+  #muteBtn, #themeBtn{display:flex; align-items:center; gap:6px; min-width:40px; padding:8px 10px;
+    border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--dim);
+    font:inherit; font-size:13px; cursor:pointer}
+  #muteBtn svg, #themeBtn svg{flex:none}
+  #muteBtn:hover, #themeBtn:hover{color:var(--text); filter:brightness(1.15)}
+  #muteBtn:focus-visible, #themeBtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  #themeBtn[aria-expanded="true"]{border-color:var(--accent)}
+  #themeBtn .chevron{transition:transform .15s ease}
+  #themeBtn[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+
+  .swatch{width:16px; height:16px; border-radius:50%; flex:none;
+    border:1px solid rgba(255,255,255,.18); box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+
+  #themeMenu{position:absolute; right:20px; bottom:84px; z-index:15;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:6px; min-width:196px; box-shadow:0 12px 32px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(6px) scale(.98); pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease}
+  #themeMenu.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto}
+  #themeMenu .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--dim); padding:7px 10px 5px}
+  .themeOption{width:100%; display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border-radius:8px; border:none; background:none; color:var(--text); font:inherit;
+    font-size:13px; cursor:pointer; text-align:left}
+  .themeOption:hover{background:var(--border)}
+  .themeOption:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .themeOption-label{flex:1}
+  .themeOption-check{width:14px; height:14px; flex:none; color:var(--accent); visibility:hidden}
+  .themeOption[aria-checked="true"]{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  .themeOption[aria-checked="true"] .themeOption-check{visibility:visible}
 
   @media (prefers-reduced-motion: reduce){
     .toast{animation:none}
     #hint{transition:none}
+    #themeMenu, #themeBtn .chevron{transition:none}
   }
 </style>
 </head>
@@ -94,13 +127,21 @@
 
   <div id="toastContainer"></div>
 
+  <div id="themeMenu" role="menu" aria-label="Theme" aria-hidden="true">
+    <div class="menuTitle">Theme</div>
+  </div>
+
   <div id="betSizes" role="group" aria-label="Bet size">
     <span class="label">Bet</span>
     <button class="num" data-v="1">$1</button>
     <button class="num on" data-v="5">$5</button>
     <button class="num" data-v="10">$10</button>
     <button class="num" data-v="25">$25</button>
-    <button id="muteBtn" aria-label="Toggle sound">🔊</button>
+    <button id="muteBtn" aria-label="Toggle sound" aria-pressed="false"></button>
+    <button id="themeBtn" aria-label="Choose theme" aria-haspopup="menu" aria-expanded="false">
+      <span class="swatch" id="themeSwatch"></span>
+      <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
   </div>
 
 <script>
@@ -157,20 +198,157 @@
 
   var MONO = 'ui-monospace,"SF Mono",Menlo,Consolas,monospace';
 
-  var COLOR = {
-    bg: '#170a10',
-    gridLine: 'rgba(214,116,152,0.13)',
-    gridLineMajor: 'rgba(214,116,152,0.22)',
-    axisText: 'rgba(233,190,206,0.75)',
-    line: '#f6b9cf',
-    lineGlow: 'rgba(246,148,183,0.9)',
-    priceTagBg: '#c2447e',
-    betText: '#4a4310',
-    winFloat: '#f5ee7a',
-    lossFloat: '#ff6b81',
-    lossFill1: '#b03a50',
-    lossFill2: '#7c2032'
+  // ---------------------------------------------------------------- themes
+  // Each theme is a complete palette: canvas colors + the CSS variables the DOM
+  // shell uses. `multRGB`/`vigRGB` are raw r,g,b for alpha-composed fills.
+  var THEMES = {
+    rose: {
+      label: 'Terminal Rose',
+      css: { bg: '#170a10', panel: '#0d0509', border: '#3a1c2a', text: '#f3e9ee',
+             dim: '#8d7a84', accent: '#e8dd4e', accentText: '#4a4310',
+             gain: '#7fe0a8', loss: '#ff8ba0', win: '#ffe94a', toastBg: 'rgba(20,9,14,0.92)' },
+      bg: '#170a10', gridLine: 'rgba(214,116,152,0.13)', gridLineMajor: 'rgba(214,116,152,0.22)',
+      axisText: 'rgba(233,190,206,0.75)', multRGB: '233,168,194',
+      line: '#f6b9cf', lineGlow: 'rgba(246,148,183,0.9)', dot: '#ffffff',
+      priceTagBg: '#c2447e', priceTagText: '#ffffff',
+      chip1: '#f7f28c', chip2: '#e8dd4e', chipGlow: 'rgba(240,230,90,0.75)', betText: '#4a4310',
+      hot1: '#ffb35c', hot2: '#f2853a', hotGlowRGB: '255,160,70',
+      lossFill1: '#b03a50', lossFill2: '#7c2032', lossGlow: 'rgba(240,70,100,0.9)', lossText: '#ffe3e8',
+      countTrack: 'rgba(74,32,10,0.55)', countFill: '#fff6c0', ring: '#fff6c0',
+      winFloat: '#f5ee7a', lossFloat: '#ff6b81',
+      hover: 'rgba(247,242,140,0.85)', hoverFill: 'rgba(247,242,140,0.10)', hoverText: 'rgba(255,246,192,0.95)',
+      reject: '#f0506a', deadZone: 'rgba(23,10,16,0.55)', nowLine: 'rgba(246,185,207,0.35)',
+      vigRGB: '255,220,90'
+    },
+    neon: {
+      label: 'Neon Green',
+      css: { bg: '#070B10', panel: '#0D1420', border: '#1A222C', text: '#E6E8EC',
+             dim: '#79828d', accent: '#39FF6A', accentText: '#04120a',
+             gain: '#39FF6A', loss: '#ff7a94', win: '#B9FF7A', toastBg: 'rgba(10,16,22,0.92)' },
+      bg: '#070B10', gridLine: 'rgba(57,255,106,0.10)', gridLineMajor: 'rgba(57,255,106,0.18)',
+      axisText: 'rgba(230,232,236,0.65)', multRGB: '150,230,170',
+      line: '#39FF6A', lineGlow: 'rgba(57,255,106,0.85)', dot: '#ffffff',
+      priceTagBg: '#39FF6A', priceTagText: '#04120a',
+      chip1: '#B9FF7A', chip2: '#39FF6A', chipGlow: 'rgba(57,255,106,0.7)', betText: '#06250f',
+      hot1: '#f8ff6a', hot2: '#d7f23a', hotGlowRGB: '215,255,90',
+      lossFill1: '#e0405a', lossFill2: '#8c1f33', lossGlow: 'rgba(255,80,110,0.9)', lossText: '#ffe3e8',
+      countTrack: 'rgba(6,37,15,0.55)', countFill: '#eaffdd', ring: '#eaffdd',
+      winFloat: '#B9FF7A', lossFloat: '#ff6b81',
+      hover: 'rgba(57,255,106,0.85)', hoverFill: 'rgba(57,255,106,0.10)', hoverText: 'rgba(200,255,210,0.95)',
+      reject: '#ff5c7a', deadZone: 'rgba(7,11,16,0.55)', nowLine: 'rgba(57,255,106,0.35)',
+      vigRGB: '57,255,106'
+    },
+    cyber: {
+      label: 'Cyberpunk',
+      css: { bg: '#0b0906', panel: '#120d08', border: '#33231a', text: '#f4ede4',
+             dim: '#9a8a78', accent: '#ff8a1f', accentText: '#3a1c02',
+             gain: '#2ee6d6', loss: '#ff7a94', win: '#ffcf7a', toastBg: 'rgba(18,13,8,0.92)' },
+      bg: '#0b0906', gridLine: 'rgba(255,140,60,0.12)', gridLineMajor: 'rgba(255,140,60,0.20)',
+      axisText: 'rgba(255,214,170,0.7)', multRGB: '255,180,120',
+      line: '#2ee6d6', lineGlow: 'rgba(46,230,214,0.85)', dot: '#ffffff',
+      priceTagBg: '#0fb8a9', priceTagText: '#02201d',
+      chip1: '#ffb35c', chip2: '#ff8a1f', chipGlow: 'rgba(255,150,60,0.75)', betText: '#3a1c02',
+      hot1: '#ff7a45', hot2: '#ff4d2e', hotGlowRGB: '255,90,50',
+      lossFill1: '#c22a4e', lossFill2: '#7c1030', lossGlow: 'rgba(255,70,100,0.9)', lossText: '#ffe3e8',
+      countTrack: 'rgba(60,20,4,0.55)', countFill: '#ffe9c9', ring: '#ffe9c9',
+      winFloat: '#ffcf7a', lossFloat: '#ff6b81',
+      hover: 'rgba(46,230,214,0.85)', hoverFill: 'rgba(46,230,214,0.10)', hoverText: 'rgba(190,255,248,0.95)',
+      reject: '#ff4d6d', deadZone: 'rgba(11,9,6,0.55)', nowLine: 'rgba(46,230,214,0.35)',
+      vigRGB: '255,170,60'
+    },
+    light: {
+      label: 'Light Minimal',
+      css: { bg: '#f5f6f8', panel: '#ffffff', border: '#dfe3ea', text: '#1c2430',
+             dim: '#7a8494', accent: '#2563eb', accentText: '#ffffff',
+             gain: '#0f9d58', loss: '#d6335c', win: '#b7791f', toastBg: 'rgba(255,255,255,0.95)' },
+      bg: '#f5f6f8', gridLine: 'rgba(28,36,48,0.07)', gridLineMajor: 'rgba(28,36,48,0.13)',
+      axisText: 'rgba(28,36,48,0.6)', multRGB: '70,90,120',
+      line: '#2563eb', lineGlow: 'rgba(37,99,235,0.35)', dot: '#1c2430',
+      priceTagBg: '#2563eb', priceTagText: '#ffffff',
+      chip1: '#ffe27a', chip2: '#f5c518', chipGlow: 'rgba(245,197,24,0.5)', betText: '#4a3a05',
+      hot1: '#ffb35c', hot2: '#f2853a', hotGlowRGB: '242,133,58',
+      lossFill1: '#e35d75', lossFill2: '#c22a4e', lossGlow: 'rgba(226,60,90,0.6)', lossText: '#ffffff',
+      countTrack: 'rgba(74,58,5,0.25)', countFill: '#6b5305', ring: '#b8860b',
+      winFloat: '#b7791f', lossFloat: '#d6335c',
+      hover: 'rgba(37,99,235,0.8)', hoverFill: 'rgba(37,99,235,0.08)', hoverText: 'rgba(30,64,175,0.95)',
+      reject: '#d6335c', deadZone: 'rgba(245,246,248,0.6)', nowLine: 'rgba(28,36,48,0.3)',
+      vigRGB: '245,197,24'
+    },
+    dark: {
+      label: 'Dark Mode',
+      css: { bg: '#121417', panel: '#1a1d21', border: '#2a2e34', text: '#e8eaed',
+             dim: '#8b929b', accent: '#4c8bf5', accentText: '#ffffff',
+             gain: '#4ade80', loss: '#f87171', win: '#e3b341', toastBg: 'rgba(26,29,33,0.94)' },
+      bg: '#121417', gridLine: 'rgba(140,150,165,0.10)', gridLineMajor: 'rgba(140,150,165,0.18)',
+      axisText: 'rgba(200,205,212,0.65)', multRGB: '150,160,175',
+      line: '#4c8bf5', lineGlow: 'rgba(76,139,245,0.7)', dot: '#ffffff',
+      priceTagBg: '#4c8bf5', priceTagText: '#ffffff',
+      chip1: '#f4d35e', chip2: '#e3b341', chipGlow: 'rgba(227,179,65,0.6)', betText: '#3a2c05',
+      hot1: '#ff9f5c', hot2: '#f2793a', hotGlowRGB: '242,121,58',
+      lossFill1: '#c94f4f', lossFill2: '#7a2e2e', lossGlow: 'rgba(248,113,113,0.7)', lossText: '#ffe8e8',
+      countTrack: 'rgba(255,255,255,0.08)', countFill: '#e8eaed', ring: '#e8eaed',
+      winFloat: '#e3b341', lossFloat: '#f87171',
+      hover: 'rgba(76,139,245,0.75)', hoverFill: 'rgba(76,139,245,0.10)', hoverText: 'rgba(210,225,255,0.95)',
+      reject: '#f87171', deadZone: 'rgba(18,20,23,0.55)', nowLine: 'rgba(140,150,165,0.3)',
+      vigRGB: '76,139,245'
+    },
+    gold: {
+      label: 'Gold Casino',
+      css: { bg: '#0e0a04', panel: '#161006', border: '#3d3216', text: '#f4e9cf',
+             dim: '#9a8c66', accent: '#d4af37', accentText: '#3a2c05',
+             gain: '#9fe08a', loss: '#ff8ba0', win: '#ffe94a', toastBg: 'rgba(22,16,6,0.92)' },
+      bg: '#0e0a04', gridLine: 'rgba(212,175,55,0.12)', gridLineMajor: 'rgba(212,175,55,0.20)',
+      axisText: 'rgba(244,233,207,0.7)', multRGB: '224,193,110',
+      line: '#f3d27a', lineGlow: 'rgba(243,210,122,0.85)', dot: '#ffffff',
+      priceTagBg: '#b8860b', priceTagText: '#fff8e6',
+      chip1: '#ffe082', chip2: '#d4af37', chipGlow: 'rgba(212,175,55,0.75)', betText: '#3a2c05',
+      hot1: '#ffb35c', hot2: '#f2853a', hotGlowRGB: '255,160,70',
+      lossFill1: '#b03a50', lossFill2: '#701c2c', lossGlow: 'rgba(240,70,100,0.9)', lossText: '#ffe3e8',
+      countTrack: 'rgba(58,44,5,0.55)', countFill: '#fff4cc', ring: '#fff4cc',
+      winFloat: '#ffe94a', lossFloat: '#ff6b81',
+      hover: 'rgba(255,224,130,0.85)', hoverFill: 'rgba(255,224,130,0.10)', hoverText: 'rgba(255,244,204,0.95)',
+      reject: '#f0506a', deadZone: 'rgba(14,10,4,0.55)', nowLine: 'rgba(243,210,122,0.35)',
+      vigRGB: '255,215,90'
+    },
+    nova: {
+      label: 'Futuristic',
+      css: { bg: '#070714', panel: '#0d0d20', border: '#272750', text: '#eceafe',
+             dim: '#8a87b0', accent: '#6a4cff', accentText: '#f2eeff',
+             gain: '#7ae0c0', loss: '#ff8bb0', win: '#c9b8ff', toastBg: 'rgba(13,13,32,0.92)' },
+      bg: '#070714', gridLine: 'rgba(122,120,255,0.12)', gridLineMajor: 'rgba(122,120,255,0.20)',
+      axisText: 'rgba(206,204,255,0.7)', multRGB: '170,165,255',
+      line: '#7aa8ff', lineGlow: 'rgba(122,168,255,0.85)', dot: '#ffffff',
+      priceTagBg: '#6a4cff', priceTagText: '#f2eeff',
+      chip1: '#a08bff', chip2: '#6a4cff', chipGlow: 'rgba(130,100,255,0.75)', betText: '#140a3a',
+      hot1: '#ff7ae0', hot2: '#e04cff', hotGlowRGB: '230,90,255',
+      lossFill1: '#d23a6a', lossFill2: '#801f44', lossGlow: 'rgba(255,70,130,0.9)', lossText: '#ffe3f0',
+      countTrack: 'rgba(20,10,58,0.55)', countFill: '#efe9ff', ring: '#efe9ff',
+      winFloat: '#c9b8ff', lossFloat: '#ff6b9d',
+      hover: 'rgba(160,139,255,0.85)', hoverFill: 'rgba(160,139,255,0.10)', hoverText: 'rgba(226,218,255,0.95)',
+      reject: '#ff5c8a', deadZone: 'rgba(7,7,20,0.55)', nowLine: 'rgba(122,168,255,0.35)',
+      vigRGB: '160,139,255'
+    }
   };
+  var THEME_ORDER = ['rose', 'dark', 'neon', 'cyber', 'light', 'gold', 'nova'];
+
+  var COLOR = {}; // filled by applyTheme
+
+  function applyTheme(key) {
+    var t = THEMES[key] || THEMES.rose;
+    for (var k in t) if (k !== 'css' && k !== 'label') COLOR[k] = t[k];
+    var r = document.documentElement.style;
+    r.setProperty('--bg', t.css.bg);
+    r.setProperty('--panel', t.css.panel);
+    r.setProperty('--border', t.css.border);
+    r.setProperty('--text', t.css.text);
+    r.setProperty('--dim', t.css.dim);
+    r.setProperty('--accent', t.css.accent);
+    r.setProperty('--accent-text', t.css.accentText);
+    r.setProperty('--gain', t.css.gain);
+    r.setProperty('--loss', t.css.loss);
+    r.setProperty('--win', t.css.win);
+    r.setProperty('--toast-bg', t.css.toastBg);
+  }
 
   // ---------------------------------------------------------------- state
 
@@ -239,10 +417,18 @@
     document.getElementById('balanceValue').textContent = fmtMoney(balance);
   }
 
+  // Inline stroke icons (no emoji) — currentColor so they inherit theme + toast tint.
+  var ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  var ICON_WARN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+  var ICON_SOUND_ON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
+  var ICON_SOUND_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+
   function toast(text, kind, ttlSec) {
     var el = document.createElement('div');
     el.className = 'toast ' + (kind || '');
-    el.textContent = text;
+    var iconHtml = kind === 'win' ? ICON_CHECK : kind === 'warn' ? ICON_WARN : '';
+    el.innerHTML = (iconHtml ? '<span class="icon">' + iconHtml + '</span>' : '') +
+      '<span>' + text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>';
     el.style.setProperty('--ttl', (ttlSec || 2.2) + 's');
     document.getElementById('toastContainer').appendChild(el);
     setTimeout(function () { el.remove(); }, ((ttlSec || 2.2) + 0.4) * 1000);
@@ -703,13 +889,13 @@
     var grad = ctx.createLinearGradient(bx, by, bx, by + bh);
     if (b.state === 'lost') {
       grad.addColorStop(0, COLOR.lossFill1); grad.addColorStop(1, COLOR.lossFill2);
-      ctx.shadowColor = age < 0.35 ? 'rgba(240,70,100,0.9)' : 'transparent';
+      ctx.shadowColor = age < 0.35 ? COLOR.lossGlow : 'transparent';
     } else if (b.state === 'hot') {
-      grad.addColorStop(0, '#ffb35c'); grad.addColorStop(1, '#f2853a');
-      ctx.shadowColor = 'rgba(255,160,70,' + (REDUCED ? 0.8 : (0.6 + 0.3 * Math.sin(tSec * 6))) + ')';
+      grad.addColorStop(0, COLOR.hot1); grad.addColorStop(1, COLOR.hot2);
+      ctx.shadowColor = 'rgba(' + COLOR.hotGlowRGB + ',' + (REDUCED ? 0.8 : (0.6 + 0.3 * Math.sin(tSec * 6))) + ')';
     } else {
-      grad.addColorStop(0, '#f7f28c'); grad.addColorStop(1, '#e8dd4e');
-      ctx.shadowColor = 'rgba(240,230,90,0.75)';
+      grad.addColorStop(0, COLOR.chip1); grad.addColorStop(1, COLOR.chip2);
+      ctx.shadowColor = COLOR.chipGlow;
     }
     ctx.shadowBlur = 16;
     ctx.fillStyle = grad;
@@ -721,9 +907,9 @@
     if (b.state === 'hot') {
       var frac = Math.max(0, Math.min(1,
         (b.t1 + CFG.resolveSec - simTime) / (CFG.guideLeadSec * 0.8 + CFG.resolveSec)));
-      ctx.fillStyle = 'rgba(74,32,10,0.55)';
+      ctx.fillStyle = COLOR.countTrack;
       ctx.fillRect(bx + 4, by + bh - 7, bw - 8, 3);
-      ctx.fillStyle = '#fff6c0';
+      ctx.fillStyle = COLOR.countFill;
       ctx.fillRect(bx + 4, by + bh - 7, (bw - 8) * frac, 3);
     }
 
@@ -733,7 +919,7 @@
       var ringT = age / 0.6;
       var ext = 18 + (b.tier || 0) * 14;
       ctx.globalAlpha = (1 - ringT) * 0.9;
-      ctx.strokeStyle = '#fff6c0';
+      ctx.strokeStyle = COLOR.ring;
       ctx.lineWidth = 2 + (b.tier || 0);
       roundRect(bx - ringT * ext, by - ringT * ext, bw + ringT * ext * 2, bh + ringT * ext * 2, 7 + ringT * 12);
       ctx.stroke();
@@ -742,7 +928,7 @@
 
     ctx.textAlign = 'center';
     if (b.state === 'lost') {
-      ctx.fillStyle = '#ffe3e8';
+      ctx.fillStyle = COLOR.lossText;
       ctx.font = 'bold 13px ' + MONO;
       ctx.fillText('−$' + b.stake, bx + bw / 2, by + bh / 2 - 7);
       ctx.font = '10px ' + MONO;
@@ -783,10 +969,10 @@
     var firstValidT1 = Math.ceil((simTime + CFG.minLeadSec) / CFG.cellSeconds) * CFG.cellSeconds;
     var deadRight = xForTime(firstValidT1);
     if (deadRight > nx) {
-      ctx.fillStyle = 'rgba(23,10,16,0.55)';
+      ctx.fillStyle = COLOR.deadZone;
       ctx.fillRect(nx, 0, deadRight - nx, H);
     }
-    ctx.strokeStyle = 'rgba(246,185,207,0.35)';
+    ctx.strokeStyle = COLOR.nowLine;
     ctx.setLineDash([3, 5]);
     ctx.beginPath(); ctx.moveTo(Math.round(nx) + 0.5, 0); ctx.lineTo(Math.round(nx) + 0.5, H); ctx.stroke();
     ctx.setLineDash([]);
@@ -818,7 +1004,7 @@
           if (cy < 14 || cy > H - 30) continue;
           var rung = cellRung(cp, cp + CFG.cellDollars, ct, ct + CFG.cellSeconds);
           var bright = dead ? 0.12 : 0.32 + 0.35 * Math.min(1, rung.multiplier / 100);
-          ctx.fillStyle = 'rgba(233,168,194,' + bright.toFixed(2) + ')';
+          ctx.fillStyle = 'rgba(' + COLOR.multRGB + ',' + bright.toFixed(2) + ')';
           ctx.fillText(fmtMult(rung.multiplier), cx, cy);
         }
       }
@@ -830,14 +1016,14 @@
       var hw = CFG.cellSeconds * CFG.pxPerSec, hh = CFG.cellDollars * CFG.pxPerDollar;
       var hRung = cellRung(hover.low, hover.high, hover.t1, hover.t2);
       ctx.save();
-      ctx.strokeStyle = 'rgba(247,242,140,0.85)';
+      ctx.strokeStyle = COLOR.hover;
       ctx.lineWidth = 1.5;
       roundRect(hx + 2, hy + 2, hw - 4, hh - 4, 6);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(247,242,140,0.10)';
+      ctx.fillStyle = COLOR.hoverFill;
       ctx.fill();
       ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(255,246,192,0.95)';
+      ctx.fillStyle = COLOR.hoverText;
       ctx.font = 'bold 11px ' + MONO;
       ctx.fillText(fmtMult(hRung.multiplier) + ' · win ' + fmtAmt(betSize * hRung.multiplier)
                    + (armedMode ? ' · tap again to confirm' : ''),
@@ -851,7 +1037,7 @@
       var rx = xForTime(rj.t1), ry = yForPrice(rj.low + CFG.cellDollars);
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - rj.age / 0.5);
-      ctx.strokeStyle = '#f0506a';
+      ctx.strokeStyle = COLOR.reject;
       ctx.lineWidth = 1.5;
       roundRect(rx + 2, ry + 2, CFG.cellSeconds * CFG.pxPerSec - 4, CFG.cellDollars * CFG.pxPerDollar - 4, 6);
       ctx.stroke();
@@ -887,7 +1073,7 @@
         if (mouse.x >= cr.x && mouse.x <= cr.x + cr.w && mouse.y >= cr.y && mouse.y <= cr.y + cr.h) {
           ctx.save();
           ctx.textAlign = 'center';
-          ctx.fillStyle = 'rgba(255,246,192,0.95)';
+          ctx.fillStyle = COLOR.hoverText;
           ctx.font = 'bold 11px ' + MONO;
           ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 4;
           ctx.fillText('pays ' + fmtAmt(cb.stake * cb.mult), cr.x + cr.w / 2, cr.y - 9);
@@ -914,7 +1100,7 @@
       var dx = nowX(), dy = yForPrice(dispPrice);
       ctx.lineTo(dx, dy);
       ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 12;
+      ctx.fillStyle = COLOR.dot; ctx.shadowBlur = 12;
       ctx.beginPath(); ctx.arc(dx, dy, 3.2, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
@@ -927,7 +1113,7 @@
     ctx.fillStyle = COLOR.priceTagBg;
     roundRect(W - tw - 4, tagY - 11, tw, 22, 5);
     ctx.fill();
-    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+    ctx.fillStyle = COLOR.priceTagText; ctx.textAlign = 'center';
     ctx.fillText(tagText, W - tw / 2 - 4, tagY);
 
     // floating payout texts: wins rise in gold (bigger for rarer wins), losses sink in red
@@ -952,8 +1138,8 @@
       var vAlpha = (vT < 0.25 ? vT / 0.25 : 1 - (vT - 0.25) / 0.75) * 0.5;
       var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35,
                                         W / 2, H / 2, Math.max(W, H) * 0.75);
-      vg.addColorStop(0, 'rgba(255,220,90,0)');
-      vg.addColorStop(1, 'rgba(255,220,90,' + vAlpha.toFixed(3) + ')');
+      vg.addColorStop(0, 'rgba(' + COLOR.vigRGB + ',0)');
+      vg.addColorStop(1, 'rgba(' + COLOR.vigRGB + ',' + vAlpha.toFixed(3) + ')');
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, W, H);
     }
@@ -1008,7 +1194,7 @@
 
   var muteBtn = document.getElementById('muteBtn');
   function renderMute() {
-    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.innerHTML = muted ? ICON_SOUND_OFF : ICON_SOUND_ON;
     muteBtn.title = muted ? 'Sound off' : 'Sound on';
     muteBtn.setAttribute('aria-pressed', String(muted));
   }
@@ -1018,6 +1204,74 @@
     renderMute();
   });
   renderMute();
+
+  // ---- theme picker: an explicit select-from-menu, not a cycling button ----
+  var themeKey = 'rose';
+  try {
+    var storedTheme = localStorage.getItem('pricegrid.theme');
+    if (storedTheme && THEMES[storedTheme]) themeKey = storedTheme;
+  } catch (e) { /* ignore */ }
+
+  var themeBtn = document.getElementById('themeBtn');
+  var themeSwatch = document.getElementById('themeSwatch');
+  var themeMenu = document.getElementById('themeMenu');
+
+  // one swatch + label + check row per theme, built once
+  THEME_ORDER.forEach(function (key) {
+    var t = THEMES[key];
+    var opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'themeOption';
+    opt.setAttribute('role', 'menuitemradio');
+    opt.dataset.key = key;
+    opt.innerHTML =
+      '<span class="swatch" style="background:linear-gradient(135deg, ' + t.css.bg + ' 50%, ' + t.css.accent + ' 50%)"></span>' +
+      '<span class="themeOption-label">' + t.label + '</span>' +
+      '<span class="themeOption-check">' + ICON_CHECK + '</span>';
+    opt.addEventListener('click', function () { selectTheme(key); closeThemeMenu(); });
+    themeMenu.appendChild(opt);
+  });
+
+  function renderThemeSelection() {
+    var t = THEMES[themeKey];
+    themeSwatch.style.background = 'linear-gradient(135deg, ' + t.css.bg + ' 50%, ' + t.css.accent + ' 50%)';
+    themeBtn.title = 'Theme: ' + t.label;
+    themeMenu.querySelectorAll('.themeOption').forEach(function (opt) {
+      opt.setAttribute('aria-checked', String(opt.dataset.key === themeKey));
+    });
+  }
+
+  function selectTheme(key) {
+    themeKey = key;
+    applyTheme(themeKey);
+    renderThemeSelection();
+    try { localStorage.setItem('pricegrid.theme', themeKey); } catch (e) { /* ignore */ }
+    toast('Theme: ' + THEMES[themeKey].label, '', 1.6);
+  }
+
+  function openThemeMenu() {
+    themeMenu.classList.add('open');
+    themeMenu.setAttribute('aria-hidden', 'false');
+    themeBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeThemeMenu() {
+    themeMenu.classList.remove('open');
+    themeMenu.setAttribute('aria-hidden', 'true');
+    themeBtn.setAttribute('aria-expanded', 'false');
+  }
+  themeBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (themeMenu.classList.contains('open')) closeThemeMenu(); else openThemeMenu();
+  });
+  document.addEventListener('click', function (e) {
+    if (!themeMenu.contains(e.target) && e.target !== themeBtn) closeThemeMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeThemeMenu();
+  });
+
+  applyTheme(themeKey);
+  renderThemeSelection();
 
   document.getElementById('betSizes').addEventListener('click', function (e) {
     var b = e.target.closest('[data-v]');
