@@ -67,8 +67,31 @@ the RTP non-deterministic.
 
 Per-round events
 ----------------
-    diceResult : {direction, target, winChance, isWin, payoutMultiplier(cents)}
+    diceResult : {direction, target, winChance, isWin, payoutMultiplier(cents), roll}
     finalWin   : {amount(cents)}   (amount = multiplier*100 on a win, else 0)
+
+Provably-fair roll (the `roll` field)
+-------------------------------------
+Each book stores the displayed dice result `roll` on the 00.00-100.00 scale (2
+decimals), generated at simulation time with the per-sim seeded RNG (reset_seed),
+so it is deterministic and reproducible -- a replay always shows the same number.
+It is ALWAYS consistent with `isWin`:
+
+    over_NN  win -> roll in (NN, 100.00]   lose -> roll in [0.00, NN]
+    under_NN win -> roll in [0.00, NN)     lose -> roll in [NN, 100.00]
+
+(matches the win rule: under wins if roll < NN, over wins if roll > NN; a tie at
+NN is a loss.) On Stake Engine the provably-fair seed pair (client seed + hashed
+server seed + nonce, HMAC-SHA256 -> float) selects WHICH book of a mode's lookup
+table the RGS serves; this stored roll is that selected book's certified outcome,
+so the number a player sees matches the RGS result and the odds/selection stay
+provably fair. The roll is presentation only -- win/lose and payout are set by the
+mode's book counts (win chance) and multiplier, which are UNCHANGED by adding it.
+
+NOTE: adding `roll` is an event-structure change, so the books (and their hashes)
+change -- a production rebuild + republish is required for it to go live. Odds are
+untouched (same 72 modes, win chances, multipliers, LUT weights); only the
+diceResult payload grows. Regenerate fairness.json after the prod rebuild.
 
 Build
 -----
