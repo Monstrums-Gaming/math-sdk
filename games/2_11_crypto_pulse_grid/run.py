@@ -1,4 +1,4 @@
-"""Driver script for Price Grid (2_11).
+"""Driver script for Crypto Pulse Grid (2_11).
 
 A tap-cell-to-bet game: each chip is a win/lose bet at a fixed multiplier. This is a
 direct-probability game (like the original Crypto Pulse 2_9), not a reel game: odds

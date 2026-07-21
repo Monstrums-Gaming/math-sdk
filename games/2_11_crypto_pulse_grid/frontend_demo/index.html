@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Price Grid — demo</title>
+<title>Crypto Pulse Grid — demo</title>
 <style>
   :root{
     --bg:#170a10; --panel:#0d0509; --border:#3a1c2a; --text:#f3e9ee; --dim:#8d7a84;
@@ -166,14 +166,31 @@
   var MONEY = 1000000; // RGS integer money scale
   var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // docs/rgs_docs/RGS.md "Response Codes" — 400s carry {error, message} bodies
+  // with one of these codes; a bare code (no message) falls back to this map.
+  var RGS_ERROR_MESSAGES = {
+    ERR_VAL: 'Invalid request.', ERR_IPB: 'Insufficient player balance.',
+    ERR_IS: 'Invalid or expired session.', ERR_ATE: 'Authentication failed.',
+    ERR_GLE: 'Gambling limit exceeded.', ERR_LOC: 'Invalid player location.',
+    ERR_GEN: 'Server error, try again.', ERR_MAINTENANCE: 'RGS under maintenance.'
+  };
+
   function rgs(path, body) {
     return fetch(RGS_URL + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).then(function (r) {
-      if (!r.ok) throw new Error('RGS ' + path + ' -> HTTP ' + r.status);
-      return r.json();
+      // RGS.md: errors are real HTTP 400/500s that STILL carry a JSON body
+      // ({error, message}) — parse it first so that detail isn't discarded
+      // in favor of a bare "HTTP 400".
+      return r.json().catch(function () { return {}; }).then(function (json) {
+        if (!r.ok || json.error) {
+          var detail = json.message || (json.error && RGS_ERROR_MESSAGES[json.error]) || json.error;
+          throw new Error('RGS ' + path + ': ' + (detail || ('HTTP ' + r.status)));
+        }
+        return json;
+      });
     });
   }
 
@@ -426,6 +443,16 @@
     document.getElementById('balanceValue').textContent = fmtMoney(balance);
   }
 
+  // RGS.md documents balance as {amount, currency}; some responses (or a
+  // demo mock) may return a bare number instead — accept either, in API
+  // integer units (caller divides by MONEY). Returns null if absent.
+  function extractBalance(payload) {
+    if (!payload) return null;
+    if (payload.balance && typeof payload.balance.amount === 'number') return payload.balance.amount;
+    if (typeof payload.balance === 'number') return payload.balance;
+    return null;
+  }
+
   // Inline stroke icons (no emoji) — currentColor so they inherit theme + toast tint.
   var ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   var ICON_WARN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
@@ -518,7 +545,7 @@
 
   // ---------------------------------------------------------------- odds bundle
 
-  fetch('price_grid_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
+  fetch('crypto_pulse_grid_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
     LADDER = Object.keys(b.modes).map(function (k) {
       var m = b.modes[k];
       return { modeKey: k, multiplier: m.multiplier, cents: m.multiplierCents,
@@ -528,22 +555,15 @@
       var bd = document.getElementById('modeBadge');
       bd.textContent = 'LIVE'; bd.classList.add('live');
       rgs('/wallet/authenticate', { sessionID: SESSION }).then(function (res) {
-        // Many RGS backends return HTTP 200 with an {error, message} BODY for
-        // business-logic failures (bad session, wrong game slot, etc.) rather
-        // than a non-2xx status — rgs()'s !r.ok check can't catch that, so
-        // check explicitly and surface the real reason instead of continuing
-        // as if authentication succeeded.
-        if (res && res.error) throw new Error(res.message || res.error);
-        if (res && res.balance && typeof res.balance.amount === 'number') {
-          setBalance(res.balance.amount / MONEY);
-        } else if (typeof res.balance === 'number') {
-          setBalance(res.balance / MONEY);
-        }
+        // rgs() already rejects on a {error,...} body (see RGS_ERROR_MESSAGES),
+        // so res here is always a genuine success payload.
+        var bal = extractBalance(res);
+        if (bal !== null) setBalance(bal / MONEY);
       }).catch(function (err) {
         toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
       });
     }
-  }).catch(function () { toast('Failed to load price_grid_rgs.json', 'warn', 4); });
+  }).catch(function () { toast('Failed to load crypto_pulse_grid_rgs.json', 'warn', 4); });
 
   // The cell's displayed multiplier: fair pricing from the local vol model, snapped
   // to the nearest ladder rung (log space) so every offered value is a real,
@@ -578,31 +598,59 @@
       if ((r -= rung.outcomes[i].weight) < 0) { pick = rung.outcomes[i]; break; }
     }
     var isWin = pick.payoutCents > 0;
-    return Promise.resolve({ isWin: isWin, payoutMult: rung.multiplier, finalBalance: null });
+    return Promise.resolve({
+      isWin: isWin, payoutMult: rung.multiplier,
+      payoutAmount: isWin ? stake * rung.multiplier : 0,
+      finalBalance: null
+    });
   }
 
-  // LIVE: play at this rung's mode → the RGS draws a pre-frozen book → end-round.
+  // LIVE: play at this rung's mode → a win releases via end-round; a loss is
+  // already fully settled by the play response (see below).
   function livePlay(rung, stake) {
     return rgs('/wallet/play', {
       sessionID: SESSION, mode: rung.modeKey, currency: CURRENCY,
       amount: Math.round(stake * MONEY)
     }).then(function (res) {
-      // A play failure (bad mode, no funds, wrong game slot, ...) commonly comes
-      // back as HTTP 200 with an {error, message} body, not a non-2xx status.
-      // Stop here — calling end-round after a failed play is what produces the
-      // confusing secondary "player does not have active round" error. Mirrors
-      // the production handleRequestBet check (packages/utils-xstate).
-      if (res && res.error) throw new Error(res.message || res.error);
-      if (!(res && res.round && res.round.state && res.round.state.length > 0)) {
-        throw new Error('Empty round state in play response: ' + JSON.stringify(res));
+      // rgs() already rejects on a {error,...} body, so a failed play never
+      // reaches here. Still worth guarding against a genuinely empty event
+      // list (a "successful" but useless response); field name has varied
+      // across games (state vs events, see 2_4_dice_kong_climb).
+      var events = (res && res.round && (res.round.state || res.round.events)) || [];
+      if (!events.length) throw new Error('Empty round state in play response: ' + JSON.stringify(res));
+      // round.payoutMultiplier is a PLAIN multiplier (e.g. 4.5 for a 4.5x win) —
+      // unlike the nested state[] events (cellCall.payoutMultiplier, wincap/
+      // finalWin.amount), which ARE ×100 cents. Confirmed against a live
+      // response: {round:{payoutMultiplier:4.5, payout:22500000, amount:5000000}}
+      // for a $5 bet at 4.5x ($22.50). Dividing this field by 100 (as the ×100
+      // convention would suggest) silently pays 1/100th of the real amount.
+      var mult = (res && res.round && res.round.payoutMultiplier) ||
+                 (res && res.payoutMultiplier) || 0;
+      var isWin = mult > 0;
+      var playBal = extractBalance(res);
+      // round.payout is the authoritative payout in the standard RGS money
+      // scale (same ×1,000,000 scale as round.amount) — prefer it outright
+      // over recomputing stake × mult client-side.
+      var playPayout = (res && res.round && typeof res.round.payout === 'number')
+        ? res.round.payout : null;
+
+      // A losing round has no payout to release, so the RGS already settles
+      // and closes it inside THIS play response (round.active:false) — no
+      // active round remains for /wallet/end-round to end. Calling it anyway
+      // is exactly what throws "player does not have active round". Only a
+      // win leaves a payout pending, so only a win calls end-round (mirrors
+      // the production noWin/singleRoundWin split in monstrums-web-sdk's
+      // packages/utils-xstate/createPrimaryMachines.ts).
+      if (!isWin) {
+        return { isWin: false, payoutMult: rung.multiplier, payoutAmount: 0,
+                 finalBalance: playBal !== null ? playBal / MONEY : null };
       }
+
       return rgs('/wallet/end-round', { sessionID: SESSION }).then(function (end) {
-        if (end && end.error) throw new Error(end.message || end.error);
-        var bal = (end && typeof end.balance === 'number') ? end.balance
-                : (res && typeof res.balance === 'number') ? res.balance : null;
-        var mult = ((res && res.round && res.round.payoutMultiplier) ||
-                    (res && res.payoutMultiplier) || 0) / 100;
-        return { isWin: mult > 0, payoutMult: mult || rung.multiplier,
+        // RGS.md documents balance as { amount, currency }, not a bare number.
+        var bal = extractBalance(end) !== null ? extractBalance(end) : playBal;
+        return { isWin: true, payoutMult: mult || rung.multiplier,
+                 payoutAmount: playPayout !== null ? playPayout / MONEY : stake * mult,
                  finalBalance: bal !== null ? bal / MONEY : null };
       });
     });
@@ -797,7 +845,10 @@
       // cell, or at the reveal window's end as a fallback (e.g. the outcome arrived late).
       if (b.outcome.isWin && (touched || simTime >= resolveT)) {
         b.state = 'won'; b.stateAge = 0;
-        var payout = b.stake * b.outcome.payoutMult;
+        // Prefer the RGS's authoritative payout amount (LIVE) over recomputing
+        // stake × payoutMult client-side — sidesteps any mult-scale mismatch.
+        var payout = (typeof b.outcome.payoutAmount === 'number')
+          ? b.outcome.payoutAmount : b.stake * b.outcome.payoutMult;
         // celebration scales with rarity: <5x normal, 5–20x big, >=20x epic
         b.tier = b.outcome.payoutMult >= 20 ? 2 : b.outcome.payoutMult >= 5 ? 1 : 0;
         if (b.outcome.finalBalance !== null) setBalance(b.outcome.finalBalance);

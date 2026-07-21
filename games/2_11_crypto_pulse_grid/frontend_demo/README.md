@@ -1,17 +1,17 @@
-# Price Grid (2_11) — frontend demo
+# Crypto Pulse Grid (2_11) — frontend demo
 
-A self-contained browser demo of the Price Grid mechanic: a live price line scrolls
-across a canvas; the future region is a grid of (time × price) cells, each labelled
-with a multiplier **snapped to the published 28-rung ladder**. Click a cell to place
-a chip; when the line reaches the cell's column the chip wins `stake × multiplier`
-or loses.
+A self-contained browser demo of the Crypto Pulse Grid mechanic: a live price line
+scrolls across a canvas; the future region is a grid of (time × price) cells, each
+labelled with a multiplier **snapped to the published 28-rung ladder**. Click a cell
+to place a chip; when the line reaches the cell's column the chip wins
+`stake × multiplier` or loses.
 
 The outcome is **never** decided by the on-screen line. Each chip is one bet at the
 cell's ladder mode (`call_<cents>`); the drawn book decides win/lose and the line is
-**steered** to hit or miss the tapped cell accordingly (the 2_10 pattern — the cell
-position is presentation, the book is the truth). Up to two chips per time-column on
-distinct cells: with two outcomes a single line can always render the combination
-(enter on the safe side, sweep between two winners), while a third chip can create an
+**steered** to hit or miss the tapped cell accordingly — the cell position is
+presentation, the book is the truth. Up to two chips per time-column on distinct
+cells: with two outcomes a single line can always render the combination (enter on
+the safe side, sweep between two winners), while a third chip can create an
 impossible win-lose-win sandwich. The cap is static so a rejection never leaks
 anything about outcomes already drawn.
 
@@ -21,7 +21,7 @@ anything about outcomes already drawn.
 ./run.sh            # http://localhost:7921 (LOCAL mode)
 ```
 
-`price_grid_rgs.json` must exist — rebuild it after any math change:
+`crypto_pulse_grid_rgs.json` must exist — rebuild it after any math change:
 
 ```bash
 PYTHONPATH="$(git rev-parse --show-toplevel 2>/dev/null || pwd)" \
@@ -42,11 +42,17 @@ a production build.)
   index.html?rgs_url=https://<rgs-host>&sessionID=<session>&currency=USD
   ```
 
-  Flow per chip: `/wallet/play {mode: call_<cents>, amount, currency}` →
-  `/wallet/end-round`. Amounts use the RGS integer money scale (×1,000,000);
-  `payoutMultiplier` is ×100 cents. Bets are serial (one active round per session);
-  clicks while a round is settling are rejected with a toast. The balance display
-  defers to the reveal so the wallet movement never spoils the outcome.
+  Flow per chip: `/wallet/play {mode: call_<cents>, amount, currency}`, then
+  `/wallet/end-round` **only if it won** (a loss is already settled inside the
+  play response — see below). Amounts use the RGS integer money scale
+  (×1,000,000). `round.payoutMultiplier` is a **plain** multiplier (e.g. `4.5`,
+  not `450`) — only the nested `state[]` book events (`cellCall`, `wincap`,
+  `finalWin`) use the ×100-cents scale. `round.payout` is the authoritative
+  payout amount in the standard money scale; prefer it over recomputing
+  `stake × payoutMultiplier` client-side. Bets are serial (one active round
+  per session); clicks while a round is settling are rejected with a toast.
+  The balance display defers to the reveal so the wallet movement never
+  spoils the outcome.
 
 ## UX notes
 
@@ -60,9 +66,12 @@ a production build.)
 - On touch devices the first tap previews a cell ("tap again to confirm"), the
   second places the chip.
 
+  (The `pricegrid.*` localStorage keys predate the 2026-07-20 rename from "Price
+  Grid" and were left as-is — internal storage keys only, not user-facing.)
+
 ## Files
 
 - `index.html` — the whole demo (canvas renderer, feed + steering, RGS client).
 - `build_demo_data.py` — verifies + copies `../library/odds_bundle.json` →
-  `price_grid_rgs.json`.
+  `crypto_pulse_grid_rgs.json`.
 - `run.sh` — local HTTP server (the demo fetches JSON, so `file://` won't work).

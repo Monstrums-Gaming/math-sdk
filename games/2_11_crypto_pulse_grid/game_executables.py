@@ -1,4 +1,4 @@
-"""Orchestrating routines for Price Grid (2_11)."""
+"""Orchestrating routines for Crypto Pulse Grid (2_11)."""
 
 from game_calculations import GameCalculations
 from game_events import cell_call_event

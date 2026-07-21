@@ -1,20 +1,21 @@
 """
-Crypto Pulse Grid (2_10) — game configuration.
+Crypto Pulse Grid (2_11) — game configuration.
 
-A **tap-cell-to-bet** game (the Euphoria mechanic). A live-looking price chart runs
-continuously; the future region of the chart is covered by a grid of multiplier
-cells. The player taps a cell to place a chip; if the price line reaches that cell
-the chip pays `bet x cellMultiplier`, otherwise it loses. WHERE the cell sits is
-pure client-side presentation — the line is steered to hit or miss the tapped cell.
+A **tap-cell-to-bet** game (formerly "Price Grid"; renamed 2026-07-20 to take over
+the `2_10_crypto_pulse_grid` slug/name after that earlier, sparser-ladder build was
+retired). A live-looking price chart runs continuously; the future region of the
+chart is covered by a grid of (time x price) multiplier cells. The player taps a
+cell to place a chip; if the price line reaches that cell the chip pays
+`bet x cellMultiplier`, otherwise it loses. WHERE the cell sits is pure client-side
+presentation — the line is steered to hit or miss the tapped cell.
 
-From the book's point of view this is exactly the `2_9_crypto_pulse` model: each chip
-is an independent **win/lose bet at a fixed multiplier M** (HIGH/LOW was
-outcome-neutral there; the tapped cell is outcome-neutral here). Like the dice
-(`2_4`), limbo (`2_5`) and crypto-pulse (`2_9`) games this is a **direct-probability**
-game: no reels, no free spins, Rust optimiser disabled. The odds come straight from
-the distribution quotas.
+From the book's point of view this is exactly the `2_9_crypto_pulse` model: each
+chip is an independent **win/lose bet at a fixed multiplier M** (the tapped cell is
+outcome-neutral). Like the dice (`2_4`), limbo (`2_5`) and crypto-pulse (`2_9`)
+games this is a **direct-probability** game: no reels, no free spins, Rust
+optimiser disabled. The odds come straight from the distribution quotas.
 
-## Modes: a 20-multiplier ladder, one published win/lose mode per multiplier
+## Modes: a 28-multiplier ladder, one published win/lose mode per multiplier
 
 Every distinct cell multiplier is its own dot-free mode `call_<cents>` (the ACP
 publisher parses `<mode>` out of `books_<mode>.jsonl.zst`, so a "." would collide
@@ -23,12 +24,15 @@ the smallest-denominator rational a/b whose realised RTP `(a/b)*M` lands in
 [96.00%, 96.70%] (`_simplest_fraction_in`, the limbo/chicken Stern-Brocot descent);
 `num_sims = b` yields exactly `a` winning books, so published odds equal book counts.
 
-**Ladder (1.4x .. 100x, 20 rungs):** 1.4, 1.7, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15,
-20, 25, 30, 40, 50, 65, 80, 100. The 100x cap is the Limbo `base_100` precedent that
-passed ACP's ETL/CVaR risk validators. The **floor is 1.4x, not 1.2x**: a 1.2x
-win/lose mode has payout std ~0.48, below ACP's Base-Volatility floor of 0.60 that
-rates the whole game off its tamest mode (the exact reason Limbo's approved ladder
-starts at 1.40x). Realised RTP band 96.00-96.39%, cross-mode spread 0.3855% (<= 1%).
+**Ladder (1.4x .. 100x, 28 rungs — dense below 10x):** 1.4, 1.5, 1.6, 1.8, 2, 2.2,
+2.5, 2.8, 3.2, 3.6, 4, 4.5, 5, 6, 7, 8, 9, 10, then the 2_10 sparse tail 12, 15, 20,
+25, 30, 40, 50, 65, 80, 100. The extra low rungs give the on-screen grid finer
+multiplier resolution where most cells live (near the line's projected path); the
+risk envelope is IDENTICAL to 2_10 at both ends. The 100x cap is the Limbo
+`base_100` precedent that passed ACP's ETL/CVaR risk validators. The **floor is
+1.4x, not 1.2x**: a 1.2x win/lose mode has payout std ~0.48, below ACP's
+Base-Volatility floor of 0.60 that rates the whole game off its tamest mode (the
+exact reason Limbo's approved ladder starts at 1.40x).
 
 ## Per-mode wincap (intentional)
 
@@ -44,8 +48,8 @@ maximum (the top rung) used for the module-level cap assertion.
 ## ACP rules satisfied
 
   1. 0.1x LUT grid — every multiplier is a multiple of 0.10 (`lut_grid_exempt = False`).
-  2. Per-mode RTP in [90%, 96.70%] — realised 96.00-96.39%.
-  3. Cross-mode spread <= 1.00% — realised 0.3855%.
+  2. Per-mode RTP in [90%, 96.70%] — every rung pinned into [96.00%, 96.70%].
+  3. Cross-mode spread <= 1.00% — automatic (all rungs inside a 0.70%-wide band).
   4. Base bet mode cost = 1.0.
   5. Risk: every mode is a two-outcome all-or-nothing bet — the shape ACP approved for
      Limbo's 1.40x-100x ladder; this ladder is interior to it at both ends.
@@ -68,8 +72,10 @@ _EPS = 1e-9
 # "call_<cents>" with an independently-derived win probability pinning realised RTP
 # into [96.00%, 96.70%]. Floor 1.4x clears the ACP volatility floor; 100x cap is the
 # Limbo-approved ceiling. Every value is a multiple of 0.10 (0.1x LUT grid).
+# Dense below 10x (18 rungs) — the variant's point — then the 2_10 sparse tail.
 _MULTIPLIERS = [
-    1.4, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0,
+    1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.5, 2.8, 3.2, 3.6, 4.0, 4.5, 5.0,
+    6.0, 7.0, 8.0, 9.0, 10.0,
     12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 65.0, 80.0, 100.0,
 ]
 
@@ -87,7 +93,7 @@ def _simplest_fraction_in(lo: Fraction, hi: Fraction) -> Fraction:
 
 
 class GameConfig(Config):
-    """Crypto Pulse Grid configuration — a 20-rung win/lose multiplier ladder."""
+    """Crypto Pulse Grid configuration — a 28-rung win/lose multiplier ladder."""
 
     _instance = None
 
@@ -98,7 +104,7 @@ class GameConfig(Config):
 
     def __init__(self):
         super().__init__()
-        self.game_id = "2_10_crypto_pulse_grid"
+        self.game_id = "2_11_crypto_pulse_grid"
         self.provider_number = 2  # placeholder — confirm ACP-assigned value before prod upload
         self.provider_name = "monstrum"
         self.game_name = "Crypto Pulse Grid"
@@ -232,10 +238,10 @@ class GameConfig(Config):
         assert self.wincap == WINCAP == max(t["multiplier"] for t in self.tiers), (
             "wincap must equal the top ladder rung (100x)"
         )
-        assert len(self.bet_modes) == len(self.tiers) == len(_MULTIPLIERS) == 20, (
-            "expected exactly 20 ladder modes"
+        assert len(self.bet_modes) == len(self.tiers) == len(_MULTIPLIERS) == 28, (
+            "expected exactly 28 ladder modes"
         )
-        assert len({t["payout_cents"] for t in self.tiers}) == 20, "duplicate ladder multiplier"
+        assert len({t["payout_cents"] for t in self.tiers}) == 28, "duplicate ladder multiplier"
 
         rtps = [t["rtp"] for t in self.tiers]
         assert max(rtps) - min(rtps) <= 0.01 + _EPS, (

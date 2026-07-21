@@ -1,4 +1,4 @@
-Price Grid (2_11) — tap-cell-to-bet multiplier grid (dense ladder)
+Crypto Pulse Grid (2_11) — tap-cell-to-bet multiplier grid (dense ladder)
 ==================================================================
 
 Mechanic
@@ -130,16 +130,16 @@ Files
 Build
 -----
 Config sanity + dev build (readable JSON books, eyeball win + lose):
-  rm -rf games/2_11_price_grid/library && \
-    PYTHONPATH="$PWD" ./env/bin/python games/2_11_price_grid/run.py
+  rm -rf games/2_11_crypto_pulse_grid/library && \
+    PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/run.py
 
 Production (mandatory — execute_all_tests rejects non-.jsonl.zst books):
   COMPRESSION=1 RUN_FORMAT_CHECKS=1 PYTHONPATH="$PWD" \
-    ./env/bin/python games/2_11_price_grid/run.py
+    ./env/bin/python games/2_11_crypto_pulse_grid/run.py
 
 Then re-verify artifacts + emit the odds bundle, and rebuild the demo data:
-  PYTHONPATH="$PWD" ./env/bin/python games/2_11_price_grid/build_odds_bundle.py
-  PYTHONPATH="$PWD" ./env/bin/python games/2_11_price_grid/frontend_demo/build_demo_data.py
+  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/build_odds_bundle.py
+  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/frontend_demo/build_demo_data.py
   make test
 
 Publish files: library/publish_files/ — index.json (28 modes, cost 1.0),

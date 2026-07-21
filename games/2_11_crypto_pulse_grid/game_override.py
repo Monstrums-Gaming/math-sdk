@@ -1,4 +1,4 @@
-"""State overrides for Crypto Pulse Grid (2_10)."""
+"""State overrides for Crypto Pulse Grid (2_11)."""
 
 from game_executables import GameExecutables
 

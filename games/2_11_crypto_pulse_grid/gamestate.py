@@ -1,5 +1,5 @@
 """
-Crypto Pulse Grid (2_10) — one tap-cell chip resolves to a win or a loss.
+Crypto Pulse Grid (2_11) — one tap-cell chip resolves to a win or a loss.
 
 Per-round event order:
     cellCall -> (wincap on a win) -> finalWin

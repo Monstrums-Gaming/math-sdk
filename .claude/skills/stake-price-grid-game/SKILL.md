@@ -2,8 +2,9 @@
 name: stake-price-grid-game
 description: >-
   Build, modify, or extend a PRICE-GRID (tap-cell-to-bet / "Euphoria") game in the
-  math-sdk — the family of games/2_10_crypto_pulse_grid and games/2_11_price_grid: a
-  live price line scrolls across a chart, the future region is a grid of
+  math-sdk — the family led by games/2_11_crypto_pulse_grid (formerly
+  2_11_price_grid; its retired predecessor 2_10_crypto_pulse_grid followed the same
+  recipe): a live price line scrolls across a chart, the future region is a grid of
   (time x price) multiplier cells, and each tapped cell is an independent win/lose
   bet at a fixed ladder multiplier. Use when creating a new grid variant (new
   game_id, different multiplier ladder), changing an existing grid game's ladder or
@@ -20,12 +21,16 @@ description: >-
 
 A **price-grid** game shows a live-looking price chart; the future region is covered
 by a grid of multiplier cells. A tap places a chip; if the line later reaches that
-cell the chip pays `bet × cellMultiplier`, else it loses. Reference implementations:
+cell the chip pays `bet × cellMultiplier`, else it loses. Reference implementation:
 
 | Game | Folder | Ladder |
 |---|---|---|
-| Crypto Pulse Grid (2_10) | `games/2_10_crypto_pulse_grid` | 20 rungs, 1.4x–100x |
-| Price Grid (2_11) | `games/2_11_price_grid` | 28 rungs, dense below 10x, same envelope |
+| Crypto Pulse Grid (2_11) | `games/2_11_crypto_pulse_grid` | 28 rungs, 1.4x–100x, dense below 10x |
+
+(Its predecessor, also named Crypto Pulse Grid, lived at `2_10_crypto_pulse_grid`
+with a sparser 20-rung ladder; it was removed 2026-07-20 and 2_11 — then named
+`2_11_price_grid` — was renamed to `2_11_crypto_pulse_grid` to take over the
+slug/name as the sole surviving grid game.)
 
 ## The model in one paragraph
 
@@ -92,10 +97,24 @@ team separately; it is NOT an RGS artifact.
   displayed value must always be a real published mode; true odds come from the
   mode, never the display model.
 - **Placing a chip** = one bet at that rung's mode. LIVE: `/wallet/play {sessionID,
-  mode: call_<cents>, currency, amount}` then `/wallet/end-round`; amounts ×1,000,000
-  (integer money), `payoutMultiplier` is ×100 cents. LOCAL: weighted draw over the
-  bundle's `outcomes` (the exact certified odds). Serialize rounds through a promise
-  chain (RGS: one active round per session) — queue, don't reject.
+  mode: call_<cents>, currency, amount}`; amounts ×1,000,000 (integer money).
+  **`round.payoutMultiplier` is a PLAIN multiplier** (e.g. `4.5` for a 4.5x win),
+  **not** ×100 cents — confirmed against a live response (`{round:{payoutMultiplier:
+  4.5, payout:22500000, amount:5000000}}` for a $5 bet at 4.5x = $22.50). Only the
+  nested `state[]` book events (`cellCall.payoutMultiplier`, `wincap`/
+  `finalWin.amount`) use the ×100-cents scale — don't apply that scaling to the
+  top-level `round` fields, or a win pays 1/100th of the real amount. `round.payout`
+  is the authoritative payout in the standard money scale (÷1,000,000) — prefer it
+  outright over recomputing `stake × payoutMultiplier` client-side. Call
+  `/wallet/end-round` **only when the play response shows a win**
+  (`payoutMultiplier > 0`) — a loss has nothing to pay out, so the RGS already
+  settles and closes the round inside the play response itself (`round.active:
+  false`); calling end-round on it anyway throws `"player does not have active
+  round"`. Mirrors the production noWin/singleRoundWin split in
+  monstrums-web-sdk's `packages/utils-xstate/createPrimaryMachines.ts`. LOCAL:
+  weighted draw over the bundle's `outcomes` (the exact certified odds). Serialize
+  rounds through a promise chain (RGS: one active round per session) — queue, don't
+  reject.
 - **Steering**: the drawn book decides; the line is steered afterward. Winners:
   converge on the nearest unrevealed winning cell, then sweep to the second. Losers:
   hold a miss lane clear of every losing band; hard-clamp inside the window so a
@@ -109,7 +128,7 @@ team separately; it is NOT an RGS artifact.
 - **Never spoil the outcome**: defer balance-display updates to the reveal (the line
   reaching the cell), even though the book settles at bet time. Camera should frame
   both the line and the nearest chip through its resolution beat.
-- Established UX conventions (see `games/2_11_price_grid/frontend_demo/`): first-play
+- Established UX conventions (see `games/2_11_crypto_pulse_grid/frontend_demo/`): first-play
   hint, cause-specific rejection copy ("Too close to the line" / "Column full — max 2
   chips" / "Chip already there"), session strip (P/L, at-risk, last-8 ticker),
   win tiers (<5x / 5–20x / ≥20x with escalating beat), hot-chip countdown bar,

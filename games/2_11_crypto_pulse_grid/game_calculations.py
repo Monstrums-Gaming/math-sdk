@@ -1,4 +1,4 @@
-"""Win evaluation for Crypto Pulse Grid (2_10).
+"""Win evaluation for Crypto Pulse Grid (2_11).
 
 There is no board to evaluate: the outcome is forced by the active criteria and the
 payout is read straight from the current mode's parameters (game_executables).

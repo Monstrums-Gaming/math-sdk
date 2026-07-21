@@ -1,8 +1,8 @@
-"""Post-build verifier + odds-bundle emitter for Crypto Pulse Grid (2_10).
+"""Post-build verifier + odds-bundle emitter for Crypto Pulse Grid (2_11).
 
 Run AFTER a prod build (COMPRESSION=1 RUN_FORMAT_CHECKS=1). Re-verifies every
 published artifact against the authoritative GameConfig, then emits `odds_bundle.json`
-(consumed verbatim by the web app apps/2-1-crypto-pulse-grid). Kept OUT of
+(consumed by frontend_demo/build_demo_data.py and any future web app). Kept OUT of
 publish_files/ (it is not an RGS artifact).
 
 Per mode it asserts, against publish_files/lookUpTable_<mode>_0.csv +
@@ -15,7 +15,7 @@ books_<mode>.jsonl.zst:
     payout, win books emit `cellCall -> wincap -> finalWin` (wincap.amount == payout),
     lose books emit `cellCall -> finalWin` (no wincap).
 
-Usage:  PYTHONPATH="$PWD" ./env/bin/python games/2_10_crypto_pulse_grid/build_odds_bundle.py
+Usage:  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/build_odds_bundle.py
 """
 
 import io
