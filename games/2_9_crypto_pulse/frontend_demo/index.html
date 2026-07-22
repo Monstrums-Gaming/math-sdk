@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crypto Pulse Pro — demo</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#0f141c; --panel2:#131a24; --line:#1e2833;
+    --text:#e8edf2; --dim:#7d8a99; --green:#12c98a; --greenD:#0e9e6c;
+    --red:#f4506b; --redD:#d63a54; --gold:#f5b731; --grid:#171f2a;
+    --field:#080c12;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font:14px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  button:focus-visible, input:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .brand{display:flex; align-items:center; gap:8px; font-weight:700; letter-spacing:.5px}
+  .brand .ic{color:var(--gold)}
+  .brand .pro{color:var(--dim); font-size:11px; font-weight:600}
+  .bal{background:#08213a; color:#cfe6ff; padding:6px 12px; border-radius:6px; font-weight:700}
+  .bal .cur{color:var(--gold); margin-right:4px}
+  .badge{font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid var(--line); color:var(--dim); margin-left:10px}
+  .badge.live{color:var(--green); border-color:var(--greenD)}
+
+  main{flex:1; display:flex; min-height:0}
+  .stage{flex:1; position:relative; min-width:0}
+  canvas{display:block; width:100%; height:100%}
+  .hud{position:absolute; top:14px; left:16px; pointer-events:none}
+  .hud .pair{color:var(--dim); font-size:13px}
+  .hud .pair b{color:var(--text); font-size:15px}
+  .hud .price{font-size:34px; font-weight:700; margin-top:2px; transition:color .2s}
+  .hud .price.up{color:var(--green)} .hud .price.dn{color:var(--red)}
+  .timer{position:absolute; top:14px; right:18px; font-size:26px; font-weight:700; letter-spacing:2px; color:var(--text)}
+  .verdict{
+    position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+    font-size:40px; font-weight:800; letter-spacing:1px; opacity:0; transition:opacity .3s;
+    text-shadow:0 4px 30px rgba(0,0,0,.6); text-align:center;
+  }
+  .verdict.show{opacity:1}
+  .verdict .sub{display:block; font-size:16px; font-weight:600; color:var(--dim); margin-top:4px}
+
+  /* ---- right rail: Stake-standard bet form ---- */
+  aside{
+    width:320px; flex:none; border-left:1px solid var(--line); background:var(--panel);
+    display:flex; flex-direction:column; overflow:auto;
+  }
+  .panel{ padding:16px; }
+  .label{ font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
+
+  /* Manual / Auto segmented toggle */
+  .tabs{ display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--bg);
+    border:1px solid var(--line); border-radius:8px; padding:4px; margin-bottom:16px; }
+  .tab{ padding:9px 0; border-radius:6px; font:inherit; font-size:11px; font-weight:700;
+    letter-spacing:.12em; color:var(--dim); background:none; border:none; cursor:pointer; }
+  .tab.active{ background:var(--gold); color:#1a1206; }
+
+  /* the inset field pill, shared by Bet amount + Profit on win */
+  .bet-row{ display:flex; align-items:center; gap:8px; background:var(--field);
+    border:1px solid var(--line); border-radius:8px; padding:6px 8px; margin-bottom:14px; }
+  .bet-row .cur-ic{ color:var(--gold); font-weight:700; padding-left:3px; flex:none; }
+  .bet-row input{ flex:1; min-width:0; background:none; border:none; color:var(--text);
+    font:inherit; font-size:15px; font-weight:700; outline:none; }
+  .bet-row.readonly input{ color:var(--dim); cursor:default; }
+  .step-btn{ width:36px; height:30px; flex:none; border-radius:6px; background:var(--panel2);
+    border:1px solid var(--line); color:var(--dim); cursor:pointer; font:inherit; font-size:13px; font-weight:700; }
+  .step-btn:hover{ color:var(--text); border-color:var(--gold); }
+
+  /* the two side action buttons in place of the single Stake "Bet" CTA */
+  .action-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+  .call-btn{ border:none; border-radius:8px; cursor:pointer; padding:14px 0; font:inherit;
+    font-weight:800; letter-spacing:.5px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .call-btn small{ font-size:11px; font-weight:600; opacity:.85; }
+  .call-btn.high{ background:var(--green); color:#04120c; }
+  .call-btn.high:hover{ background:var(--greenD); }
+  .call-btn.low{ background:var(--red); color:#1a0207; }
+  .call-btn.low:hover{ background:var(--redD); }
+  .call-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  /* auto panel controls */
+  .seg{ display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--bg);
+    border:1px solid var(--line); border-radius:8px; padding:4px; }
+  .seg button{ padding:8px 0; border-radius:6px; font:inherit; font-size:11px; font-weight:700;
+    letter-spacing:.06em; color:var(--dim); background:none; border:none; cursor:pointer; }
+  .seg button.on{ background:var(--gold); color:#1a1206; }
+  .seg.side button.on.high{ background:var(--green); color:#04120c; }
+  .seg.side button.on.low{ background:var(--red); color:#1a0207; }
+  .rchips{ display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .rchips button{ padding:7px 0; border-radius:6px; font:inherit; font-size:12px; font-weight:600;
+    background:var(--bg); border:1px solid var(--line); color:var(--dim); cursor:pointer; }
+  .rchips button.on{ background:var(--gold); border-color:var(--gold); color:#1a1206; }
+  .adj-row{ display:grid; grid-template-columns:1fr 76px; gap:8px; align-items:center; margin-bottom:12px; }
+  .num{ width:100%; background:var(--field); border:1px solid var(--line); border-radius:8px;
+    padding:8px; color:var(--text); font:inherit; font-weight:700; outline:none; }
+  .num::placeholder{ color:var(--dim); font-weight:400; }
+  .fast-btn{ width:100%; padding:9px 0; border-radius:8px; background:var(--bg);
+    border:1px solid var(--line); color:var(--dim); font:inherit; font-weight:700;
+    letter-spacing:.08em; cursor:pointer; margin-bottom:10px; }
+  .fast-btn.on{ background:var(--gold); border-color:var(--gold); color:#1a1206; }
+  .auto-start{ width:100%; padding:14px 0; border-radius:8px; border:none; background:var(--gold);
+    color:#1a1206; font:inherit; font-weight:800; letter-spacing:.5px; cursor:pointer; }
+  .auto-start.running{ background:var(--red); color:#fff; }
+
+  .foot{ color:var(--dim); font-size:11px; text-align:center; margin-top:12px; }
+
+  @media (max-width:760px){
+    body{ overflow:auto; }
+    main{ flex-direction:column; }
+    .stage{ min-height:300px; }
+    aside{ width:100%; border-left:none; border-top:1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="ic">▨</span> CRYPTO PULSE <span class="pro">PRO</span>
+    <span class="badge" id="modeBadge">LOCAL</span></div>
+  <div class="bal"><span class="cur">$</span><span id="bal">780.00</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="chart"></canvas>
+    <div class="hud">
+      <div class="pair"><b>BTC/USD</b> Perpetual</div>
+      <div class="price" id="price">47986.66</div>
+    </div>
+    <div class="timer" id="timer">00:00</div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <aside>
+    <div class="panel">
+      <div class="tabs" id="modeTabs">
+        <button class="tab active" id="tabManual" data-mode="manual">MANUAL</button>
+        <button class="tab" id="tabAuto" data-mode="auto">AUTO</button>
+      </div>
+
+      <div class="label">Bet Amount</div>
+      <div class="bet-row">
+        <span class="cur-ic">$</span>
+        <input id="betInput" type="text" inputmode="decimal" value="10.00" aria-label="Bet amount" />
+        <button class="step-btn" id="betHalf" aria-label="Halve bet">½</button>
+        <button class="step-btn" id="betDouble" aria-label="Double bet">2×</button>
+      </div>
+
+      <div class="label">Profit on Win</div>
+      <div class="bet-row readonly">
+        <span class="cur-ic">$</span>
+        <input id="profitInput" type="text" value="9.00" readonly tabindex="-1" aria-label="Profit on win" />
+      </div>
+
+      <!-- MANUAL: two side action buttons sharing one Profit-on-Win field -->
+      <div class="action-row" id="manualActions">
+        <button class="call-btn high" id="high" data-side="high">↑ HIGH <small id="mxH">1.90×</small></button>
+        <button class="call-btn low"  id="low"  data-side="low">↓ LOW <small id="mxL">1.90×</small></button>
+      </div>
+
+      <!-- AUTO -->
+      <div id="autoPanel" style="display:none">
+        <div class="label">Bet Side</div>
+        <div class="seg side" id="autoSide" style="margin-bottom:14px">
+          <button class="on high" data-side="high">↑ HIGH</button>
+          <button class="low" data-side="low">↓ LOW</button>
+        </div>
+
+        <div class="label">Number of Rounds</div>
+        <div class="rchips" id="autoRounds" style="margin-bottom:14px">
+          <button data-r="10">10</button>
+          <button data-r="25">25</button>
+          <button data-r="50">50</button>
+          <button data-r="100">100</button>
+          <button data-r="inf" class="on">∞</button>
+        </div>
+
+        <div class="label">On Win</div>
+        <div class="adj-row">
+          <div class="seg" id="onWinSeg">
+            <button class="on" data-m="reset">RESET</button>
+            <button data-m="increase">INCREASE</button>
+          </div>
+          <input class="num" id="onWinPct" value="0" inputmode="decimal" aria-label="On-win increase percent" />
+        </div>
+
+        <div class="label">On Loss</div>
+        <div class="adj-row">
+          <div class="seg" id="onLossSeg">
+            <button class="on" data-m="reset">RESET</button>
+            <button data-m="increase">INCREASE</button>
+          </div>
+          <input class="num" id="onLossPct" value="0" inputmode="decimal" aria-label="On-loss increase percent" />
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px">
+          <div>
+            <div class="label">Stop on Profit</div>
+            <input class="num" id="stopProfit" value="" placeholder="Off" inputmode="decimal" aria-label="Stop on profit" />
+          </div>
+          <div>
+            <div class="label">Stop on Loss</div>
+            <input class="num" id="stopLoss" value="" placeholder="Off" inputmode="decimal" aria-label="Stop on loss" />
+          </div>
+        </div>
+
+        <button class="fast-btn" id="autoFast" aria-pressed="false">⚡ FAST</button>
+        <button class="auto-start" id="autoBtn">▶ START AUTO</button>
+      </div>
+
+      <div class="foot" id="foot">Locked until round ends. No cancellation.</div>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  // ---- config / RGS wiring -------------------------------------------------
+  const qs = new URLSearchParams(location.search);
+  const RGS_URL   = qs.get("rgs_url") || qs.get("rgsUrl") || "";
+  const SESSION   = qs.get("sessionID") || qs.get("session") || "";
+  const CURRENCY  = qs.get("currency") || "USD";
+  const IS_LIVE   = Boolean(RGS_URL && SESSION);
+  const MONEY = 1_000_000;           // RGS integer money scale (live)
+
+  // ---- state ---------------------------------------------------------------
+  let BUNDLE = null, MODE = null, MULT = 1.9;
+  let balance = 780.00, bet = 10, busy = false, curMode = "manual";
+
+  const $ = id => document.getElementById(id);
+  const priceEl = $("price"), verdict = $("verdict"), timerEl = $("timer");
+  const fmt = n => n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const round2 = x => Math.round(x*100)/100;
+
+  // ---- odds bundle ---------------------------------------------------------
+  fetch("crypto_pulse_rgs.json").then(r=>r.json()).then(b=>{
+    BUNDLE=b; MODE=b.modes.base; MULT=b.multiplier;
+    $("mxH").textContent = $("mxL").textContent = MULT.toFixed(2)+"×";
+    refreshProfit();
+    if (IS_LIVE){ const bd=$("modeBadge"); bd.textContent="LIVE"; bd.classList.add("live"); }
+    // jurisdiction kill-switch: some markets disallow autoplay -> hide the Auto tab, force Manual
+    if (b.disabledAutoplay){ $("tabAuto").style.display="none"; setMode("manual"); }
+  }).catch(()=>flashFoot("Failed to load crypto_pulse_rgs.json"));
+
+  // ---- bet amount (Stake-standard field) -----------------------------------
+  function setBet(v, silent){
+    bet = Math.max(1, round2(v || 0));
+    $("betInput").value = fmt(bet);
+    refreshProfit();
+  }
+  function refreshProfit(){
+    // both sides pay MULT (1.90x) -> profit on win = bet * (MULT - 1)
+    $("profitInput").value = fmt(round2(bet*(MULT-1)));
+  }
+  $("betHalf").onclick   = ()=>setBet(bet/2);
+  $("betDouble").onclick = ()=>setBet(bet*2);
+  $("betInput").addEventListener("change",()=>{
+    const v = parseFloat(String($("betInput").value).replace(/[^0-9.]/g,""));
+    setBet(isNaN(v)?1:v, true);
+  });
+
+  // ---- Manual / Auto tabs --------------------------------------------------
+  function setMode(m){
+    if (A.running) return;             // blocked mid auto-sequence
+    curMode = m;
+    const auto = m==="auto";
+    $("manualActions").style.display = auto ? "none" : "";
+    $("autoPanel").style.display     = auto ? "" : "none";
+    $("tabManual").classList.toggle("active", !auto);
+    $("tabAuto").classList.toggle("active", auto);
+  }
+  $("modeTabs").addEventListener("click",e=>{
+    const b=e.target.closest("[data-mode]"); if(b) setMode(b.dataset.mode);
+  });
+
+  // ---- manual action buttons ----------------------------------------------
+  $("high").onclick = ()=>play(true);
+  $("low").onclick  = ()=>play(false);
+
+  // ---- round flow ----------------------------------------------------------
+  async function play(pickedHigh){
+    if(busy || !MODE) return false;
+    if(bet>balance){ flashFoot("Insufficient balance"); return false; }
+    busy=true; setButtons(false);
+    balance = round2(balance - bet); renderBal();     // stake taken
+    verdict.classList.remove("show");
+
+    // Resolve the outcome from the CERTIFIED odds (local replay) or the RGS (live).
+    let isWin, payoutMult;
+    try {
+      ({isWin, payoutMult} = IS_LIVE ? await livePlay(pickedHigh) : localPlay());
+    } catch(err){ flashFoot("RGS error: "+err.message); balance=round2(balance+bet); renderBal(); busy=false; setButtons(true); return false; }
+
+    // Chart finishes on the player's side iff they won: endsHigh = pickedHigh == isWin.
+    const endsHigh = (pickedHigh === isWin);
+    await animateChart(endsHigh, A.running && A.fast);   // Auto "Fast" → quick reveal
+
+    const winAmt = isWin ? round2(bet*payoutMult) : 0;
+    if(isWin){ balance = round2(balance + winAmt); renderBal(); }
+    showVerdict(isWin, winAmt, pickedHigh);
+    busy=false; setButtons(true);
+    return isWin;
+  }
+
+  // LOCAL: weighted pick over the published outcomes (29 win / 28 lose) — exact odds.
+  function localPlay(){
+    const outs=MODE.outcomes, total=outs.reduce((s,o)=>s+o.weight,0);
+    let r=Math.random()*total, pick=outs[outs.length-1];
+    for(const o of outs){ if((r-=o.weight)<0){ pick=o; break; } }
+    return { isWin: pick.payoutCents>0, payoutMult: MULT };
+  }
+
+  // LIVE: authenticate → play(base) → read the pre-frozen book → end-round.
+  async function livePlay(){
+    const call=(p,b)=>fetch(RGS_URL+p,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(b)}).then(r=>r.json());
+    await call("/wallet/authenticate",{sessionID:SESSION});
+    const res=await call("/wallet/play",{sessionID:SESSION,mode:"base",currency:CURRENCY,amount:Math.round(bet*MONEY)});
+    await call("/wallet/end-round",{sessionID:SESSION});
+    const mult=(res.payoutMultiplier??0)/100;         // base-bet x100
+    if(typeof res.balance==="number") balance=res.balance/MONEY;
+    return { isWin: mult>0, payoutMult: mult||MULT };
+  }
+
+  // ---- chart (smooth, frame-rate independent) ------------------------------
+  const cv=$("chart"), ctx=cv.getContext("2d");
+  let W=0,H=0, DPR=Math.min(devicePixelRatio||1,2);
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function resize(){ const r=cv.getBoundingClientRect(); W=r.width;H=r.height;
+    cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  addEventListener("resize",resize); resize();
+
+  const WINDOW=120;            // points visible across the chart
+  const IDLE_MS=170;           // ms between idle ticks (higher = calmer scroll)
+  // eased-velocity reveal: cadence eases idle -> a mildly quicker "focus" speed -> idle.
+  const FOCUS_PEAK=1.4;        // peak reveal speed vs idle (<=1.4x, never an abrupt 3x jump)
+  const FOCUS_MS=IDLE_MS/FOCUS_PEAK;         // fastest ms/point at the middle of the reveal (~121)
+  const AVG_MS=(IDLE_MS+FOCUS_MS)/2;         // mean ms/point over the sin^2 envelope (env avgs 0.5)
+  const FAST_MS=14;            // fixed ms/point for Auto "Fast" mode (~0.5s/round, animation kept)
+  let startPrice=47986.66;     // dashed baseline = the price at bet time
+  let series=[];               // rolling price points, newest last
+  let shown=startPrice;        // eased price shown in the HUD (never snaps)
+  let viewLo=0, viewHi=1, primed=false;   // eased y-range → no vertical jitter
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const clamp01=t=>t<0?0:t>1?1:t;
+
+  // gentle walk that mean-reverts toward the baseline (low volatility = smooth)
+  function idleTick(prev){ return prev + (startPrice-prev)*0.03 + (Math.random()-0.5)*startPrice*0.0011; }
+  (function seed(){ let v=startPrice; for(let i=0;i<=WINDOW;i++){ v=idleTick(v); series.push(v); }
+    startPrice=series[series.length-1]; })();
+
+  // predetermined path (n points) that finishes decisively on the winning side.
+  // two low-amplitude noise octaves give it real chart-tape texture; the endpoint is
+  // hard-pinned to target so the finish is always decisively on the correct side.
+  function buildReveal(endsHigh,n){
+    const base=startPrice, dir=endsHigh?1:-1;
+    const target=base*(1+dir*(0.005+Math.random()*0.006));
+    const pts=[]; let v=base;
+    for(let i=1;i<=n;i++){
+      const drift=(target-base)*(i/n);
+      const taper=1-(i/n)*0.5;                        // calm the noise as it nears the finish
+      const n1=(Math.random()-0.5)*base*0.0015*taper; // coarse drift noise
+      const n2=(Math.random()-0.5)*base*0.0006*taper; // finer octave = richer texture
+      v=base+drift+n1+n2;
+      pts.push(v);
+    }
+    pts[n-1]=target;
+    return {pts,target};
+  }
+
+  const anim={phase:"idle", queue:[], glide:0, cellMs:IDLE_MS, target:0, onDone:null, total:0, fast:false};
+  function pushPoint(p){ series.push(p); if(series.length>WINDOW+1) series.shift(); }
+  function targetRange(){
+    let lo=startPrice, hi=startPrice;
+    for(const v of series){ if(v<lo)lo=v; if(v>hi)hi=v; }
+    const mid=(lo+hi)/2, half=Math.max((hi-lo)/2, startPrice*0.0012)*1.4;
+    return [mid-half, mid+half];
+  }
+  // smooth "focus" envelope: 0 at both ends (value AND slope) → no jump, no kink; peaks mid-reveal
+  function revealCellMs(){
+    if(anim.total<=0) return IDLE_MS;
+    const done=anim.total-anim.queue.length;             // points already revealed
+    const p=clamp01((done+anim.glide)/anim.total);       // fractional progress through the reveal
+    const env=Math.sin(Math.PI*p); const bump=env*env;   // sin^2(pi*p): 0→1→0, flat at the ends
+    return lerp(IDLE_MS,FOCUS_MS,bump);
+  }
+
+  let _t=performance.now();
+  function loop(now){
+    const dt=Math.min(80, now-_t); _t=now;
+    // eased cadence: recompute ms/point every frame so speed changes are always continuous
+    if(anim.phase==="reveal") anim.cellMs = anim.fast ? FAST_MS : revealCellMs();
+    // advance the scroll continuously; append a point each time we cross a cell
+    anim.glide += dt/anim.cellMs;
+    while(anim.glide>=1){
+      anim.glide-=1;
+      if(anim.phase==="reveal"){
+        if(anim.queue.length){ pushPoint(anim.queue.shift()); }
+        else { startPrice=anim.target; anim.phase="idle"; anim.cellMs=IDLE_MS; anim.total=0; anim.fast=false;
+               timerEl.textContent="00:00"; const cb=anim.onDone; anim.onDone=null; if(cb)cb(); }
+      } else pushPoint(idleTick(series[series.length-1]));
+    }
+    // ease the y-range and the HUD price so nothing snaps between frames
+    const [tl,th]=targetRange(), ky=1-Math.exp(-dt/240);
+    if(!primed){ viewLo=tl; viewHi=th; primed=true; } else { viewLo=lerp(viewLo,tl,ky); viewHi=lerp(viewHi,th,ky); }
+    shown=lerp(shown, series[series.length-1], 1-Math.exp(-dt/120));
+    render();
+    if(anim.phase==="reveal"){ const s=Math.ceil((anim.queue.length*(anim.fast?FAST_MS:AVG_MS))/1000);   // even countdown
+      timerEl.textContent="00:"+String(Math.max(0,s)).padStart(2,"0"); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function animateChart(endsHigh, fast){
+    return new Promise(res=>{
+      // Normal: eased idle-consistent cadence over ~5.5-7.5s. Auto "Fast": a quick fixed
+      // cadence (~0.5s) so autobet actually speeds up the REVEAL, not just the inter-round pause.
+      const totalMs = fast ? 550 : (5500+Math.random()*2000);
+      const n = fast ? Math.max(16, Math.round(totalMs/FAST_MS))
+                     : Math.max(24, Math.round(totalMs/AVG_MS));
+      const {pts,target}=buildReveal(endsHigh,n);
+      anim.target=target; anim.fast=!!fast;
+      if(REDUCED){ pts.forEach(pushPoint); startPrice=target; timerEl.textContent="00:00"; res(); return; }
+      anim.queue=pts; anim.total=n; anim.phase="reveal"; anim.glide=0; anim.onDone=res;
+      anim.cellMs = fast ? FAST_MS : IDLE_MS;              // fast: quick fixed; normal: start at idle speed
+    });
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    const n=series.length; if(n<2) return;
+    const span=viewHi-viewLo||1;
+    const x=i=>((i-anim.glide)/WINDOW)*W;              // fractional glide = continuous scroll
+    const y=v=>H-((v-viewLo)/span)*H;
+    // grid
+    ctx.strokeStyle=getCSS("--grid"); ctx.lineWidth=1;
+    for(let g=1;g<5;g++){ const gy=Math.round(H*g/5)+.5; ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+    // baseline (price at bet time)
+    ctx.strokeStyle="rgba(125,138,153,.45)"; ctx.setLineDash([4,5]); ctx.beginPath();
+    ctx.moveTo(0,y(startPrice)); ctx.lineTo(W,y(startPrice)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=getCSS("--dim"); ctx.font="11px ui-monospace,monospace"; ctx.fillText(fmt(startPrice),W-74,y(startPrice)-6);
+    // path
+    const head=series[n-1], up=head>=startPrice, col=up?getCSS("--green"):getCSS("--red");
+    const grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, up?"rgba(18,201,138,.20)":"rgba(244,80,107,.20)"); grad.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.beginPath(); ctx.moveTo(x(0),H);
+    for(let i=0;i<n;i++) ctx.lineTo(x(i),y(series[i]));
+    ctx.lineTo(x(n-1),H); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath();
+    for(let i=0;i<n;i++){ const px=x(i),py=y(series[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.lineJoin="round"; ctx.stroke();
+    // head dot
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x(n-1),y(head),3.2,0,7); ctx.fill();
+    // HUD price (eased)
+    priceEl.textContent=fmt(shown);
+    priceEl.className="price "+(shown>=startPrice?"up":"dn");
+  }
+  const _css={}; function getCSS(v){ return _css[v]||(_css[v]=getComputedStyle(document.documentElement).getPropertyValue(v).trim()); }
+
+  // ---- autoplay ------------------------------------------------------------
+  const A={ running:false, side:true, rounds:Infinity, done:0, baseBet:10, startBal:0,
+    onWin:{mode:"reset",pct:0}, onLoss:{mode:"reset",pct:0}, stopProfit:0, stopLoss:0, fast:false };
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+  // side selector (green HIGH / red LOW seg)
+  $("autoSide").addEventListener("click",e=>{
+    const b=e.target.closest("[data-side]"); if(!b)return;
+    [...e.currentTarget.children].forEach(c=>c.classList.remove("on"));
+    b.classList.add("on"); A.side = b.dataset.side==="high";
+  });
+  // rounds chips
+  $("autoRounds").addEventListener("click",e=>{
+    const b=e.target.closest("[data-r]"); if(!b)return;
+    [...e.currentTarget.children].forEach(c=>c.classList.remove("on"));
+    b.classList.add("on"); A.rounds = b.dataset.r==="inf" ? Infinity : Number(b.dataset.r);
+  });
+  // on-win / on-loss reset|increase toggles
+  function wireSeg(id,obj){
+    $(id).addEventListener("click",e=>{
+      const b=e.target.closest("[data-m]"); if(!b)return;
+      [...e.currentTarget.children].forEach(c=>c.classList.remove("on"));
+      b.classList.add("on"); obj.mode=b.dataset.m;
+    });
+  }
+  wireSeg("onWinSeg",A.onWin); wireSeg("onLossSeg",A.onLoss);
+  $("onWinPct").addEventListener("change",()=>{ A.onWin.pct=Math.max(0,parseFloat($("onWinPct").value)||0); $("onWinPct").value=A.onWin.pct; });
+  $("onLossPct").addEventListener("change",()=>{ A.onLoss.pct=Math.max(0,parseFloat($("onLossPct").value)||0); $("onLossPct").value=A.onLoss.pct; });
+  $("stopProfit").addEventListener("change",()=>{ A.stopProfit=Math.max(0,parseFloat($("stopProfit").value)||0); });
+  $("stopLoss").addEventListener("change",()=>{ A.stopLoss=Math.max(0,parseFloat($("stopLoss").value)||0); });
+  $("autoFast").addEventListener("click",()=>{
+    A.fast=!A.fast; $("autoFast").classList.toggle("on",A.fast); $("autoFast").setAttribute("aria-pressed",String(A.fast));
+  });
+  $("autoBtn").addEventListener("click",()=>{ A.running ? stopAuto() : startAuto(); });
+
+  async function startAuto(){
+    if(A.running || !MODE) return;
+    A.running=true; A.done=0; A.baseBet=bet; A.startBal=balance;
+    const btn=$("autoBtn"); btn.classList.add("running"); btn.textContent="■ STOP AUTO";
+    while(A.running && A.done<A.rounds){
+      if(bet>balance){ flashFoot("Insufficient balance"); break; }
+      const isWin=await play(A.side);
+      if(!A.running) break;
+      A.done++;
+      const rule=isWin?A.onWin:A.onLoss;
+      if(rule.mode==="reset") setBet(A.baseBet,true);
+      else setBet(bet*(1+rule.pct/100),true);
+      const profit=round2(balance-A.startBal);
+      if(A.stopProfit>0 && profit>=A.stopProfit) break;
+      if(A.stopLoss>0 && -profit>=A.stopLoss) break;
+      if(A.running && A.done<A.rounds) await sleep(A.fast?200:650);
+    }
+    stopAuto();
+  }
+  function stopAuto(){
+    A.running=false; const btn=$("autoBtn");
+    btn.classList.remove("running"); btn.textContent="▶ START AUTO";
+  }
+
+  // ---- keyboard ------------------------------------------------------------
+  addEventListener("keydown",e=>{
+    if(A.running || curMode!=="manual") return;
+    const t=e.target;
+    if(t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
+    if(e.key==="ArrowUp"){ e.preventDefault(); play(true); }
+    else if(e.key==="ArrowDown"){ e.preventDefault(); play(false); }
+  });
+
+  // ---- ui helpers ----------------------------------------------------------
+  function renderBal(){ $("bal").textContent=fmt(balance); }
+  function setButtons(on){ $("high").disabled=!on; $("low").disabled=!on;
+    $("foot").textContent = on ? "Locked until round ends. No cancellation." : "Round in progress…"; }
+  function showVerdict(isWin,amt,pickedHigh){
+    verdict.style.color = isWin?getCSS("--green"):getCSS("--red");
+    verdict.innerHTML = (isWin?`WIN +$${fmt(amt)}`:`LOSS`)+
+      `<span class="sub">${pickedHigh?"HIGH":"LOW"} · ${MULT.toFixed(2)}×</span>`;
+    verdict.classList.add("show");
+    setTimeout(()=>verdict.classList.remove("show"),2200);
+  }
+  function flashFoot(m){ const f=$("foot"); const o=f.textContent; f.textContent=m; setTimeout(()=>f.textContent=o,1400); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Tap Trade — demo</title>
+<link rel="preload" href="./tap_trade_rgs.json" as="fetch" crossorigin>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23050708'/%3E%3Cpolyline points='4,16 9,10 13,13 20,5' fill='none' stroke='%2322ff9a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="balancePill" title="LOCAL: click to reset balance">
+    <span class="dot"></span>
+    <span id="balanceValue" class="num">$2,000.00</span>
+    <span class="badge" id="modeBadge">LOCAL</span>
+  </div>
+
+  <div id="sessionStrip" class="num">
+    <span class="pl up" id="plValue">+$0.00</span>
+    <span class="sep"></span>
+    <span class="risk" id="riskValue">nothing in play</span>
+    <span class="sep"></span>
+    <span class="ticker" id="tickerPips" title="Bet history"></span>
+  </div>
+
+  <div id="hint">Tap a square — if the line reaches it, you win that multiplier.</div>
+
+  <div id="toastContainer"></div>
+
+  <div id="brand" aria-hidden="true"></div>
+
+  <div id="gameTitle" aria-hidden="true"></div>
+
+  <div id="themeMenu" role="menu" aria-label="Theme" aria-hidden="true">
+    <div class="menuTitle">Theme</div>
+  </div>
+
+  <div id="betMenu" role="menu" aria-label="Bet amount" aria-hidden="true">
+    <div class="menuTitle">Bet amount</div>
+  </div>
+
+  <div id="histPanel" role="menu" aria-label="Bet history" aria-hidden="true">
+    <div class="menuTitle">Bet history</div>
+    <div id="histList"></div>
+  </div>
+
+  <div id="settingsPanel" role="menu" aria-label="Settings" aria-hidden="true">
+    <div class="menuTitle">Settings</div>
+    <div class="setRow">
+      <span class="setLabel">Game speed</span>
+      <span class="setSeg num" id="speedSeg" role="group" aria-label="Game speed">
+        <button data-s="1">1x</button>
+        <button data-s="1.5">1.5x</button>
+        <button data-s="2">2x</button>
+      </span>
+    </div>
+    <div class="setRow">
+      <span class="setLabel">Sound<span class="setHint">place / win / loss cues</span></span>
+      <button id="soundToggle" class="switch" role="switch" aria-checked="true" aria-label="Sound"><span class="knob"></span></button>
+    </div>
+    <div class="setRow">
+      <span class="setLabel">Tap to confirm<span class="setHint">first tap previews, second places the chip</span></span>
+      <button id="tapConfirmToggle" class="switch" role="switch" aria-checked="true" aria-label="Tap to confirm"><span class="knob"></span></button>
+    </div>
+  </div>
+
+  <div id="debugPanel" role="menu" aria-label="Debug" aria-hidden="true">
+    <div class="menuTitle">Debug — scenario</div>
+    <div class="dbgRow">
+      <textarea id="dbgScenario" rows="2" spellcheck="false"
+        placeholder="0:+2W 0:-2L   (col:rowOffset + W/L per chip · max 2 per column)"></textarea>
+    </div>
+    <div class="dbgRow dbgBtns">
+      <button id="dbgRun" type="button">Run scenario</button>
+      <label class="dbgRepeat">×<input id="dbgRepeat" type="number" min="1" max="20" value="1"></label>
+      <button type="button" data-sc="0:+2W 0:-2L">Win + loss</button>
+      <button type="button" data-sc="0:+3W 0:-3W">Two winners</button>
+      <button type="button" data-sc="0:+3L 0:-3L">Two losses</button>
+      <button type="button" data-sc="0:+2W 0:-2L 1:+2W 1:-2L">Two columns</button>
+    </div>
+    <div class="dbgRow">
+      <button id="dbgInspector" class="switch" role="switch" aria-checked="false" aria-label="Inspector overlay"><span class="knob"></span></button>
+      <span class="dbgInspLabel">Inspector overlay (collision rects · bands · phase-colored line)</span>
+    </div>
+    <div class="dbgRow dbgStats num" id="dbgStats">no reveals yet</div>
+    <div class="dbgRow dbgBtns">
+      <button id="dbgCopy" type="button">Copy report JSON</button>
+      <button id="dbgReset" type="button">Reset data</button>
+    </div>
+  </div>
+
+  <div id="dbgHud" aria-hidden="true"></div>
+
+  <div id="histModal" aria-hidden="true">
+    <div class="histCard" role="dialog" aria-modal="true" aria-label="Bet replay">
+      <button id="histModalClose" aria-label="Close">&times;</button>
+      <canvas id="replayCanvas" width="480" height="260"></canvas>
+      <img id="histShot" class="none" alt="Where the line landed">
+      <div class="histCap">
+        <span id="histCapAmt" class="num"></span>
+        <span id="histCapSub" class="num"></span>
+      </div>
+      <button id="replayBtn">Replay</button>
+    </div>
+  </div>
+
+  <div id="zoomCtrl" role="group" aria-label="Chart zoom">
+    <button id="zoomOut" class="num" aria-label="Zoom out">&minus;</button>
+    <button id="zoomIn" class="num" aria-label="Zoom in">+</button>
+  </div>
+
+  <div id="fatalModal" aria-hidden="true">
+    <div class="histCard fatalCard" role="alertdialog" aria-modal="true" aria-label="Game error">
+      <div class="menuTitle">Something went wrong</div>
+      <p id="fatalMsg"></p>
+      <div class="fatalActions">
+        <button id="fatalRetry" type="button">Try again</button>
+        <button id="fatalReload" type="button">Reload</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash" role="dialog" aria-label="Loading Tap Trade">
+    <img id="splashLoader" src="stake_engine_loader.webp" alt="Loading">
+    <video id="splashVideo" class="hidden" src="monstrums_logo.webm" preload="none" playsinline></video>
+  </div>
+
+  <div id="betSizes" role="group" aria-label="Bet size">
+    <span class="label">Bet</span>
+    <button class="num" data-v="1">$1</button>
+    <button class="num" data-v="2">$2</button>
+    <button class="num on" data-v="5">$5</button>
+    <button class="num" data-v="20">$20</button>
+    <button id="betMoreBtn" aria-label="More bet amounts" aria-haspopup="menu" aria-expanded="false">
+      <span class="plus num">+</span>
+      <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+    <button id="histBtn" aria-label="Bet history" aria-haspopup="menu" aria-expanded="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+    </button>
+    <button id="debugBtn" aria-label="Debug" aria-haspopup="menu" aria-expanded="false" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="8" height="14" rx="4"></rect><path d="M19 7l-3 2"></path><path d="M5 7l3 2"></path><path d="M19 19l-3-2"></path><path d="M5 19l3-2"></path><path d="M12 20v-9"></path><path d="M9.5 6a2.5 2.5 0 0 1 5 0"></path></svg>
+    </button>
+    <button id="settingsBtn" aria-label="Settings" aria-haspopup="menu" aria-expanded="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+    <button id="themeBtn" aria-label="Choose theme" aria-haspopup="menu" aria-expanded="false">
+      <span class="swatch" id="themeSwatch"></span>
+      <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+  </div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

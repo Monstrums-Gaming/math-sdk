@@ -1,0 +1,33 @@
+name: tap-trade-demo
+
+# CI for the Tap Trade frontend demo (games/2_6_tap_trade/frontend_demo):
+# unit tests over the pure modules (bet grid, money formatting, RGS helpers)
+# plus a production Vite build, so a broken demo build can't land unnoticed.
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'games/2_6_tap_trade/frontend_demo/**'
+      - '.github/workflows/tap-trade-demo.yml'
+  pull_request:
+    paths:
+      - 'games/2_6_tap_trade/frontend_demo/**'
+      - '.github/workflows/tap-trade-demo.yml'
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: games/2_6_tap_trade/frontend_demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: games/2_6_tap_trade/frontend_demo/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

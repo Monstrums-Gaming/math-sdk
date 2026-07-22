@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chicken Road Demo</title>
+<style>
+  :root{
+    /* teal night-road world */
+    --bg:#071924;
+    --road:#0d2431;
+    --road-line:#183443;
+    --curb:#304b59;
+    /* warm signage console */
+    --console:#171a21;
+    --console-2:#1f232d;
+    --raised:#272c39;
+    --line:rgba(244,241,230,.10);
+    --paint:#f4f1e6;
+    --paint-dim:#8f9cab;
+    /* road-sign amber = hero; traffic-signal green/red = state */
+    --amber:#ffc12b;
+    --amber-deep:#dc9f0f;
+    --go:#33e07c;
+    --stop:#ff4455;
+    --hot:#ff8a1e;
+    --pill:#2b3844;
+    --accent:var(--amber);
+    --danger:var(--stop);
+    --text:var(--paint);
+    --font-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#06141d;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{display:grid;place-items:center;padding:18px}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+  .game{
+    width:min(1100px, 100%);
+    height:min(680px, calc(100vh - 36px));
+    min-height:560px;
+    position:relative;
+    overflow:hidden;
+    border-radius:18px;
+    background:var(--road);
+    box-shadow:0 24px 80px rgba(0,0,0,.45), inset 0 0 0 3px rgba(80,120,140,.12);
+    user-select:none;
+  }
+
+  .world{
+    position:absolute;
+    inset:0;
+    width:1270px;
+    height:100%;
+    transform:translateX(0);
+    transition:transform .38s cubic-bezier(.12,.65,0,1.01);
+    will-change:transform;
+    z-index:1;
+  }
+
+  .sidewalk{
+    position:absolute;left:336px;top:0;bottom:0;width:160px;
+    background:#0b202d;
+    border-right:30px solid #172f3c;
+    box-shadow:inset -3px 0 rgba(0,0,0,.2);
+    z-index:7;
+  }
+
+  .curb-blocks{
+    position:absolute;right:-30px;top:0;width:30px;height:100%;
+    background:repeating-linear-gradient(
+      to bottom,
+      #294552 0 68px,
+      #0b202d 68px 83px,
+      #355563 83px 152px,
+      #0b202d 152px 168px
+    );
+  }
+
+  .traffic-light{
+    position:absolute;left:20px;top:74px;width:100px;height:210px;
+  }
+  .light-head{
+    width:100px;height:58px;border-radius:32px;background:#294653;padding:7px;display:flex;gap:7px;align-items:center;
+  }
+  .lamp{width:42px;height:42px;border-radius:50%;background:#112b38;box-shadow:inset 0 0 0 6px #0b1c26}
+  .lamp.red{background:#213b4a}
+  .lamp.yellow{background:#ffbf00;box-shadow:inset 0 0 0 6px #ffce35,0 0 16px rgba(255,191,0,.65)}
+  .pole{width:23px;height:105px;background:#314f5d;margin:0 auto}
+  .base{width:63px;height:44px;background:#294653;border-radius:50%;margin:auto;box-shadow:inset 0 -10px #213c49}
+
+  .bush{
+    position:absolute;left:16px;bottom:70px;width:100px;height:82px;border-radius:42% 50% 45% 50%;
+    background:#1d3947;
+    box-shadow:15px 5px #1d3947,-7px 17px #1d3947,28px 22px #1d3947,4px 27px #1d3947;
+  }
+
+  /* Movement is driven entirely by WAAPI (hopTo/crash knock-away) — no CSS
+     left/transform transition, so JS pacing and visuals can never drift. */
+  .chicken{
+    position:absolute;
+    left:381px;
+    top:56%;
+    transform:translateY(-50%);
+    width:80px;
+    height:88px;
+    z-index:14;
+    filter:drop-shadow(0 8px 5px rgba(0,0,0,.35));
+  }
+  .chicken .body{
+    position:absolute;left:10px;top:28px;width:60px;height:48px;border-radius:55% 55% 45% 50%;background:white;
+  }
+  .chicken .wing{position:absolute;left:0;top:39px;width:30px;height:25px;border-radius:55%;background:white;transform:rotate(18deg)}
+  .chicken .head{position:absolute;right:5px;top:12px;width:34px;height:40px;border-radius:50%;background:white}
+  .chicken .comb{position:absolute;right:13px;top:4px;width:9px;height:16px;border-radius:9px 9px 3px 3px;background:#ff3158;box-shadow:8px 4px #ff3158}
+  .chicken .eye{position:absolute;right:12px;top:24px;width:5px;height:5px;border-radius:50%;background:#111}
+  .chicken .beak{position:absolute;right:-3px;top:30px;border-left:12px solid #ff9d00;border-top:6px solid transparent;border-bottom:6px solid transparent}
+  .chicken .leg{position:absolute;bottom:4px;width:5px;height:15px;background:#ff8d00}
+  .chicken .leg.one{left:38px}.chicken .leg.two{left:54px}
+  .chicken .foot{position:absolute;bottom:1px;width:17px;height:4px;background:#ff8d00;border-radius:4px}
+  .chicken .foot.one{left:29px}.chicken .foot.two{left:47px}
+  /* (hop is a WAAPI animation in hopTo — see DUR.hop) */
+
+  .road{
+    position:absolute;
+    left:496px;
+    top:0;
+    bottom:0;
+    width:calc(129px * 6);
+    min-width:calc(129px * 6);
+    background:
+      repeating-linear-gradient(
+        to right,
+        transparent 0 126px,
+        rgba(25,55,70,.9) 126px 132px
+      ),
+      var(--road);
+    overflow:hidden;
+  }
+
+  .lane-lines{
+    position:absolute;inset:0;
+    background:repeating-linear-gradient(to bottom,transparent 0 18px,var(--road-line) 18px 39px,transparent 39px 92px);
+    mask:repeating-linear-gradient(to right,transparent 0 130px,#000 130px 135px,transparent 135px 270px);
+    opacity:.85;
+  }
+
+  .crossing{
+    position:absolute;
+    left:0;
+    top:56%;
+    width:calc(129px * 6);
+    height:90px;
+    transform:translateY(-50%);
+    display:grid;
+    grid-template-columns:repeat(6,129px);
+    align-items:center;
+    justify-items:center;
+    z-index:6;
+  }
+  .drain{width:81px;height:52px;border-radius:50%;background:#203c49;border:6px solid #294a59;position:relative;flex:0 0 auto;box-shadow:0 4px #0a1820}
+  .drain:after{content:"";position:absolute;inset:10px 20px;border-radius:8px;background:repeating-linear-gradient(to right,#0c202b 0 6px,transparent 6px 11px)}
+  /* The NEXT lane's sewer drain is a click target too (mirrors the pill). */
+  .drain.next{
+    cursor:pointer;
+    border-color:rgba(51,224,124,.75);
+    box-shadow:0 4px #0a1820,0 0 16px rgba(51,224,124,.4);
+    transition:box-shadow .12s ease, border-color .12s ease;
+  }
+  .drain.next:hover{
+    border-color:var(--go);
+    box-shadow:0 4px #0a1820,0 0 26px rgba(51,224,124,.7);
+  }
+
+  .multipliers{
+    position:absolute;
+    left:496px;
+    top:calc(56% + 45px);
+    width:calc(129px * 6);
+    display:grid;
+    grid-template-columns:repeat(6,129px);
+    align-items:center;
+    justify-items:center;
+    z-index:12;
+    pointer-events:none;
+  }
+  .mult{
+    position:relative;
+    width:105px;
+    height:40px;
+    border-radius:12px;
+    background:var(--pill);
+    display:grid;
+    place-items:center;
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:-.02em;
+    color:var(--paint);
+    border:1px solid var(--line);
+    box-shadow:inset 0 1px rgba(255,255,255,.04);
+  }
+  /* rising risk = warmer rung (encodes the ladder's real danger gradient) */
+  .mult.t1{color:#d3e7da}
+  .mult.t2{color:#ffe08a}
+  .mult.t3{color:#ffb877}
+  .mult.t4{color:#ff9aa2}
+  /* state overrides (declared after tiers so they win) */
+  .mult.active{background:#1c8f56;color:#eafff2;border-color:transparent;box-shadow:0 0 0 3px rgba(51,224,124,.14)}
+  /* The NEXT lane's pill is a click target (alternate PLAY trigger). The
+     .multipliers container keeps pointer-events:none; only this pill re-enables. */
+  .mult.reached{
+    background:var(--go);color:#08160d;border-color:transparent;
+    box-shadow:0 0 0 3px rgba(51,224,124,.3),0 0 20px rgba(51,224,124,.45);
+    pointer-events:auto;cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .mult.reached:hover{
+    transform:translateY(-2px) scale(1.05);
+    box-shadow:0 0 0 3px rgba(51,224,124,.5),0 0 28px rgba(51,224,124,.7);
+  }
+  .mult.busted{background:var(--stop);color:#fff;border-color:transparent}
+  .turbo-toggle{min-height:34px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:var(--paint-dim);font-weight:800;font-size:11px;letter-spacing:.04em;cursor:pointer;transition:.15s}
+  .turbo-toggle.active{background:var(--amber);color:#12141a;box-shadow:0 0 14px rgba(255,193,43,.4)}
+
+  .cars{
+    position:absolute;
+    inset:0;
+    z-index:30;
+    pointer-events:none;
+    overflow:hidden;
+  }
+
+  .whoosh{
+    position:absolute;
+    width:5px;
+    height:72px;
+    border-radius:5px;
+    background:linear-gradient(to bottom,transparent,rgba(255,255,255,.45),transparent);
+    z-index:6;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  .car{
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    width:86px;
+    height:130px;
+    border-radius:24px 24px 16px 16px;
+    background:linear-gradient(90deg,#ff9b00,#ffbd27 45%,#ff9700);
+    box-shadow:0 12px 8px rgba(0,0,0,.38);
+    transform:translateX(-50%);
+    transform-origin:center center;
+    /* Only transform animates (compositor-only) — filter/opacity animation on the
+       body caused per-frame repaints (shimmer/flicker). */
+    will-change:transform;
+  }
+
+  .car::selection{background:transparent}
+
+  .car-shadow{
+    position:absolute;
+    width:74px;
+    height:24px;
+    border-radius:50%;
+    background:rgba(0,0,0,.28);
+    filter:blur(5px);
+    transform:translateX(-50%);
+    pointer-events:none;
+    z-index:7;
+    will-change:transform, opacity;
+  }
+
+  .chicken.brace{
+    animation:brace var(--brace-dur, .28s) ease-in-out;
+  }
+
+  @keyframes brace{
+    0%,100%{transform:translateY(-50%) rotate(0deg)}
+    45%{transform:translateY(-55%) rotate(-6deg) scale(.96)}
+  }
+
+  .car:before{
+    content:"";
+    position:absolute;
+    left:13px;
+    right:13px;
+    top:15px;
+    height:34px;
+    background:#d8f4ff;
+    border-radius:12px 12px 5px 5px;
+    box-shadow:inset 0 -8px #a6d4e5;
+  }
+
+  .car:after{
+    content:"";
+    position:absolute;
+    left:13px;
+    right:13px;
+    bottom:16px;
+    height:10px;
+    background:#f4f4f4;
+    border-radius:5px;
+    box-shadow:0 -38px 0 -2px #172a36;
+  }
+
+  .car.blue{background:linear-gradient(90deg,#2474d5,#4e9af0 45%,#1d69c2)}
+  .car.red{background:linear-gradient(90deg,#df3b3b,#ff6767 45%,#cc2f2f)}
+  .car.green{background:linear-gradient(90deg,#2d9c6b,#52bf88 45%,#25875d)}
+
+  /* Depth scale during a crash: decor(1-7) < chicken idle(14) < traffic(30)
+     < crash-car(34) < knocked chicken(35) < impact/feathers(36). */
+  .car.crash-car{
+    z-index:34;
+    filter:drop-shadow(0 10px 8px rgba(0,0,0,.45));
+  }
+
+  /* The knocked chicken tumbles OVER the crash car (motion itself is WAAPI). */
+  .chicken.knocked{
+    z-index:35;
+  }
+
+  /* Brief camera shake on the road strip at the contact frame. */
+  .road.shake{
+    animation:roadShake var(--shake-dur, .32s) ease-out;
+  }
+  @keyframes roadShake{
+    0%,100%{transform:translate(0,0)}
+    20%{transform:translate(-5px,3px)}
+    40%{transform:translate(4px,-3px)}
+    60%{transform:translate(-3px,2px)}
+    80%{transform:translate(2px,-1px)}
+  }
+
+  .feather{
+    position:absolute;
+    width:10px;
+    height:14px;
+    border-radius:60% 60% 50% 50%;
+    background:#fff;
+    box-shadow:inset 0 -3px rgba(0,0,0,.08);
+    z-index:36;
+    pointer-events:none;
+    will-change:transform, opacity;
+  }
+
+  .impact{
+    position:absolute;
+    width:72px;
+    height:72px;
+    border-radius:50%;
+    background:radial-gradient(circle,#fff 0 12%,#ffd43b 13% 30%,#ff7b00 31% 47%,transparent 48%);
+    z-index:36;
+    pointer-events:none;
+    animation:impactPop var(--impact-dur, .45s) ease-out forwards;
+  }
+
+  @keyframes impactPop{
+    from{transform:translate(-50%,-50%) scale(.2);opacity:1}
+    to{transform:translate(-50%,-50%) scale(1.7);opacity:0}
+  }
+
+  .hud{
+    position:absolute;
+    left:352px;
+    top:18px;
+    right:18px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    z-index:20;
+  }
+  .hud-card{
+    background:rgba(18,21,28,.82);border:1px solid var(--line);backdrop-filter:blur(10px);
+    border-radius:12px;padding:9px 15px;min-width:128px;
+  }
+  .hud-card span{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--paint-dim);text-transform:uppercase;letter-spacing:.15em;font-weight:800;margin-bottom:3px}
+  .hud-card strong{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--paint)}
+  #statusLabel{font-family:system-ui,sans-serif;font-size:13px;font-weight:800}
+  #modeBadge{font-size:9px;letter-spacing:.12em;padding:1px 5px;border-radius:4px;background:rgba(255,193,43,.14);color:var(--amber)}
+  /* traffic-signal state dot on the Status card */
+  .signal{width:9px;height:9px;border-radius:50%;background:var(--paint-dim);box-shadow:0 0 0 0 transparent;transition:.25s}
+  .signal.sig-go{background:var(--go);box-shadow:0 0 10px 1px rgba(51,224,124,.7)}
+  .signal.sig-wait{background:var(--amber);box-shadow:0 0 10px 1px rgba(255,193,43,.7)}
+  .signal.sig-stop{background:var(--stop);box-shadow:0 0 10px 1px rgba(255,68,85,.7)}
+  .controls{
+    position:absolute;
+    z-index:30;
+    top:16px;
+    left:16px;
+    bottom:16px;
+    width:322px;
+    display:grid;
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px;
+    padding:16px 14px 14px;
+    border-radius:16px;
+    background:linear-gradient(180deg,var(--console-2),var(--console));
+    border:1px solid var(--line);
+    box-shadow:0 18px 48px rgba(0,0,0,.5), inset 0 1px rgba(255,255,255,.04);
+    overflow:auto;
+  }
+  /* hazard-stripe cap across the top of the console */
+  .controls::before{
+    content:"";position:sticky;top:-16px;display:block;height:5px;margin:-16px -14px 2px;border-radius:16px 16px 0 0;
+    background:repeating-linear-gradient(45deg,var(--amber) 0 11px,#12141a 11px 22px);
+    opacity:.9;
+  }
+
+  .control-left,.control-right{display:grid;gap:12px;align-content:start}
+  .control-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .control-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:7px;
+    color:var(--paint-dim);
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+  }
+  .control-label strong{color:var(--paint);font-size:12px;font-family:var(--font-mono);font-weight:700;letter-spacing:0}
+
+  .mode-tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:4px;
+    padding:4px;
+    border-radius:10px;
+    background:#0e1015;
+    border:1px solid var(--line);
+  }
+  .mode-tab{
+    min-height:34px;
+    padding:8px 10px;
+    border:0;
+    border-radius:7px;
+    background:transparent;
+    color:var(--paint-dim);
+    font-weight:800;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .mode-tab.active{background:var(--raised);color:var(--paint);box-shadow:inset 0 0 0 1px var(--line)}
+
+  .stake-input{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 34px 58px 58px;
+    align-items:center;
+    min-height:44px;
+    border-radius:10px;
+    overflow:hidden;
+    background:#0e1015;
+    border:1px solid var(--line);
+    box-shadow:inset 0 1px rgba(0,0,0,.3);
+    transition:border-color .15s;
+  }
+  .stake-input:focus-within{border-color:var(--amber)}
+  .stake-input input{
+    grid-column:1;
+    width:100%;
+    min-width:0;
+    height:100%;
+    border:0;
+    outline:0;
+    padding:0 12px;
+    background:transparent;
+    color:var(--paint);
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+    font-size:14px;
+    font-weight:700;
+  }
+  .currency{
+    grid-column:2;
+    display:grid;
+    place-items:center;
+    width:100%;
+    height:100%;
+    background:transparent;
+    border-left:1px solid var(--line);
+    color:var(--paint-dim);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.04em;
+  }
+  .currency::before{content:none}
+  .mini-btn{
+    width:100%;
+    height:100%;
+    padding:0;
+    border:0;
+    border-left:1px solid var(--line);
+    border-radius:0;
+    background:var(--raised);
+    color:var(--paint);
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .mini-btn:hover{background:#323947;color:var(--amber)}
+  .mini-btn:disabled{opacity:.5}
+  #halfBet{
+    grid-column:3;
+  }
+  #doubleBet{
+    grid-column:4;
+  }
+
+  .difficulty-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+  }
+  .difficulty-btn{
+    min-height:40px;
+    padding:8px 6px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:#0e1015;
+    color:var(--paint-dim);
+    font-size:11px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .difficulty-btn:hover{color:var(--paint)}
+  /* active difficulty is tinted by its risk level */
+  .difficulty-btn.active{color:#12141a;border-color:transparent}
+  .difficulty-btn.active[data-difficulty="easy"]{background:var(--go)}
+  .difficulty-btn.active[data-difficulty="medium"]{background:var(--amber)}
+  .difficulty-btn.active[data-difficulty="hard"]{background:var(--hot)}
+
+  button{
+    border:0;
+    border-radius:10px;
+    padding:12px 16px;
+    font-weight:900;
+    font-size:14px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  /* signature: the primary action is a road-hazard beacon */
+  button.primary{
+    position:relative;
+    min-height:54px;
+    overflow:hidden;
+    background:linear-gradient(180deg,var(--amber),var(--amber-deep));
+    color:#12141a;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    box-shadow:0 8px 22px rgba(255,193,43,.28), inset 0 -3px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.35);
+    transition:transform .1s, box-shadow .15s, filter .15s;
+  }
+  button.primary::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:4px;
+    background:repeating-linear-gradient(45deg,#12141a 0 8px,transparent 8px 16px);opacity:.5;
+  }
+  button.primary:hover{filter:brightness(1.05);box-shadow:0 10px 28px rgba(255,193,43,.42), inset 0 -3px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.35)}
+  button.primary:active{transform:translateY(1px)}
+  button.secondary{
+    min-height:48px;
+    background:var(--raised);
+    color:var(--paint);
+    border:1px solid var(--line);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-size:12px;
+    transition:.15s;
+  }
+  button.secondary:hover{background:#323947}
+  button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none;filter:none}
+
+  #difficulty{display:none}
+  .action-stack{display:grid;grid-template-columns:1fr;gap:10px}
+  .control-hint{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:var(--paint-dim);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-weight:800;
+  }
+  .control-hint strong{color:var(--paint);font-family:var(--font-mono);font-weight:700;letter-spacing:0;font-size:13px}
+  .message{
+    position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.9);
+    z-index:40;background:rgba(14,16,21,.94);border:1px solid var(--line);padding:14px 26px;border-radius:14px;
+    font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:0;pointer-events:none;transition:.2s;
+  }
+  .message.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .message.win{color:var(--go);box-shadow:0 0 34px rgba(51,224,124,.28)}
+  .message.lose{color:var(--stop);box-shadow:0 0 34px rgba(255,68,85,.28)}
+
+  @media(max-width:720px){
+    .game{min-height:980px;overflow:auto}
+    .mult{font-size:13px}
+    .controls{
+      position:absolute;
+      top:auto;
+      left:12px;
+      right:12px;
+      bottom:12px;
+      width:auto;
+      max-height:none;
+      grid-template-rows:auto auto;
+    }
+    .world{width:100%;transform:none!important}
+    .sidewalk{left:0}
+    .road{left:118px}
+    .multipliers{left:118px}
+    .chicken{left:45px}
+    .hud{
+      left:130px;
+      right:12px;
+      flex-wrap:wrap;
+    }
+    .difficulty-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="game" id="game">
+  <div class="world" id="world">
+  <div class="sidewalk">
+    <div class="curb-blocks"></div>
+    <div class="traffic-light">
+      <div class="light-head"><div class="lamp red"></div><div class="lamp yellow"></div></div>
+      <div class="pole"></div><div class="base"></div>
+    </div>
+    <div class="bush"></div>
+  </div>
+
+  <div class="chicken" id="chicken">
+    <div class="wing"></div><div class="body"></div><div class="head"></div><div class="comb"></div>
+    <div class="eye"></div><div class="beak"></div><div class="leg one"></div><div class="leg two"></div>
+    <div class="foot one"></div><div class="foot two"></div>
+  </div>
+
+  <div class="road">
+    <div class="lane-lines"></div>
+    <div class="crossing" id="crossing"></div>
+    <div class="cars" id="cars"></div>
+  </div>
+
+  <div class="multipliers" id="multipliers"></div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-card"><span>Balance <b id="modeBadge">LOCAL</b></span><strong id="balanceLabel">$0.00</strong></div>
+    <div class="hud-card"><span>Lane</span><strong id="stepLabel">0 / 0</strong></div>
+    <div class="hud-card"><span>Multiplier</span><strong id="cashoutLabel">1.00x</strong></div>
+    <div class="hud-card"><span>Status <i id="signalDot" class="signal"></i></span><strong id="statusLabel">Loading…</strong></div>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <div class="controls">
+    <div class="control-left">
+      <div class="mode-tabs" style="grid-template-columns:1fr 1fr auto">
+        <button class="mode-tab active" type="button">Manual</button>
+        <button class="mode-tab" type="button">Auto</button>
+        <button class="turbo-toggle" id="turboBtn" type="button" title="Faster animations">⚡ Turbo</button>
+      </div>
+
+      <div>
+        <div class="control-label">
+          <span>Bet Amount</span>
+          <strong id="betValueLabel">$1.00</strong>
+        </div>
+        <div class="stake-input">
+          <input id="betAmount" type="number" min="0" step="0.00000001" value="0.00000000" />
+          <span class="currency">USD</span>
+          <button class="mini-btn" id="halfBet" type="button">½</button>
+          <button class="mini-btn" id="doubleBet" type="button">2×</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="control-label">
+          <span>Difficulty</span>
+          <strong id="difficultyLabel">Medium</strong>
+        </div>
+        <div class="difficulty-grid">
+          <button class="difficulty-btn" data-difficulty="easy" type="button">Easy</button>
+          <button class="difficulty-btn active" data-difficulty="medium" type="button">Medium</button>
+          <button class="difficulty-btn" data-difficulty="hard" type="button">Hard</button>
+        </div>
+        <select id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-right">
+      <div class="control-hint">
+        <span>Next payout</span>
+        <strong id="panelPayout">$0.00</strong>
+      </div>
+      <button class="primary" id="startBtn">Play</button>
+      <div class="action-stack">
+        <button class="secondary" id="goToStartBtn" style="display:none">End Game</button>
+      </div>
+      <div class="control-hint">
+        <span>Lane</span>
+        <strong id="panelStep">0 / 0</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---- RGS wiring ----------------------------------------------------------
+  // LOCAL (default): weighted-pick a real published outcome from chicken_run_rgs.json.
+  // LIVE (?rgs_url=..&sessionID=..): /wallet/play settles ONE independent per-lane
+  // wager at a time — see README.md.
+  const getParam = (k) => new URLSearchParams(location.search).get(k);
+  const RGS_URL = getParam('rgs_url');
+  const SESSION_ID = getParam('sessionID');
+  const LANG = getParam('lang') || getParam('language') || 'en';
+  let CURRENCY = getParam('currency') || 'USD';
+  const LAUNCH_MODE = getParam('mode');
+  const IS_LIVE = Boolean(RGS_URL && SESSION_ID);
+  const API_MULTIPLIER = 1_000_000; // wallet money: integer, 6 decimals (1e6 == 1.0)
+  const EVENT_SCALE = 100;          // event amounts / cents (110 == 1.1x)
+  const toUnits = (api) => api / API_MULTIPLIER;
+  const toApi = (units) => Math.round(units * API_MULTIPLIER);
+
+  let bundle = null;         // chicken_run_rgs.json
+  let lanes = 0;             // bundle.lanes (fixed at 24)
+  let ladder = [];           // bundle.ladders[difficulty] — 24 per-lane multipliers
+  let betLevels = null;      // LIVE wallet config (bet-level snapping)
+  let hasOpenRound = false;  // LIVE: settle before next play
+  let balanceUnits = 1000;   // demo balance in currency units (LIVE overwrites from wallet)
+  let betUnits = 1;          // current stake in currency units
+  let autoMode = false;      // Manual/Auto tab
+
+  const game = document.getElementById('game');
+  const world = document.getElementById('world');
+  const carsLayer = document.getElementById('cars');
+  const crossing = document.getElementById('crossing');
+  const multWrap = document.getElementById('multipliers');
+  const chicken = document.getElementById('chicken');
+  const startBtn = document.getElementById('startBtn');
+  const goToStartBtn = document.getElementById('goToStartBtn');
+  const turboBtn = document.getElementById('turboBtn');
+  const difficulty = document.getElementById('difficulty');
+  const difficultyButtons = [...document.querySelectorAll('.difficulty-btn')];
+  const difficultyLabel = document.getElementById('difficultyLabel');
+  const betAmount = document.getElementById('betAmount');
+  const betValueLabel = document.getElementById('betValueLabel');
+  const halfBet = document.getElementById('halfBet');
+  const doubleBet = document.getElementById('doubleBet');
+  const panelPayout = document.getElementById('panelPayout');
+  const panelStep = document.getElementById('panelStep');
+  const stepLabel = document.getElementById('stepLabel');
+  const cashoutLabel = document.getElementById('cashoutLabel');
+  const statusLabel = document.getElementById('statusLabel');
+  const message = document.getElementById('message');
+  const balanceLabel = document.getElementById('balanceLabel');
+  const modeBadge = document.getElementById('modeBadge');
+  const signalDot = document.getElementById('signalDot');
+
+  // Per-lane independent-wager model — single source of truth for buttons/guards.
+  // currentLane: 0 = chicken at the start; 1..lanes = lanes already crossed & paid.
+  let currentLane = 0;
+  let busy = false;      // true while a play is being resolved/animated (guards spam-clicks)
+  let active = false;    // derived: true while there is a next lane to jump into
+  let cameraX = 0;
+  let turbo = false;    // shorter animations/pauses
+
+  const trafficAnimations = new Set();
+  const trafficGroups = new Map();
+  let carTimer = null;
+  let protectedLane = null;
+  let trafficIdCounter = 0;
+  let stoppedProtectedCar = null;
+  let stoppedProtectedShadow = null;
+
+  function ensureTrafficGroup(trafficId){
+    if (!trafficGroups.has(trafficId)) {
+      trafficGroups.set(trafficId, new Set());
+    }
+    return trafficGroups.get(trafficId);
+  }
+
+  function registerTrafficAnimation(animation, laneIndex, trafficId){
+    trafficAnimations.add(animation);
+
+    if (trafficId != null) {
+      ensureTrafficGroup(trafficId).add(animation);
+    }
+
+    const cleanup = () => {
+      trafficAnimations.delete(animation);
+
+      if (trafficId != null && trafficGroups.has(trafficId)) {
+        const group = trafficGroups.get(trafficId);
+        group.delete(animation);
+        if (group.size === 0) {
+          trafficGroups.delete(trafficId);
+        }
+      }
+    };
+
+    animation.addEventListener('finish', cleanup, { once:true });
+    animation.addEventListener('cancel', cleanup, { once:true });
+    return animation;
+  }
+
+  // ---- shared cosmetic collision loop ---------------------------------------
+  // ONE rAF loop watches all live traffic and drives the near-miss reactions
+  // (brace flinch + whoosh streak) from the cars' REAL on-screen positions,
+  // replacing the old per-car currentTime polling. Purely visual: the book
+  // result is the only authority on wins/losses — a geometric overlap here
+  // never changes a payout.
+  let collisionRafId = null;
+  function collisionLoop(){
+    collisionRafId = null;
+    if (trafficAnimations.size === 0) return;   // self-stops when traffic clears
+
+    const chickenRect = chicken.getBoundingClientRect();
+    carsLayer.querySelectorAll('.car:not(.crash-car)').forEach(car => {
+      if (car.dataset.reacted) return;
+      const lane = Number(car.dataset.lane);
+      const laneDistance = active ? Math.abs(lane - currentLane) : 99;
+      if (laneDistance !== 1) return;   // only adjacent lanes cause a flinch
+
+      const rect = car.getBoundingClientRect();
+      const passingChicken =
+        rect.bottom > chickenRect.top + 14 && rect.top < chickenRect.bottom - 14;
+      if (!passingChicken) return;
+
+      car.dataset.reacted = '1';
+      chicken.classList.remove('brace');
+      void chicken.offsetWidth;
+      chicken.classList.add('brace');
+
+      if (protectedLane !== lane) {
+        const whoosh = carsLayer.querySelector(
+          `.whoosh[data-traffic-id="${car.dataset.trafficId}"]`
+        );
+        if (whoosh) {
+          registerTrafficAnimation(
+            whoosh.animate(
+              [
+                { opacity: 0, transform: 'translateY(-25px) scaleY(.5)' },
+                { opacity: .9, transform: 'translateY(0) scaleY(1)', offset: .35 },
+                { opacity: 0, transform: 'translateY(40px) scaleY(1.35)' },
+              ],
+              { duration: t(DUR.whoosh), easing: 'ease-out', fill: 'forwards' }
+            ),
+            lane,
+            car.dataset.trafficId
+          );
+        }
+      }
+    });
+
+    collisionRafId = requestAnimationFrame(collisionLoop);
+  }
+  function ensureCollisionLoop(){
+    if (collisionRafId === null) collisionRafId = requestAnimationFrame(collisionLoop);
+  }
+
+  function releaseProtectedLane(){
+    if (protectedLane === null) return;
+
+    const road = document.querySelector('.road');
+
+    if (stoppedProtectedCar && stoppedProtectedCar.isConnected) {
+      const car = stoppedProtectedCar;
+      const shadow = stoppedProtectedShadow;
+      const startTop = parseFloat(car.style.top) || 0;
+      const endTop = road.clientHeight + 160;
+
+      const carExit = car.animate(
+        [
+          { top: `${startTop}px`, transform: 'translateX(-50%) scale(1)' },
+          { top: `${endTop}px`, transform: 'translateX(-50%) scale(1.12)' }
+        ],
+        {
+          duration: 760,
+          easing: 'cubic-bezier(.2,.55,.35,1)',
+          fill: 'forwards'
+        }
+      );
+
+      if (shadow && shadow.isConnected) {
+        shadow.animate(
+          [
+            { top: `${startTop + 105}px`, opacity: .3, transform: 'translateX(-50%) scale(1)' },
+            { top: `${endTop + 105}px`, opacity: .1, transform: 'translateX(-50%) scale(1.15)' }
+          ],
+          {
+            duration: 760,
+            easing: 'cubic-bezier(.2,.55,.35,1)',
+            fill: 'forwards'
+          }
+        );
+      }
+
+      carExit.onfinish = () => {
+        car.remove();
+        if (shadow) shadow.remove();
+      };
+    }
+
+    stoppedProtectedCar = null;
+    stoppedProtectedShadow = null;
+    protectedLane = null;
+  }
+
+  function brakeCarSafely(car, shadow){
+    const road = document.querySelector('.road');
+    const roadRect = road.getBoundingClientRect();
+    const chickenRect = chicken.getBoundingClientRect();
+    const carRect = car.getBoundingClientRect();
+
+    const chickenTop = chickenRect.top - roadRect.top;
+    const currentTop = carRect.top - roadRect.top;
+    const safeGap = 34;
+    const carHeight = carRect.height || 130;
+    const targetTop = Math.max(8, chickenTop - carHeight - safeGap);
+
+    car.getAnimations().forEach(animation => animation.cancel());
+    if (shadow) {
+      shadow.getAnimations().forEach(animation => animation.cancel());
+    }
+
+    car.style.bottom = 'auto';
+    car.style.top = `${currentTop}px`;
+    car.style.transform = 'translateX(-50%) scale(1)';
+    car.style.filter = 'none';
+    car.style.opacity = '1';
+
+    const braking = car.animate(
+      [
+        {
+          top: `${currentTop}px`,
+          transform: 'translateX(-50%) scale(1)'
+        },
+        {
+          top: `${targetTop}px`,
+          transform: 'translateX(-50%) scale(1)'
+        }
+      ],
+      {
+        duration: 280,
+        easing: 'cubic-bezier(.15,.8,.25,1)',
+        fill: 'forwards'
+      }
+    );
+
+    braking.onfinish = () => {
+      car.style.top = `${targetTop}px`;
+      car.style.transform = 'translateX(-50%) scale(1)';
+    };
+
+    if (shadow) {
+      shadow.style.bottom = 'auto';
+      shadow.style.top = `${currentTop + 105}px`;
+      shadow.style.transform = 'translateX(-50%) scale(1)';
+      shadow.style.opacity = '.3';
+
+      shadow.animate(
+        [
+          { top: `${currentTop + 105}px` },
+          { top: `${targetTop + 105}px` }
+        ],
+        {
+          duration: 280,
+          easing: 'cubic-bezier(.15,.8,.25,1)',
+          fill: 'forwards'
+        }
+      );
+    }
+
+    stoppedProtectedCar = car;
+    stoppedProtectedShadow = shadow || null;
+  }
+
+  function protectLane(laneIndex){
+    releaseProtectedLane();
+    protectedLane = laneIndex;
+
+    const road = document.querySelector('.road');
+    const roadRect = road.getBoundingClientRect();
+    const chickenRect = chicken.getBoundingClientRect();
+    const chickenCenterY = chickenRect.top - roadRect.top + chickenRect.height / 2;
+
+    const candidates = [...carsLayer.querySelectorAll(
+      `.car[data-lane="${laneIndex}"]:not(.crash-car)`
+    )]
+      .map(car => {
+        const rect = car.getBoundingClientRect();
+        const centerY = rect.top - roadRect.top + rect.height / 2;
+        return { car, centerY, distance: chickenCenterY - centerY };
+      })
+      .filter(item => item.distance >= -20)
+      .sort((a, b) => a.distance - b.distance);
+
+    const nearest = candidates[0];
+
+    if (nearest) {
+      const trafficId = nearest.car.dataset.trafficId;
+      const shadow = carsLayer.querySelector(
+        `.car-shadow[data-traffic-id="${trafficId}"]`
+      );
+      brakeCarSafely(nearest.car, shadow);
+    }
+  }
+
+  function scheduleNextCar(){
+    clearTimeout(carTimer);
+
+    const delay = 560 + Math.random() * 720;
+    carTimer = setTimeout(() => {
+      // Hidden tabs freeze animation timelines but timers keep firing — spawning
+      // then would pile up frozen cars (they resume + clear once visible again).
+      if (!document.hidden) spawnCar();
+      scheduleNextCar();
+    }, delay);
+  }
+
+  function buildRoad(){
+    if(!lanes) return;
+    const road = document.querySelector('.road');
+    const widthPx = `${lanes * 129}px`;
+    road.style.width = widthPx; road.style.minWidth = widthPx;
+    crossing.style.width = widthPx;
+    crossing.style.gridTemplateColumns = `repeat(${lanes}, 129px)`;
+    multWrap.style.width = widthPx;
+    multWrap.style.gridTemplateColumns = `repeat(${lanes}, 129px)`;
+    crossing.innerHTML = '';
+    multWrap.innerHTML = '';
+    for(let i=0;i<lanes;i++){
+      const drain = document.createElement('div');
+      drain.className='drain';
+      drain.addEventListener('click', () => onLaneClicked(i));
+      crossing.appendChild(drain);
+      const mult = document.createElement('div');
+      mult.className='mult';
+      mult.addEventListener('click', () => onLaneClicked(i));
+      multWrap.appendChild(mult);
+    }
+    render();
+  }
+
+  // Clicking the NEXT lane's multiplier pill or sewer drain proceeds (same as
+  // pressing PLAY). Other lanes are inert — each wager is only ever on the next
+  // lane, so the click is just an alternate PLAY trigger, never a lane picker.
+  function onLaneClicked(i){
+    if(busy || !bundle || i !== currentLane || currentLane >= lanes) return;
+    onPlay();
+  }
+
+  function fmtX(v){ return (v>=100 ? v.toFixed(0) : v.toFixed(2)) + 'x'; }
+
+  function render(){
+    if(!ladder || !ladder.length) return;
+    [...multWrap.children].forEach((el,i)=>{
+      const m = ladder[i];
+      el.textContent = fmtX(m);
+      const tier = m >= 100 ? 't4' : m >= 10 ? 't3' : m >= 2 ? 't2' : 't1';
+      let cls = `mult ${tier}`;
+      if(i < currentLane) cls += ' active';
+      else if(i === currentLane && currentLane < lanes) cls += ' reached';
+      el.className = cls;
+      el.title = i === currentLane && currentLane < lanes ? 'Click to hop to this lane' : '';
+    });
+    // The next lane's sewer drain is a click target too (mirrors the pill).
+    [...crossing.children].forEach((el,i)=>{
+      const isNext = i === currentLane && currentLane < lanes;
+      el.classList.toggle('next', isNext);
+      el.title = isNext ? 'Click to hop to this lane' : '';
+    });
+    stepLabel.textContent = `${currentLane} / ${lanes}`;
+    const nextMult = currentLane < lanes ? ladder[currentLane] : null;
+    cashoutLabel.textContent = nextMult != null ? fmtX(nextMult) : '—';
+
+    panelStep.textContent = `${currentLane} / ${lanes}`;
+    panelPayout.textContent = nextMult != null ? `$${(betUnits * nextMult).toFixed(2)}` : '—';
+
+    const selectedName = difficulty.value.charAt(0).toUpperCase() + difficulty.value.slice(1);
+
+    difficultyLabel.textContent = selectedName;
+    difficultyButtons.forEach(button => {
+      button.classList.toggle('active', button.dataset.difficulty === difficulty.value);
+    });
+  }
+
+  function flash(text,type){
+    message.textContent=text;
+    message.className='message show '+type;
+    setTimeout(()=>message.className='message',1200);
+  }
+
+  function setCamera(nextX){
+    const maxCamera = Math.max(0, world.scrollWidth - game.clientWidth + 24);
+    cameraX = Math.max(0, Math.min(nextX, maxCamera));
+    world.style.transform = `translateX(${-cameraX}px)`;
+  }
+
+  // Glide the camera instead of snapping (used by the smooth end-of-run reset).
+  function glideCamera(toX, ms){
+    world.style.transition = `transform ${ms}ms cubic-bezier(.25,.8,.3,1)`;
+    setCamera(toX);
+    setTimeout(() => { world.style.transition = ''; }, ms + 60);
+  }
+
+  function followChicken(worldCenterX){
+    if (window.innerWidth <= 720) return;
+
+    const panelWidth = 336;
+    const visibleLeft = panelWidth + 28;
+    const visibleRight = game.clientWidth - 70;
+    const preferredX = visibleLeft + (visibleRight - visibleLeft) * 0.68;
+    const currentScreenX = worldCenterX - cameraX;
+
+    if (currentScreenX > preferredX) {
+      setCamera(cameraX + currentScreenX - preferredX);
+    }
+  }
+
+  // Reset to the start. smooth=true glides the camera home and fades the chicken
+  // back in at lane 0 (no teleport snap); smooth=false is the instant variant.
+  function resetChicken(smooth = false){
+    if(smooth) glideCamera(0, t(420));
+    else setCamera(0);
+    // Cancel any persisted WAAPI state (the knock-away holds fill:forwards).
+    chicken.getAnimations().forEach(a => a.cancel());
+    chicken.classList.remove('knocked', 'brace');
+    // Visibility is INLINE-authoritative: even if a fade animation is dropped or
+    // raced, the chicken can never be left invisible ("missing chicken" bug).
+    chicken.style.opacity='1';
+    chicken.style.left='381px';
+    chicken.style.top='56%';
+    chicken.style.transform='translateY(-50%)';
+    if(smooth){
+      chicken.animate(
+        [
+          { opacity: 0, transform: 'translateY(-42%) scale(.9)' },
+          { opacity: 1, transform: 'translateY(-52%) scale(1.02)', offset: .7 },
+          { opacity: 1, transform: 'translateY(-50%) scale(1)' },
+        ],
+        { duration: t(280), easing: 'ease-out' }
+      );
+    }
+  }
+
+  function setControlsEnabled(){
+    const canChangeDifficulty = !busy && currentLane === 0;
+    difficulty.disabled = !canChangeDifficulty;
+    difficultyButtons.forEach(b => b.disabled = !canChangeDifficulty);
+    betAmount.disabled = busy;
+    halfBet.disabled = busy;
+    doubleBet.disabled = busy;
+  }
+
+  // ---- per-lane wager flow ---------------------------------------------------
+  // Each PLAY is one independent wager on the next lane. The Stake Engine book is
+  // the ONLY source of truth for win/lose — the UI paces the reveal but never
+  // recomputes the outcome, picks a lane, or settles twice.
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  const t = (ms) => turbo ? Math.max(60, Math.round(ms * 0.42)) : ms;   // turbo timing
+
+  // Await an animation with a timeout floor. Chrome FREEZES animation timelines
+  // in hidden tabs, so a raw `await anim.finished` deadlocks the round when the
+  // player switches tabs mid-animation (timers still fire; animations don't).
+  // The game logic must always pace by the floor; visuals catch up on return.
+  const awaitAnim = (anim, ms) => Promise.race([
+    anim.finished.catch(() => {}),
+    wait(ms + 150),
+  ]);
+
+  // Single source of truth for lane geometry + every animated duration (ms).
+  // syncDurations() mirrors the CSS-side durations as custom properties, scaled
+  // by the same turbo factor as t(), so CSS and JS can never drift apart.
+  const LANE_W = 129;
+  const DUR = {
+    hop: 320,        // WAAPI hop arc
+    hopSettle: 90,   // pause after landing
+    brace: 280,      // near-miss flinch (CSS)
+    whoosh: 430,     // near-miss speed streak
+    crashIn: 640,    // crash car drive-in (arrival == contact frame)
+    impact: 450,     // impact burst (CSS)
+    knock: 760,      // chicken knock-away tumble
+    crashExit: 700,  // crash car hit-and-run exit
+    shake: 320,      // road camera shake (CSS)
+  };
+  function syncDurations(){
+    const root = document.documentElement.style;
+    root.setProperty('--brace-dur', `${t(DUR.brace)}ms`);
+    root.setProperty('--impact-dur', `${t(DUR.impact)}ms`);
+    root.setProperty('--shake-dur', `${t(DUR.shake)}ms`);
+  }
+  syncDurations();
+
+  // Dev-only QA override (honoured ONLY by the LOCAL weighted pick, never LIVE):
+  // ?forceLose=1 / ?forceWin=1 deterministically exercise the crash / win paths.
+  const QA_FORCE = (() => {
+    const p = new URLSearchParams(location.search);
+    if (p.get('forceLose') === '1') return 'lose';
+    if (p.get('forceWin') === '1') return 'win';
+    return null;
+  })();
+
+  function setSignal(name){
+    if(signalDot) signalDot.className = 'signal sig-' + name;
+  }
+
+  function updateButtons(){
+    const atEnd = currentLane >= lanes;
+    startBtn.disabled = busy || atEnd || !bundle;
+    goToStartBtn.style.display = currentLane > 0 ? '' : 'none';
+    goToStartBtn.disabled = busy;
+    setControlsEnabled();
+  }
+
+  // PLAY -> wager the next lane (LOCAL weighted-pick or LIVE /wallet/play), then
+  // animate exactly one hop and resolve win/hit. Guarded by `busy` so a spam-click
+  // can't wager twice.
+  async function onPlay(){
+    if(busy || !bundle || currentLane >= lanes) return;
+    betUnits = Math.max(0, Number(betAmount.value) || 0);
+    if(betUnits <= 0){ statusLabel.textContent = 'Enter a bet'; return; }
+    if(!IS_LIVE && betUnits > balanceUnits){ statusLabel.textContent = 'Insufficient balance'; return; }
+
+    busy = true;
+    updateButtons();
+    setSignal('wait');
+    statusLabel.textContent = 'Placing bet…';
+
+    const targetLane = currentLane + 1;
+    const laneIdx0 = targetLane - 1;
+    const modeKey = `${difficulty.value}_${targetLane}`;
+
+    let result;
+    try{
+      if(IS_LIVE){
+        if(hasOpenRound){ await liveEndRound().catch(()=>{}); hasOpenRound = false; }
+        const resp = await livePlay(modeKey);
+        if(resp.balance) setBalanceApi(resp.balance.amount);
+        const round = resp.round || {};
+        if(round.active === true) hasOpenRound = true;
+        const mult = Number(round.payoutMultiplier) || 0;
+        result = { win: mult > 0, payoutMult: mult };
+      } else {
+        balanceUnits -= betUnits;
+        updateBalance();
+        const round = localPlay(modeKey).round;
+        result = { win: round.payoutMultiplier > 0, payoutMult: round.payoutMultiplier };
+      }
+    }catch(err){
+      statusLabel.textContent = rgsErrorMessage(err);
+      if(!IS_LIVE){ balanceUnits += betUnits; updateBalance(); }
+      busy = false;
+      updateButtons();
+      setSignal('go');
+      return;
+    }
+
+    statusLabel.textContent = `Crossing to lane ${targetLane}…`;
+
+    // Occasional flavour traffic on a safe hop; the collision car for a losing
+    // lane is introduced by crashIntoChicken from off-screen instead.
+    if(result.win){
+      const spawned = maybePrepareDestinationCar(laneIdx0);
+      if(spawned){
+        statusLabel.textContent = 'Traffic approaching';
+        // ACCURATE TIMING: land only after the car has fully CLEARED the
+        // crossing row. With linear travel the car's rear clears the row at
+        // ~66% of its duration; hold the hop so landing time (wait + hop)
+        // sits past that moment plus a safety margin — a won lane can never
+        // have its destination car still passing through the chicken.
+        const clearMs = spawned.duration * 0.66 + 90;
+        await wait(Math.max(t(140), clearMs - t(DUR.hop)));
+      }
+    }
+
+    // The chicken leaves its old lane only now — keep that lane protected
+    // through the whole pre-hop wait so background traffic can't drive through
+    // a still-occupied lane.
+    releaseProtectedLane();
+    await hopTo(laneIdx0);
+
+    const hit = !result.win;
+    if(hit){
+      await resolveHit(laneIdx0);
+    } else {
+      currentLane++;
+      active = currentLane < lanes;
+      render();
+      // Guard the landed-on lane IMMEDIATELY (the old 140ms delay left a gap
+      // where an in-flight car could pass through the winning chicken).
+      protectLane(laneIdx0);
+      await resolveWin(laneIdx0, result.payoutMult);
+    }
+
+    busy = false;
+    afterPlay(hit);
+  }
+
+  // One natural hop onto `lane`: a single WAAPI animation carrying the whole
+  // motion — horizontal glide + parabolic arc + landing squash/stretch. The
+  // final `left` is committed up-front and the visible travel is a transform
+  // delta, so there is exactly ONE clock (awaited via animation.finished) and
+  // turbo scales it identically to every JS wait.
+  async function hopTo(lane){
+    // Belt-and-braces: a round can never start with an invisible chicken. Drop
+    // any finished/filling leftover animations and assert inline visibility.
+    chicken.getAnimations().forEach(a => { if (a.playState === 'finished') a.cancel(); });
+    chicken.style.opacity = '1';
+
+    const road = document.querySelector('.road');
+    const laneCenterX = road.offsetLeft + (lane * LANE_W) + (LANE_W / 2);
+    followChicken(laneCenterX);
+
+    const fromLeft = parseFloat(chicken.style.left) || chicken.offsetLeft;
+    const toLeft = laneCenterX - chicken.offsetWidth / 2;
+    const dx = toLeft - fromLeft;
+    chicken.style.left = `${toLeft}px`;
+
+    const anim = chicken.animate(
+      [
+        { transform: `translate(${-dx}px, -50%) rotate(0deg)` },
+        { transform: `translate(${-dx * 0.5}px, -80%) rotate(-4deg)`, offset: 0.45 },
+        { transform: 'translate(0px, -50%) rotate(2deg)', offset: 0.8 },
+        { transform: 'translate(0px, -47%) scale(1.07, 0.88)', offset: 0.9 },   // landing squash
+        { transform: 'translate(0px, -50%) scale(1, 1)' },
+      ],
+      { duration: t(DUR.hop), easing: 'cubic-bezier(.3,.7,.3,1)' }
+    );
+    await awaitAnim(anim, t(DUR.hop));
+
+    followChicken(laneCenterX + LANE_W);   // reveal the upcoming lane
+    await wait(t(DUR.hopSettle));
+  }
+
+  // Instant jump helper (kept for parity with hopTo — unused now that Skip
+  // Animation has been removed from the per-lane flow).
+  function jumpTo(lane){
+    const road = document.querySelector('.road');
+    const laneCenterX = road.offsetLeft + (lane * LANE_W) + (LANE_W / 2);
+    chicken.style.left = `${laneCenterX - chicken.offsetWidth / 2}px`;
+    followChicken(laneCenterX);
+  }
+
+  // Safe crossing: pay stake × lane multiplier immediately and advance.
+  async function resolveWin(laneIdx0, payoutMult){
+    const winUnits = betUnits * payoutMult;
+    if(!IS_LIVE){ balanceUnits += winUnits; }
+    updateBalance();
+    flash(`+${fmtX(payoutMult)}`, 'win');
+    statusLabel.textContent = `Lane ${laneIdx0 + 1} cleared · +$${winUnits.toFixed(2)}`;
+    if(IS_LIVE && hasOpenRound){
+      try{ const r = await liveEndRound(); if(r && r.balance) setBalanceApi(r.balance.amount); }
+      catch(e){}
+      hasOpenRound = false;
+    }
+    setSignal('go');
+  }
+
+  // Hit: stake is lost and the chicken resets to the start. Earlier banked
+  // payouts are unaffected.
+  async function resolveHit(laneIdx0){
+    setSignal('stop');
+    const pill = [...multWrap.children][laneIdx0];
+    if(pill) pill.classList.add('busted');
+    statusLabel.textContent = 'Incoming car';
+    removeDecorativeTrafficFromLane(laneIdx0);
+    await crashIntoChicken(laneIdx0);
+    flash('BUSTED', 'lose');
+    statusLabel.textContent = `Hit at lane ${laneIdx0 + 1} · lost`;
+    if(IS_LIVE && hasOpenRound){
+      try{ const r = await liveEndRound(); if(r && r.balance) setBalanceApi(r.balance.amount); }
+      catch(e){}
+      hasOpenRound = false;
+    }
+    await wait(t(360));
+    currentLane = 0;
+    active = currentLane < lanes;
+    resetChicken(true);   // knocked chicken glides/fades back in at the start
+    render();
+  }
+
+  // Re-arm PLAY once busy clears; drives Auto's next press or stops it.
+  function afterPlay(hit){
+    updateButtons();
+    if(hit){
+      if(autoMode){ autoMode = false; syncModeTabs(); }
+      setSignal('go');
+      return;
+    }
+    if(currentLane >= lanes){
+      if(autoMode){ autoMode = false; syncModeTabs(); }
+      statusLabel.textContent = 'Reached the end — End Game to play again';
+      setSignal('go');
+      return;
+    }
+    setSignal('go');
+    if(autoMode){
+      if(!bundle || bundle.disabledAutoplay || (!IS_LIVE && betUnits > balanceUnits)){
+        autoMode = false; syncModeTabs();
+        return;
+      }
+      setTimeout(() => { if(autoMode && !busy) onPlay(); }, t(700));
+    }
+  }
+
+  // END GAME: finish the run and return the chicken to lane 0 with no
+  // wager/deduction (every cleared lane was already paid immediately). The
+  // return is animated — hop-out fade, camera glide home, fade back in — so it
+  // never reads as a teleport snap.
+  async function goToStart(){
+    if(busy || currentLane === 0) return;
+    busy = true;
+    updateButtons();
+    releaseProtectedLane();
+    statusLabel.textContent = 'Ending run…';
+
+    const out = chicken.animate(
+      [
+        { transform: 'translateY(-50%) scale(1)', opacity: 1 },
+        { transform: 'translateY(-66%) scale(1.04) rotate(-4deg)', opacity: 1, offset: .4 },
+        { transform: 'translateY(-34%) scale(.9)', opacity: 0 },
+      ],
+      { duration: t(260), easing: 'ease-in', fill: 'forwards' }
+    );
+    await awaitAnim(out, t(260));
+    // Inline-hold the hidden state and drop the filling animation immediately
+    // (never leave a fill:'forwards' opacity hold lingering).
+    chicken.style.opacity = '0';
+    out.cancel();
+
+    currentLane = 0;
+    active = currentLane < lanes;
+    resetChicken(true);   // camera glides home + chicken fades back in
+    render();
+    busy = false;
+    updateButtons();
+    setSignal('go');
+    statusLabel.textContent = 'Run ended — back at the start';
+  }
+
+  // Feather burst at the contact point — pure cosmetics, auto-removed.
+  function spawnFeathers(x, y){
+    const count = 7 + Math.floor(Math.random() * 4);
+    for(let i = 0; i < count; i += 1){
+      const f = document.createElement('div');
+      f.className = 'feather';
+      f.style.left = `${x + (Math.random() - 0.5) * 34}px`;
+      f.style.top = `${y + (Math.random() - 0.5) * 22}px`;
+      carsLayer.appendChild(f);
+      const dx = (Math.random() - 0.5) * 170;
+      const dy = 46 + Math.random() * 120;
+      const rot = (Math.random() - 0.5) * 540;
+      const fall = f.animate(
+        [
+          { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+          { transform: `translate(${dx * 0.7}px, ${-24 - Math.random() * 42}px) rotate(${rot * 0.4}deg)`, opacity: 1, offset: 0.32 },
+          { transform: `translate(${dx}px, ${dy}px) rotate(${rot}deg)`, opacity: 0 },
+        ],
+        { duration: t(650 + Math.random() * 350), easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'forwards' }
+      );
+      fall.onfinish = () => f.remove();
+    }
+  }
+
+  // TRUE-CONTACT crash: the car's front bumper actually reaches the chicken —
+  // the arrival frame IS the contact frame. At contact the impact burst fires at
+  // the real bumper point, the road shakes, the chicken is knocked away tumbling
+  // in the car's travel direction (WAAPI, fill:forwards until resetChicken), and
+  // the car decelerates through the hit then exits bottom (hit-and-run).
+  // Outcome authority is untouched: this only runs when the book said "lose".
+  async function crashIntoChicken(laneIndex){
+    const road = document.querySelector('.road');
+    const laneCenterX = (laneIndex * LANE_W) + (LANE_W / 2);
+
+    const car = document.createElement('div');
+    car.className = 'car red crash-car';
+    car.style.left = `${laneCenterX}px`;
+    carsLayer.appendChild(car);
+
+    const roadRect = road.getBoundingClientRect();
+    const chickenRect = chicken.getBoundingClientRect();
+    const chickenTopY = chickenRect.top - roadRect.top;
+
+    // The .car is anchored with bottom:100% (its bottom edge sits at translateY 0
+    // from the road top), so a translate of `chickenTopY + overlap` puts the front
+    // bumper `overlap`px INTO the chicken body — a real overlap frame, not the old
+    // stop-65px-short hand-off.
+    const OVERLAP = 14;
+    const contactY = chickenTopY + OVERLAP;
+    const startY = -180;
+
+    // Phase 1 — drive in; arrival == contact.
+    const arrive = car.animate(
+      [
+        { transform: `translate(-50%, ${startY}px)` },
+        { transform: `translate(-50%, ${contactY}px)` },
+      ],
+      { duration: t(DUR.crashIn), easing: 'cubic-bezier(.3,.6,.3,.98)', fill: 'forwards' }
+    );
+    await awaitAnim(arrive, t(DUR.crashIn));
+
+    // Contact frame — everything fires together.
+    const bumperY = contactY;   // road-relative Y of the car's front bumper
+    const impact = document.createElement('div');
+    impact.className = 'impact';
+    impact.style.left = `${laneCenterX}px`;
+    impact.style.top = `${bumperY}px`;
+    carsLayer.appendChild(impact);
+
+    road.classList.remove('shake');
+    void road.offsetWidth;
+    road.classList.add('shake');
+
+    spawnFeathers(laneCenterX, bumperY);
+
+    chicken.classList.add('knocked');   // tumble above the crash car (z 35)
+    const dir = Math.random() > 0.5 ? 1 : -1;
+    const knock = chicken.animate(
+      [
+        { transform: 'translate(0, -50%) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${dir * 46}px, 14%) rotate(${dir * 160}deg)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(${dir * 112}px, 130%) rotate(${dir * 320}deg)`, opacity: 0 },
+      ],
+      { duration: t(DUR.knock), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }
+    );
+
+    // Phase 2 — decelerate through the contact, then exit bottom.
+    const exit = car.animate(
+      [
+        { transform: `translate(-50%, ${contactY}px)` },
+        { transform: `translate(-50%, ${contactY + 26}px)`, offset: 0.3 },
+        { transform: `translate(-50%, ${road.clientHeight + 220}px)` },
+      ],
+      { duration: t(DUR.crashExit), easing: 'cubic-bezier(.4,.1,.6,1)', fill: 'forwards', delay: t(120) }
+    );
+    exit.onfinish = () => car.remove();
+
+    await awaitAnim(knock, t(DUR.knock));
+    // Convert the animation-held invisible state into an inline style and drop
+    // the filling animation — no fill:'forwards' opacity hold may ever linger
+    // (a lingering one is what caused the random "missing chicken").
+    chicken.style.opacity = '0';
+    knock.cancel();
+    setTimeout(() => impact.remove(), t(DUR.impact));
+    road.classList.remove('shake');
+  }
+
+  function spawnCar(forcedLane = null){
+    const road = document.querySelector('.road');
+    const car = document.createElement('div');
+    const shadow = document.createElement('div');
+    const whoosh = document.createElement('div');
+    const colors = ['', 'blue', 'red', 'green'];
+
+    let laneIndex =
+      forcedLane !== null
+        ? forcedLane
+        : Math.floor(Math.random() * lanes);
+
+    // Random background traffic avoids the occupied lane.
+    // A destination car may appear in the next lane, but not on every jump,
+    // so traffic still feels random and natural.
+    if (forcedLane === null) {
+      if (protectedLane !== null && laneIndex === protectedLane) {
+        laneIndex = (laneIndex + 1 + Math.floor(Math.random() * (lanes - 1))) % lanes;
+      }
+
+      if (active && currentLane < lanes && laneIndex === currentLane) {
+        // Allow some natural traffic in the upcoming lane.
+        // Only redirect it most of the time to avoid making every jump identical.
+        if (Math.random() < 0.62) {
+          const side = Math.random() > 0.5 ? 1 : -1;
+          laneIndex = Math.max(0, Math.min(lanes - 1, currentLane + side));
+
+          if (laneIndex === currentLane || laneIndex === protectedLane) {
+            laneIndex = (currentLane + 1) % lanes;
+          }
+        }
+      }
+    }
+
+    const laneCenterX = (laneIndex * LANE_W) + (LANE_W / 2);
+    const startY = -190;
+    const endY = road.clientHeight + 230;
+    // The gameplay-relevant destination car (forcedLane) is turbo-scaled so the
+    // pre-hop wait derived from its duration stays proportional in turbo;
+    // background ambience keeps its natural pace.
+    const duration =
+      forcedLane !== null
+        ? t(1300 + Math.random() * 350)
+        : 1900 + Math.random() * 1100;
+    const trafficId = `traffic-${++trafficIdCounter}`;
+
+    car.className = `car ${colors[Math.floor(Math.random() * colors.length)]}`;
+    car.dataset.lane = String(laneIndex);
+    car.dataset.trafficId = trafficId;
+    car.style.left = `${laneCenterX}px`;
+
+    shadow.className = 'car-shadow';
+    shadow.dataset.lane = String(laneIndex);
+    shadow.dataset.trafficId = trafficId;
+    shadow.style.left = `${laneCenterX}px`;
+
+    whoosh.className = 'whoosh';
+    whoosh.dataset.lane = String(laneIndex);
+    whoosh.dataset.trafficId = trafficId;
+    whoosh.style.left = `${laneCenterX + (Math.random() > .5 ? 48 : -52)}px`;
+    whoosh.style.top = '48%';
+
+    carsLayer.appendChild(shadow);
+    carsLayer.appendChild(whoosh);
+    carsLayer.appendChild(car);
+
+    // Smooth continuous motion: constant-speed travel (linear easing) with a
+    // gently growing scale for perspective, generated as evenly-spaced keyframes.
+    // The old hand-authored 5-stop path had velocity jumps at its offsets
+    // (.40/.50/.62) and animated `filter: blur()` — which repaints the layer
+    // every frame — together reading as jerky/flickery passes. No filter or
+    // opacity is animated on the car body anymore.
+    const STEPS = 10;
+    const keyframes = [];
+    for(let s = 0; s <= STEPS; s += 1){
+      const p = s / STEPS;
+      const y = startY + (endY - startY) * p;
+      const scale = 0.74 + 0.42 * Math.pow(p, 1.15);
+      keyframes.push({ transform: `translate(-50%, ${y.toFixed(1)}px) scale(${scale.toFixed(3)})` });
+    }
+
+    const animation = registerTrafficAnimation(
+      car.animate(keyframes, {
+        duration,
+        easing: 'linear',
+        fill: 'forwards'
+      }),
+      laneIndex
+    );
+
+    // Shadow follows the same smooth path; opacity (compositor-friendly) swells
+    // mid-road and fades at the edges.
+    const shadowKeyframes = [];
+    for(let s = 0; s <= STEPS; s += 1){
+      const p = s / STEPS;
+      const y = startY + 118 + (endY - startY) * p;
+      const scale = 0.62 + 0.5 * Math.pow(p, 1.15);
+      const opacity = 0.08 + 0.22 * Math.sin(Math.PI * p);
+      shadowKeyframes.push({
+        transform: `translate(-50%, ${y.toFixed(1)}px) scale(${scale.toFixed(3)})`,
+        opacity: Number(opacity.toFixed(3)),
+      });
+    }
+    const shadowAnimation = registerTrafficAnimation(
+      shadow.animate(shadowKeyframes, { duration, easing: 'linear', fill: 'forwards' }),
+      laneIndex
+    );
+
+
+    // Subtle suspension bob layered on top of the travel animation (composite
+    // add), so cars read as riding the road rather than sliding on rails.
+    const bob = car.animate(
+      [
+        { transform: 'translateY(0px)' },
+        { transform: 'translateY(-2.5px)' },
+        { transform: 'translateY(0px)' },
+      ],
+      { duration: 240 + Math.random() * 160, iterations: Infinity, composite: 'add', easing: 'ease-in-out' }
+    );
+
+    // Near-miss reactions come from the shared geometric collision loop.
+    ensureCollisionLoop();
+
+    animation.onfinish = () => {
+      bob.cancel();
+      car.remove();
+      shadow.remove();
+      whoosh.remove();
+      trafficAnimations.delete(animation);
+      trafficAnimations.delete(shadowAnimation);
+      trafficGroups.delete(trafficId);
+    };
+
+    // Callers (the destination-car flow) time the hop against the car's real travel.
+    return { animation, duration };
+  }
+
+  function maybePrepareDestinationCar(laneIndex){
+    const existing = [...carsLayer.querySelectorAll(
+      `.car[data-lane="${laneIndex}"]:not(.crash-car)`
+    )].find(car => {
+      const animation = car.getAnimations()[0];
+      return animation && animation.playState !== 'finished';
+    });
+
+    if (existing) {
+      return null;
+    }
+
+    // Keep some successful jumps naturally empty.
+    if (Math.random() >= 0.58) {
+      return null;
+    }
+
+    // Spawn at the real top entry point and let it travel downward. Returns the
+    // spawn info so the caller can hold the hop until the car has cleared.
+    return spawnCar(laneIndex);
+  }
+
+  function removeDecorativeTrafficFromLane(laneIndex){
+    carsLayer
+      .querySelectorAll(
+        `.car[data-lane="${laneIndex}"]:not(.crash-car), ` +
+        `.car-shadow[data-lane="${laneIndex}"], ` +
+        `.whoosh[data-lane="${laneIndex}"]`
+      )
+      .forEach(element => {
+        element.getAnimations().forEach(animation => animation.cancel());
+        element.remove();
+      });
+  }
+
+  function startTraffic(){
+    spawnCar();
+    scheduleNextCar();
+  }
+
+  // ---- money ---------------------------------------------------------------
+  function updateBalance(){ balanceLabel.textContent = `$${balanceUnits.toFixed(2)}`; }
+  function setBalanceApi(api){ balanceUnits = toUnits(api); updateBalance(); }
+
+  // ---- LIVE RGS client (mirrors games/2_4_dice_kong_climb/.../kong-dice.js) --
+  async function rgsCall(endpoint, body){
+    const res = await fetch(`https://${RGS_URL}${endpoint}`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok || json?.statusCode){ throw new Error(json?.statusCode || json?.error || `HTTP ${res.status}`); }
+    return json;
+  }
+  const liveAuth = () => rgsCall('/wallet/authenticate', { sessionID:SESSION_ID, language:LANG });
+  const livePlay = (modeKey) => rgsCall('/wallet/play', {
+    sessionID:SESSION_ID, mode:modeKey, currency:CURRENCY, amount:snapLiveBet(toApi(betUnits))
+  });
+  const liveEndRound = () => rgsCall('/wallet/end-round', { sessionID:SESSION_ID });
+  function snapLiveBet(api){
+    const cfg = betLevels;
+    if(!cfg) return api;
+    if(Array.isArray(cfg.betLevels) && cfg.betLevels.length){
+      return cfg.betLevels.reduce((a,b) => (Math.abs(b-api) < Math.abs(a-api) ? b : a));
+    }
+    let v = api;
+    if(cfg.stepBet) v = Math.round(v/cfg.stepBet)*cfg.stepBet;
+    if(cfg.minBet) v = Math.max(cfg.minBet, v);
+    if(cfg.maxBet) v = Math.min(cfg.maxBet, v);
+    return v;
+  }
+  function rgsErrorMessage(err){
+    const code = (err && err.message) || '';
+    const map = {
+      ERR_IS:'Invalid session', ERR_IPB:'Insufficient balance', ERR_VAL:'Invalid bet',
+      ERR_ATE:'Round already settled', ERR_GLE:'Bet limit exceeded', ERR_LOC:'Locked',
+      ERR_GEN:'Something went wrong', ERR_MAINTENANCE:'Under maintenance'
+    };
+    return map[code] || code || 'Bet failed';
+  }
+
+  // ---- LOCAL replay: weighted-pick a real published outcome for ONE lane, synth
+  // a minimal book for it (win/lose only — no cumulative ladder concept) --------
+  function pickOutcome(m){
+    // Dev-only QA override (?forceLose=1 / ?forceWin=1) — LOCAL mode only, since
+    // pickOutcome is never consulted on the LIVE path.
+    if (QA_FORCE === 'lose') return m.outcomes.find(o => o.payoutCents === 0) || m.outcomes[m.outcomes.length-1];
+    if (QA_FORCE === 'win') return m.outcomes.find(o => o.payoutCents > 0) || m.outcomes[0];
+    let r = Math.random() * m.totalWeight;
+    for(const o of m.outcomes){ r -= o.weight; if(r <= 0) return o; }
+    return m.outcomes[m.outcomes.length-1];
+  }
+  function localPlay(modeKey){
+    const m = bundle.modes[modeKey];
+    const o = pickOutcome(m);
+    const win = o.payoutCents > 0;
+    const rawMult = win ? o.payoutCents / EVENT_SCALE : 0;
+    const events = [
+      { index:0, type:'laneSetup', difficulty:m.difficulty, lane:m.lane, multiplier:m.multiplier },
+      { index:1, type:'laneResult', difficulty:m.difficulty, lane:m.lane, isWin:win, payoutMultiplier:rawMult },
+      { index:2, type:'finalWin', amount:o.payoutCents, multiplier:rawMult }
+    ];
+    return { round:{ betID:Date.now(), amount:toApi(betUnits), payout:toApi(betUnits*rawMult),
+                     payoutMultiplier:rawMult, active:false, mode:modeKey, state:events } };
+  }
+
+  // ---- difficulty + Manual/Auto tabs ---------------------------------------
+  function setDifficulty(name){
+    if(busy || currentLane > 0 || !bundle || !bundle.ladders[name]) return;
+    difficulty.value = name;
+    ladder = bundle.ladders[name];
+    buildRoad();
+    updateButtons();
+  }
+  const modeTabButtons = [...document.querySelectorAll('.mode-tab')];
+  function syncModeTabs(){ modeTabButtons.forEach((b,i) => b.classList.toggle('active', (i===1)===autoMode)); }
+
+  function updateBetDisplay(){
+    const value = Math.max(0, Number(betAmount.value) || 0);
+    betAmount.value = value.toFixed(8);
+    betValueLabel.textContent = `$${value.toFixed(2)}`;
+    render();
+  }
+
+  difficultyButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      if (difficulty.disabled) return;
+      setDifficulty(button.dataset.difficulty);
+    });
+  });
+
+  modeTabButtons.forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      autoMode = (i === 1);
+      syncModeTabs();
+      if(autoMode && !busy && currentLane < lanes && bundle && !bundle.disabledAutoplay) onPlay();
+    });
+  });
+
+  halfBet.addEventListener('click', () => {
+    if (betAmount.disabled) return;
+    const currentBet = Number(betAmount.value) || 0;
+    betAmount.value = Math.max(0, currentBet / 2).toFixed(8);
+    updateBetDisplay();
+  });
+
+  doubleBet.addEventListener('click', () => {
+    if (betAmount.disabled) return;
+    const currentBet = Number(betAmount.value) || 0;
+    betAmount.value = (currentBet * 2).toFixed(8);
+    updateBetDisplay();
+  });
+
+  betAmount.addEventListener('change', updateBetDisplay);
+  betAmount.addEventListener('input', () => {
+    const value = Number(betAmount.value);
+    if (Number.isFinite(value)) {
+      betValueLabel.textContent = `$${value.toFixed(2)}`;
+    }
+  });
+
+  startBtn.addEventListener('click', onPlay);
+  goToStartBtn.addEventListener('click', goToStart);
+  turboBtn.addEventListener('click', () => {
+    turbo = !turbo;
+    turboBtn.classList.toggle('active', turbo);
+    syncDurations();   // keep CSS-side durations on the same clock as t()
+  });
+  difficulty.addEventListener('change', render);
+  window.addEventListener('resize',()=>{
+    if(currentLane === 0){
+      if(window.innerWidth <= 720){
+        chicken.style.left='45px';
+      }else{
+        chicken.style.left='381px';
+      }
+      setCamera(0);
+      chicken.style.top='56%';
+      chicken.style.transform='translateY(-50%)';
+    }else{
+      const chickenCenter = chicken.offsetLeft + chicken.offsetWidth / 2;
+      followChicken(chickenCenter);
+    }
+  });
+
+  // ---- init ----------------------------------------------------------------
+  async function init(){
+    modeBadge.textContent = IS_LIVE ? 'LIVE' : 'LOCAL';
+    try{
+      const res = await fetch('chicken_run_rgs.json', { cache:'no-store' });
+      bundle = await res.json();
+    }catch(err){
+      statusLabel.textContent = 'Could not load chicken_run_rgs.json — serve over http (./run.sh).';
+      return;
+    }
+    lanes = bundle.lanes || 24;
+    const want = (LAUNCH_MODE && bundle.ladders[LAUNCH_MODE]) ? LAUNCH_MODE
+               : (bundle.ladders[difficulty.value] ? difficulty.value
+               : (bundle.difficulties[1] || bundle.difficulties[0]));
+    difficulty.value = want;
+    ladder = bundle.ladders[want];
+    buildRoad();
+    active = currentLane < lanes;
+    updateBalance();
+    startTraffic();
+
+    if(IS_LIVE){
+      try{
+        const auth = await liveAuth();
+        if(auth.balance){ setBalanceApi(auth.balance.amount); if(auth.balance.currency) CURRENCY = auth.balance.currency; }
+        if(auth.config){
+          betLevels = auth.config;
+          if(auth.config.defaultBetLevel){
+            betUnits = toUnits(auth.config.defaultBetLevel);
+            betAmount.value = betUnits.toFixed(8);
+            betValueLabel.textContent = `$${betUnits.toFixed(2)}`;
+          }
+        }
+        // Simple/safe reconnect: settle any round left open by a refresh, then start fresh.
+        if(auth.round && auth.round.active === true){
+          statusLabel.textContent = 'Settling previous round…';
+          hasOpenRound = true;
+          try{ const r = await liveEndRound(); if(r && r.balance) setBalanceApi(r.balance.amount); }
+          catch(e){}
+          hasOpenRound = false;
+        }
+        statusLabel.textContent = 'Ready';
+      }catch(err){ statusLabel.textContent = 'RGS auth failed: ' + rgsErrorMessage(err); }
+    } else {
+      if(Number(betAmount.value) <= 0){ betAmount.value = '1.00000000'; betValueLabel.textContent = '$1.00'; }
+      statusLabel.textContent = 'Ready';
+    }
+    setSignal('go');
+    updateButtons();
+    render();
+    syncModeTabs();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
+
+<style>
+  #betAmount::-webkit-outer-spin-button,
+  #betAmount::-webkit-inner-spin-button{
+    margin:0;
+  }
+</style>

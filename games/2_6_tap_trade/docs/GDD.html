@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tap Trade — Game Design Document</title>
+<style>
+  /* Print-first design: light body for paper, Terminal Rose accents, dark cover. */
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  :root{
+    --ink:#231a1f; --dim:#7a6b72; --faint:#b8aab1;
+    --rose:#c2447e; --rose-soft:#f3d9e5; --gold:#8a7d1c; --gold-soft:#f4efc9;
+    --panel:#faf6f8; --border:#e5d8de; --gain:#1d7a4d; --loss:#b03a50;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font:10.5pt/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       color:var(--ink)}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+  /* ------------------------------------------------------------- cover */
+  .cover{height:257mm; background:#170a10; color:#f3e9ee; border-radius:2mm;
+         display:flex; flex-direction:column; justify-content:space-between;
+         padding:22mm 18mm; page-break-after:always; position:relative; overflow:hidden}
+  .cover .rule{height:2px; background:linear-gradient(90deg,#e8dd4e,#c2447e 60%,transparent); width:52mm}
+  .cover .kicker{font:600 9pt var(--mono); letter-spacing:.28em; text-transform:uppercase; color:#8d7a84; margin-top:8mm}
+  .cover h1{font-size:34pt; font-weight:800; letter-spacing:-.02em; margin:2mm 0 4mm}
+  .cover h1 em{font-style:normal; color:#e8dd4e}
+  .cover .sub{font-size:11.5pt; color:#c9b8c0; max-width:120mm}
+  .cover table{margin-top:10mm; border-collapse:collapse; font-size:9pt}
+  .cover td{padding:1.2mm 6mm 1.2mm 0; color:#c9b8c0}
+  .cover td:first-child{font:600 8pt var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#8d7a84}
+  .cover .chartline{position:absolute; right:-10mm; top:36mm; opacity:.5}
+  .cover .foot{font:8.5pt var(--mono); color:#8d7a84}
+
+  /* ------------------------------------------------------------- structure */
+  h2{font-size:15pt; font-weight:800; letter-spacing:-.01em; color:var(--ink);
+     margin:9mm 0 3mm; padding-bottom:1.6mm; border-bottom:2px solid var(--rose);
+     page-break-after:avoid}
+  h2 .no{color:var(--rose); font-family:var(--mono); font-size:11pt; margin-right:2mm}
+  h3{font-size:11pt; font-weight:700; margin:5mm 0 1.5mm; color:var(--ink); page-break-after:avoid}
+  p{margin:0 0 2.6mm; max-width:172mm}
+  ul,ol{margin:0 0 2.8mm 5mm}
+  li{margin-bottom:1mm}
+  strong{font-weight:700}
+  code{font-family:var(--mono); font-size:9pt; background:var(--panel);
+       border:1px solid var(--border); border-radius:2px; padding:0 1mm}
+  .callout{background:var(--gold-soft); border-left:3px solid var(--gold);
+           padding:2.6mm 4mm; margin:3mm 0; border-radius:0 2mm 2mm 0; page-break-inside:avoid}
+  .callout.rose{background:var(--rose-soft); border-left-color:var(--rose)}
+  .callout p{margin:0}
+  .cols2{column-count:2; column-gap:8mm}
+  .avoid{page-break-inside:avoid}
+  .pagebreak{page-break-before:always}
+
+  table.data{border-collapse:collapse; width:100%; margin:2.5mm 0 4mm; font-size:9pt; page-break-inside:avoid}
+  table.data th{font:700 8pt var(--mono); letter-spacing:.08em; text-transform:uppercase;
+                color:var(--dim); text-align:left; padding:1.6mm 3mm; border-bottom:2px solid var(--rose)}
+  table.data td{padding:1.5mm 3mm; border-bottom:1px solid var(--border); vertical-align:top}
+  table.data tr:nth-child(even) td{background:var(--panel)}
+  table.odds td{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  table.odds{page-break-inside:auto}
+  table.odds tr{page-break-inside:avoid}
+
+  .fig{margin:3mm 0 4mm; page-break-inside:avoid}
+  .fig figcaption{font:600 8pt var(--mono); letter-spacing:.08em; text-transform:uppercase;
+                  color:var(--dim); margin-top:1.5mm}
+  .swatches{display:flex; gap:2.5mm; flex-wrap:wrap; margin:2mm 0 4mm}
+  .sw{width:30mm; border:1px solid var(--border); border-radius:2mm; overflow:hidden; page-break-inside:avoid}
+  .sw .band{height:9mm; display:flex}
+  .sw .band i{flex:1}
+  .sw span{display:block; font:600 7.5pt var(--mono); padding:1.2mm 2mm; color:var(--dim)}
+
+  pre{font:8.5pt/1.5 var(--mono); background:#231a1f; color:#f0e6ea; border-radius:2mm;
+      padding:3.5mm 4.5mm; margin:2.5mm 0 4mm; white-space:pre-wrap; page-break-inside:avoid}
+  pre .c{color:#8d7a84}
+  .toc{margin:4mm 0}
+  .toc li{list-style:none; display:flex; align-items:baseline; margin-bottom:1.8mm}
+  .toc .t{font-weight:600}
+  .toc .no{font:700 9pt var(--mono); color:var(--rose); width:9mm}
+  .toc .dots{flex:1; border-bottom:1px dotted var(--faint); margin:0 2mm}
+  .toc .sub{font-weight:400; color:var(--dim)}
+  .kv td:first-child{font:600 8.5pt var(--mono); color:var(--dim); white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ================================================================ COVER -->
+<div class="cover">
+  <div>
+    <div class="rule"></div>
+    <div class="kicker">Monstrums Gaming · Stake Engine</div>
+    <h1>TAP <em>TRADE</em></h1>
+    <div class="sub">Tap-cell-to-bet on a live price chart. A direct-probability prediction
+    arcade built on the certified-replay Stake Engine RGS — 28 win/lose multiplier modes,
+    1.4× to 100×, RTP 96.00–96.55%.</div>
+    <svg class="chartline" width="360" height="200" viewBox="0 0 360 200" fill="none">
+      <g stroke="rgba(214,116,152,0.25)" stroke-width="1">
+        <line x1="0" y1="50" x2="360" y2="50"/><line x1="0" y1="100" x2="360" y2="100"/><line x1="0" y1="150" x2="360" y2="150"/>
+        <line x1="90" y1="0" x2="90" y2="200"/><line x1="180" y1="0" x2="180" y2="200"/><line x1="270" y1="0" x2="270" y2="200"/>
+      </g>
+      <rect x="272" y="52" width="86" height="46" rx="6" fill="rgba(232,221,78,0.18)" stroke="#e8dd4e"/>
+      <path d="M0,150 C40,140 60,110 95,118 C130,126 150,90 190,95 C230,100 260,80 315,75"
+            stroke="#f6b9cf" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="315" cy="75" r="4" fill="#fff"/>
+    </svg>
+    <table>
+      <tr><td>Document</td><td>Game Design Document — internal</td></tr>
+      <tr><td>Game ID</td><td class="num">2_6_tap_trade (math) · 2-6-tap-trade (web)</td></tr>
+      <tr><td>Version</td><td class="num">1.0 · 2026-07-22</td></tr>
+      <tr><td>Math</td><td class="num">28 modes · RTP 96.00–96.55% · max win 100×</td></tr>
+      <tr><td>Status</td><td>Feature-complete · pre-ACP-upload</td></tr>
+    </table>
+  </div>
+  <div class="foot">Monstrums-Gaming/math-sdk · games/2_6_tap_trade — Monstrums-Gaming/monstrums-web-sdk · apps/2-6-tap-trade</div>
+</div>
+
+<!-- ================================================================ TOC -->
+<h2><span class="no">§</span>Contents</h2>
+<ol class="toc">
+  <li><span class="no">1</span><span class="t">Overview</span><span class="dots"></span><span class="sub">concept, platform, lineage</span></li>
+  <li><span class="no">2</span><span class="t">Core Gameplay</span><span class="dots"></span><span class="sub">loop, grid, placement rules, the 2-chip cap</span></li>
+  <li><span class="no">3</span><span class="t">Game Math</span><span class="dots"></span><span class="sub">ladder derivation, full odds table, risk envelope</span></li>
+  <li><span class="no">4</span><span class="t">Presentation &amp; UX</span><span class="dots"></span><span class="sub">HUD, themes, history, settings, mobile</span></li>
+  <li><span class="no">5</span><span class="t">Fairness &amp; Compliance</span><span class="dots"></span><span class="sub">certified replay, ACP rules, jurisdiction</span></li>
+  <li><span class="no">6</span><span class="t">Technical Architecture</span><span class="dots"></span><span class="sub">book contract, tap queue, masked ledger</span></li>
+  <li><span class="no">7</span><span class="t">Status &amp; Roadmap</span><span class="dots"></span><span class="sub">done, launch gates, later</span></li>
+  <li><span class="no">8</span><span class="t">Appendix</span><span class="dots"></span><span class="sub">file map, storage keys, glossary</span></li>
+</ol>
+
+<!-- ================================================================ 1 -->
+<h2><span class="no">1</span>Overview</h2>
+<p><strong>Tap Trade</strong> is a continuous, tap-to-bet prediction game (the “Euphoria”
+mechanic). A live-looking price chart scrolls forever; the future region of the chart is
+covered by a grid of <em>(time × price)</em> multiplier cells. The player taps a cell to
+place a chip. If the price line reaches that cell, the chip pays
+<span class="num">bet × cellMultiplier</span>; otherwise it loses. There are no rounds and
+no timers — each chip resolves the moment the line reaches its column.</p>
+<table class="data kv">
+  <tr><td>Genre</td><td>Direct-probability prediction arcade (crash-adjacent, per-decision wagers)</td></tr>
+  <tr><td>Platform</td><td>Stake Engine (certified-replay RGS, iframe launch with <code>rgs_url</code> + <code>sessionID</code>)</td></tr>
+  <tr><td>Session shape</td><td>Continuous; multiple concurrent chips; a chip = one independent wager</td></tr>
+  <tr><td>Bet range</td><td>Operator bet-level grid (offline reference grid $1–$1,000)</td></tr>
+  <tr><td>Max win</td><td class="num">100× (top ladder rung, Limbo <code>base_100</code> precedent)</td></tr>
+  <tr><td>Math model</td><td>Each chip is an independent win/lose bet at a fixed multiplier M — a <code>2_9_crypto_pulse</code> twin</td></tr>
+  <tr><td>Lineage</td><td><code>2_11_price_grid</code> → <code>2_11_crypto_pulse_grid</code> (28-rung rebuild; the 20-rung <code>2_10</code> was retired) → renamed <code>2_6_tap_trade</code> to pair with web <code>apps/2-6-tap-trade</code></td></tr>
+</table>
+<div class="callout rose"><p><strong>The one-sentence pitch:</strong> the thrill of calling a
+price move, priced like a certified casino game — every cell on screen is a real published
+bet mode, and the chart is steered theatre over pre-generated, hash-frozen outcomes.</p></div>
+
+<!-- ================================================================ 2 -->
+<h2><span class="no">2</span>Core Gameplay</h2>
+<h3>2.1 The loop</h3>
+<ol>
+  <li><strong>Tap a future cell.</strong> Each cell displays a multiplier snapped to the
+  published ladder. A chip is placed for the current bet size (one real
+  <code>/wallet/play</code> at that cell’s mode).</li>
+  <li><strong>The line approaches.</strong> The chip pulses <em>pending</em> → <em>active</em>
+  → <em>hot</em> (with a depleting countdown bar) as its column nears the now-line.</li>
+  <li><strong>Reveal.</strong> The line is steered to hit (win) or miss (lose) the cell per
+  the drawn book. A win fills the cell gold with a ring pulse and pays
+  <span class="num">stake × M</span>; a loss flashes red, shakes, and drops away.</li>
+</ol>
+<h3>2.2 Grid geometry</h3>
+<table class="data kv">
+  <tr><td>Cell size</td><td class="num">5 s wide × $0.50 tall (14 px/s × 110 px/$ at zoom 1)</td></tr>
+  <tr><td>Now-line</td><td>At 40% of the canvas width; history scrolls left of it</td></tr>
+  <tr><td>Dead zone</td><td class="num">Cells starting &lt; 2.5 s ahead cannot be bet (shaded)</td></tr>
+  <tr><td>Reveal window</td><td class="num">A chip resolves within 1.6 s of its column reaching the now-line</td></tr>
+  <tr><td>Zoom</td><td class="num">0.5×–2.5× (wheel / pinch / buttons) — rescales pixels only, never odds</td></tr>
+</table>
+<h3>2.3 Placement rules</h3>
+<ul>
+  <li>Cell must start ≥ 2.5 s in the future (“Too close to the line”).</li>
+  <li>One chip per cell (“Chip already there”).</li>
+  <li><strong>Max two chips per time-column</strong>, on distinct cells (“Column full”).</li>
+  <li>Stake must be ≤ the displayed balance (queued chips reserve funds).</li>
+  <li>Chips in <em>other</em> columns are unrestricted — their rounds are serialized
+  through the bet queue, not rejected.</li>
+  <li><strong>Tap-to-confirm</strong> (setting; default on for touch): first tap previews the
+  cell and its exact offer, second tap places.</li>
+</ul>
+<div class="callout avoid"><p><strong>Why exactly two chips per column.</strong> During a
+column’s reveal window the line sweeps one <em>contiguous</em> band of prices, so the
+column’s winners must be adjacent in price with every loser outside the band. With 2 chips
+all 4 outcome patterns are drawable (sweep both, hit either, thread between). With 3 chips
+a <em>win-lose-win sandwich</em> (1 of 8 draws) is impossible to render; with 4 chips ~31%
+of patterns are. Payouts would still be correct — but the line would visibly contradict a
+result. The cap is <strong>static</strong> so a rejection never leaks anything about
+outcomes already drawn on the board.</p></div>
+<figure class="fig">
+  <svg width="470" height="120" viewBox="0 0 470 120">
+    <g font-family="ui-monospace,Menlo,monospace" font-size="9" font-weight="700">
+      <rect x="10" y="14" width="86" height="26" rx="4" fill="#f4efc9" stroke="#1d7a4d"/>
+      <text x="53" y="30" text-anchor="middle" fill="#1d7a4d">A — WIN</text>
+      <rect x="10" y="46" width="86" height="26" rx="4" fill="#f6dfe4" stroke="#b03a50" stroke-dasharray="4 3"/>
+      <text x="53" y="62" text-anchor="middle" fill="#b03a50">B — LOSE</text>
+      <rect x="10" y="78" width="86" height="26" rx="4" fill="#f4efc9" stroke="#1d7a4d"/>
+      <text x="53" y="94" text-anchor="middle" fill="#1d7a4d">C — WIN</text>
+      <path d="M120,27 C160,27 180,27 210,27" stroke="#c2447e" stroke-width="2" fill="none"/>
+      <path d="M210,27 C240,40 240,70 214,88" stroke="#b03a50" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+      <g transform="translate(228,59)"><circle r="8" fill="#b03a50"/><path d="M-3,-3 L3,3 M3,-3 L-3,3" stroke="#fff" stroke-width="1.8"/></g>
+      <text x="250" y="34" fill="#7a6b72" font-weight="400">line reaches A…</text>
+      <text x="250" y="62" fill="#b03a50" font-weight="400">…but cannot reach C</text>
+      <text x="250" y="76" fill="#b03a50" font-weight="400">without crossing B</text>
+    </g>
+  </svg>
+  <figcaption>Fig. 1 — the unrenderable win-lose-win sandwich that motivates the 2-chip column cap</figcaption>
+</figure>
+
+<!-- ================================================================ 3 -->
+<h2><span class="no">3</span>Game Math</h2>
+<h3>3.1 Model</h3>
+<p>Tap Trade is a <strong>direct-probability</strong> game: no board, no reels, no free
+spins, Rust optimiser off. Every distinct cell multiplier is its own published bet mode
+<code>call_&lt;cents&gt;</code> (cost 1.0). Lookup-table weights are uniform (1 per book),
+so <strong>published odds equal book counts exactly</strong> — there is no approximation
+anywhere in the pipeline.</p>
+<h3>3.2 Ladder derivation</h3>
+<p>For each multiplier M, the win probability is the <em>smallest-denominator</em> rational
+a/b whose realised RTP <span class="num">(a/b) × M</span> lands in
+<span class="num">[96.00%, 96.70%]</span> (the <code>_simplest_fraction_in</code>
+Stern-Brocot descent shared with Limbo/Chicken). <code>num_sims = b</code>, so a build
+yields exactly <em>a</em> winning books out of <em>b</em> — the LUT <em>is</em> the odds.</p>
+<div class="callout"><p><strong>Why the floor is 1.4×, not 1.2×:</strong> a 1.2× win/lose
+mode has payout standard deviation ≈ 0.48, below ACP’s Base-Volatility floor of 0.60 —
+which rates the whole game off its tamest mode. 1.4× clears it (~0.62). The 100× ceiling is
+the approved Limbo <code>base_100</code> precedent; the whole ladder sits inside that
+envelope at both ends. Every mode is a two-outcome all-or-nothing bet.</p></div>
+<h3>3.3 The 28-rung odds table</h3>
+<p>Generated from the verified odds bundle (<code>build_odds_bundle.py</code> re-checks
+every published LUT row and book event before emitting it). Band
+<span class="num">96.00–96.55%</span>, cross-mode spread <span class="num">0.5517%</span>
+(≤ 1% required), <span class="num">1,176</span> books total, largest mode 135 books.</p>
+<table class="data odds">
+  <thead><tr><th>Mode</th><th>Multiplier</th><th>Win chance (a/b)</th><th>Win %</th><th>RTP</th><th>Books</th></tr></thead>
+  <tbody>
+<tr><td>call_140</td><td>1.4×</td><td>11/16</td><td>68.75%</td><td>96.25%</td><td>16</td></tr>
+<tr><td>call_150</td><td>1.5×</td><td>9/14</td><td>64.29%</td><td>96.43%</td><td>14</td></tr>
+<tr><td>call_160</td><td>1.6×</td><td>3/5</td><td>60.00%</td><td>96.00%</td><td>5</td></tr>
+<tr><td>call_180</td><td>1.8×</td><td>8/15</td><td>53.33%</td><td>96.00%</td><td>15</td></tr>
+<tr><td>call_200</td><td>2×</td><td>12/25</td><td>48.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_220</td><td>2.2×</td><td>7/16</td><td>43.75%</td><td>96.25%</td><td>16</td></tr>
+<tr><td>call_250</td><td>2.5×</td><td>5/13</td><td>38.46%</td><td>96.15%</td><td>13</td></tr>
+<tr><td>call_280</td><td>2.8×</td><td>10/29</td><td>34.48%</td><td>96.55%</td><td>29</td></tr>
+<tr><td>call_320</td><td>3.2×</td><td>3/10</td><td>30.00%</td><td>96.00%</td><td>10</td></tr>
+<tr><td>call_360</td><td>3.6×</td><td>4/15</td><td>26.67%</td><td>96.00%</td><td>15</td></tr>
+<tr><td>call_400</td><td>4×</td><td>6/25</td><td>24.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_450</td><td>4.5×</td><td>3/14</td><td>21.43%</td><td>96.43%</td><td>14</td></tr>
+<tr><td>call_500</td><td>5×</td><td>5/26</td><td>19.23%</td><td>96.15%</td><td>26</td></tr>
+<tr><td>call_600</td><td>6×</td><td>4/25</td><td>16.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_700</td><td>7×</td><td>4/29</td><td>13.79%</td><td>96.55%</td><td>29</td></tr>
+<tr><td>call_800</td><td>8×</td><td>3/25</td><td>12.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_900</td><td>9×</td><td>3/28</td><td>10.71%</td><td>96.43%</td><td>28</td></tr>
+<tr><td>call_1000</td><td>10×</td><td>5/52</td><td>9.62%</td><td>96.15%</td><td>52</td></tr>
+<tr><td>call_1200</td><td>12×</td><td>2/25</td><td>8.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_1500</td><td>15×</td><td>5/78</td><td>6.41%</td><td>96.15%</td><td>78</td></tr>
+<tr><td>call_2000</td><td>20×</td><td>4/83</td><td>4.82%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_2500</td><td>25×</td><td>1/26</td><td>3.85%</td><td>96.15%</td><td>26</td></tr>
+<tr><td>call_3000</td><td>30×</td><td>4/125</td><td>3.20%</td><td>96.00%</td><td>125</td></tr>
+<tr><td>call_4000</td><td>40×</td><td>2/83</td><td>2.41%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_5000</td><td>50×</td><td>1/52</td><td>1.92%</td><td>96.15%</td><td>52</td></tr>
+<tr><td>call_6500</td><td>65×</td><td>2/135</td><td>1.48%</td><td>96.30%</td><td>135</td></tr>
+<tr><td>call_8000</td><td>80×</td><td>1/83</td><td>1.20%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_10000</td><td>100×</td><td>1/104</td><td>0.96%</td><td>96.15%</td><td>104</td></tr>
+  </tbody>
+</table>
+<h3>3.4 The per-mode wincap quirk (intentional)</h3>
+<p>Each mode’s <code>BetMode.max_win</code> equals its <em>own</em> multiplier M (not the
+global 100×). The engine applies a per-mode wincap override during sims, so a winning book
+— whose payout equals M — always reaches the active mode’s cap and emits a standard
+<code>wincap</code> event. <strong>Every winning book in every mode</strong> is therefore
+<code>cellCall → wincap → finalWin</code>; a losing book is <code>cellCall → finalWin</code>.
+The web client treats <code>wincap</code> as an explicit no-op. Do not “fix” this.</p>
+<h3>3.5 Display pricing vs true odds</h3>
+<p>The multiplier a cell <em>shows</em> comes from a local volatility model (normal-CDF
+band probability × 1.55, house-edge 3.5%) snapped in log-space to the nearest ladder rung —
+so every offered value is a real published mode. This model is presentation only: the
+true odds always come from the mode the chip plays.</p>
+
+<!-- ================================================================ 4 -->
+<h2 class="pagebreak"><span class="no">4</span>Presentation &amp; UX</h2>
+<h3>4.1 Screens &amp; flow</h3>
+<ul>
+  <li><strong>Splash:</strong> one loop of the Stake Engine loader (animated webp) on a
+  #041721 ground → loader fades → ground eases to black → the Monstrums sting video fades
+  in with audio. Autoplay ladder: sound → muted → skip. Tap (once playing) or Escape skips;
+  a 20 s failsafe guarantees entry. The game boots underneath.</li>
+  <li><strong>Main screen:</strong> full-viewport canvas chart + floating chrome.</li>
+</ul>
+<h3>4.2 HUD map</h3>
+<table class="data kv">
+  <tr><td>Top-left</td><td>Juice wordmark (theme-aware inline SVG) · balance pill with LOCAL/LIVE badge</td></tr>
+  <tr><td>Top-right</td><td>Session strip pill: net P/L · amount in play · last-8 result pips (click → history)</td></tr>
+  <tr><td>Center</td><td>First-visit hint (fades 0.8 s after the first chip; persisted)</td></tr>
+  <tr><td>Mid-left</td><td>Zoom −/+ (docks to a vertical rail on phones)</td></tr>
+  <tr><td>Bottom-center</td><td>Tap Trade title badge (theme-aware; hidden on phones)</td></tr>
+  <tr><td>Bottom-right</td><td>Bet row: quick chips · custom slot · “+” grid menu · history · settings · theme</td></tr>
+</table>
+<h3>4.3 Bet picker</h3>
+<p>The RGS bet-level grid is authoritative (off-grid <code>/wallet/play</code> amounts are
+rejected with <code>ERR_VAL</code>). Quick chips are the design amounts
+<span class="num">[1, 2, 5, 20]</span> snapped to the nearest grid values; the “+” menu
+offers the full grid with the top value styled <strong>MAX</strong>; a non-quick pick fills
+a single custom slot. Selection persists (<code>taptrade.betSize</code>). Every label is
+currency-aware (Intl via <code>?currency</code> + <code>?lang</code>, crypto-code fallback).</p>
+<h3>4.4 Settings (gear)</h3>
+<table class="data">
+  <thead><tr><th>Setting</th><th>Options</th><th>Notes</th></tr></thead>
+  <tr><td>Game speed</td><td class="num">1× / 1.5× / 2×</td><td>Multiplies the sim clock only (base pace 1.3×); odds untouched; hidden above 1× under <code>disabledTurbo</code></td></tr>
+  <tr><td>Sound</td><td>on / off</td><td>Synth cues (no audio assets): place tick, loss thud, win arpeggio scaled by tier</td></tr>
+  <tr><td>Tap to confirm</td><td>on / off</td><td>Pointer-agnostic two-tap placement; defaults on for touch, off for mouse</td></tr>
+</table>
+<h3>4.5 Themes</h3>
+<p>Seven complete palettes (canvas + CSS variables) switchable at runtime; persisted.</p>
+<div class="swatches">
+  <div class="sw"><div class="band"><i style="background:#170a10"></i><i style="background:#e8dd4e"></i><i style="background:#f6b9cf"></i></div><span>rose · Terminal Rose</span></div>
+  <div class="sw"><div class="band"><i style="background:#121417"></i><i style="background:#4c8bf5"></i><i style="background:#e3b341"></i></div><span>dark · Dark Mode</span></div>
+  <div class="sw"><div class="band"><i style="background:#070B10"></i><i style="background:#39FF6A"></i><i style="background:#B9FF7A"></i></div><span>neon · Neon Green</span></div>
+  <div class="sw"><div class="band"><i style="background:#0b0906"></i><i style="background:#ff8a1f"></i><i style="background:#2ee6d6"></i></div><span>cyber · Cyberpunk</span></div>
+  <div class="sw"><div class="band"><i style="background:#f5f6f8"></i><i style="background:#2563eb"></i><i style="background:#f5c518"></i></div><span>light · Light Minimal</span></div>
+  <div class="sw"><div class="band"><i style="background:#0e0a04"></i><i style="background:#d4af37"></i><i style="background:#f3d27a"></i></div><span>gold · Gold Casino</span></div>
+  <div class="sw"><div class="band"><i style="background:#070714"></i><i style="background:#6a4cff"></i><i style="background:#7aa8ff"></i></div><span>nova · Futuristic</span></div>
+</div>
+<h3>4.6 Bet history &amp; replay</h3>
+<p>Every resolved chip keeps a <strong>JPEG landing shot</strong> — a crop of the live
+canvas around the cell captured ~0.5 s after the reveal beat, so the win fill / loss flash
+is visible — plus the line’s approach path. The panel (clock button, or the strip pips)
+lists the last 24 with thumbnails; an entry opens a modal that <strong>replays the
+approach</strong> on a faithful mini-chart (real cell grid at the live chart’s
+seconds-to-dollars aspect; the slice ends exactly where the shot shows). In-memory only —
+shots are too large for localStorage.</p>
+<h3>4.7 Feedback &amp; celebration</h3>
+<table class="data">
+  <thead><tr><th>Event</th><th>Feedback</th></tr></thead>
+  <tr><td>Win &lt; 5×</td><td>Gold fill, ring pulse, float “+amount”, toast, 2-note arpeggio</td></tr>
+  <tr><td>Win 5–20×</td><td>Bigger ring/float, 3-note arpeggio</td></tr>
+  <tr><td>Win ≥ 20×</td><td>Widest ring, screen-edge vignette flush, 4-note arpeggio</td></tr>
+  <tr><td>Loss</td><td>Red flash + shake, chip drops away, float “Missed”, thud — <em>no</em> balance change (stake left at placement)</td></tr>
+  <tr><td>Chip states</td><td>pending (pulse) → active → hot (countdown bar) → won/lost</td></tr>
+</table>
+<h3>4.8 Mobile (≤ 700 px)</h3>
+<p>Full-width bottom bet bar (label hidden, ≥44 px targets, safe-area inset), vertically
+docked zoom rail at mid-left, compact brand + pill with the session strip wrapping below,
+edge-to-edge menus capped at 48 vh, title badge hidden. Pinch zoom with a ghost-tap guard.
+All motion respects <code>prefers-reduced-motion</code>.</p>
+
+<!-- ================================================================ 5 -->
+<h2 class="pagebreak"><span class="no">5</span>Fairness &amp; Compliance</h2>
+<h3>5.1 Certified replay</h3>
+<p>The Stake Engine RGS is a certified <strong>replay</strong> system: books and lookup
+tables are pre-generated, hash-verified, and frozen at publish time. Odds cannot change at
+runtime. The platform owns the provably-fair seed pair; its HMAC selects which
+pre-generated book a round serves.</p>
+<h3>5.2 Position-neutral books</h3>
+<p>The book encodes only win/lose and the offered multiplier. <em>Where</em> the tapped
+cell sits is pure client-side presentation — the chart is steered to hit or miss the
+player’s cell from the drawn outcome. Prices are RNG theatre; money is book-driven.</p>
+<h3>5.3 ACP rules satisfied</h3>
+<ul>
+  <li>0.1× LUT grid — every multiplier is a multiple of 0.10.</li>
+  <li>Per-mode RTP within [90%, 96.70%] — realised 96.00–96.55%.</li>
+  <li>Cross-mode spread ≤ 1.00% — realised 0.5517%.</li>
+  <li>Base bet mode cost = 1.0 (all 28 modes).</li>
+  <li>Risk/star-rating: all-or-nothing two-outcome modes inside the approved Limbo
+  1.40×–100× envelope (the one gate not provable locally).</li>
+</ul>
+<h3>5.4 Regulated-market behavior</h3>
+<table class="data kv">
+  <tr><td><code>jurisdiction.disabledTurbo</code></td><td>Hides the 1.5×/2× speeds; resets a persisted fast speed to 1×</td></tr>
+  <tr><td><code>jurisdiction.socialCasino</code></td><td>Relabels the bet row “Play”</td></tr>
+  <tr><td>Demo gating</td><td>LOCAL play-money runs only in dev builds or behind <code>?demo=1</code>; a paramless production launch shows a blocking “launch from the casino” overlay</td></tr>
+  <tr><td>Fatal errors</td><td><code>ERR_IS</code>/<code>ERR_ATE</code> raise a non-dismissible Reload modal; reload re-authenticates and resume settles any orphan round</td></tr>
+  <tr><td>Currency / locale</td><td>All amounts via Intl from <code>?currency</code>+<code>?lang</code>; crypto codes fall back to a code-prefix format</td></tr>
+</table>
+<div class="callout rose"><p><strong>Open launch gate:</strong> <code>provider_number</code>
+in <code>game_config.py</code> is a placeholder (2). Set the ACP-assigned value and re-run
+the full prod build before the upload that ships. Bet levels are configured in the ACP
+dashboard (bet-level template; <code>us_</code> prefix for Stake US), not emitted by the math.</p></div>
+
+<!-- ================================================================ 6 -->
+<h2 class="pagebreak"><span class="no">6</span>Technical Architecture</h2>
+<h3>6.1 Two repositories, one contract</h3>
+<pre>math-sdk  games/2_6_tap_trade            <span class="c"># authors odds, simulates, emits books + LUTs</span>
+  run.py → create_books → generate_configs → execute_all_tests
+  build_odds_bundle.py → library/odds_bundle.json   <span class="c"># re-verifies artifacts; feeds the client ladder</span>
+  frontend_demo/                          <span class="c"># Vite demo — the living reference spec for the web app</span>
+
+monstrums-web-sdk  apps/2-6-tap-trade     <span class="c"># the production frontend (Svelte 5, dev :3026)</span>
+  src/game/…  src/components/…            <span class="c"># consumes books via the shared actor → handler pipeline</span></pre>
+<h3>6.2 The book contract (verified against published books)</h3>
+<pre>win:   cellCall {result:"Win",  isWin:true,  payoutMultiplier:&lt;M×100&gt;, winChance:a/b}
+       → wincap  {amount:&lt;M×100&gt;}          <span class="c"># every winning book — client no-op</span>
+       → finalWin{amount:&lt;M×100&gt;}
+lose:  cellCall {result:"Lose", isWin:false, payoutMultiplier:&lt;M×100&gt;, winChance:a/b}
+       → finalWin{amount:0}</pre>
+<p>Mode keys are <code>call_&lt;multiplierCents&gt;</code>; the client ladder derives from
+<code>odds_bundle.json</code> so math naming wins.</p>
+<h3>6.3 Money scales (three different ones — the classic trap)</h3>
+<table class="data">
+  <thead><tr><th>Field</th><th>Scale</th><th>Example ($5 bet at 4.5×)</th></tr></thead>
+  <tr><td>API amounts (<code>round.amount/payout</code>, balances)</td><td class="num">× 1,000,000</td><td class="num">5000000 / 22500000</td></tr>
+  <tr><td>Book event amounts (<code>cellCall.payoutMultiplier</code>, <code>wincap/finalWin.amount</code>)</td><td class="num">× 100 (cents of bet)</td><td class="num">450</td></tr>
+  <tr><td><code>round.payoutMultiplier</code></td><td class="num">plain multiplier</td><td class="num">4.5 — dividing by 100 silently pays 1/100th</td></tr>
+</table>
+<h3>6.4 Round lifecycle</h3>
+<p><code>/wallet/authenticate</code> → balance, bet levels, jurisdiction, resumable round ·
+<code>/wallet/play</code> (mode, ×1e6 amount) → book events under <code>round.state</code> ·
+a <strong>loss settles inside the play response</strong> (<code>round.active:false</code>);
+only a <strong>win</strong> calls <code>/wallet/end-round</code> (the shared machine’s
+<em>singleRoundWin</em> path calls it eagerly and applies the balance after the play phase).
+One active round per session.</p>
+<h3>6.5 Multi-chip over a one-round machine: the tap queue</h3>
+<p>The shared xstate actor accepts <code>BET</code> only in <code>idle</code>. Taps
+therefore queue app-side (<code>game/tapQueue.svelte.ts</code>) and pump serially: each
+chip sets its own <code>activeBetModeKey</code>/<code>betAmount</code> just before
+dispatch; the <code>cellCall</code> handler does <strong>not</strong> await the reveal
+animation (opposite of crypto-pulse), so a round settles in ~1 RTT and the queue drains
+while the line is still travelling.</p>
+<h3>6.6 The masked balance ledger</h3>
+<p>Server balances (including a win’s end-round credit) land at <em>settlement</em>, before
+the line reaches the chip. The HUD therefore reads a display ledger:
+<span class="num">place = −stake · win reveal = +payout · loss = no change</span>, and
+reconciles to the authoritative <code>stateBet.balanceAmount</code> only when nothing is
+queued, in flight, or unrevealed. Per-round balance snapshots must never drive the pill —
+out-of-order reveals drift it by whole stakes (the “double-deduction” bug class).</p>
+<h3>6.7 Scene engine &amp; steering</h3>
+<p>Raw 2D canvas, one rAF loop, fixed-tick accumulator
+(<span class="num">tick 0.1 s × timeScale 1.3 × speed setting</span>; hidden-tab backlog is
+dropped so chips never resolve off-screen). Steering per nearest unresolved column:
+winners — converge on the closest unrevealed winner, then sweep to the other; losers —
+hold a miss lane clear of every losing band; inside the reveal window the outcome is
+hard-guaranteed with a margin clamp so a losing cell is never touched.</p>
+<div class="callout"><p><strong>Svelte 5 lesson (hard-won):</strong> object references fork
+across <code>$state</code> proxy trees. A chip (tapState) holding a reference to its
+history entry (historyState) ended up mutating a <em>different</em> object than the panel
+rendered. Cross-store links must be <strong>by id</strong>, resolved through the owning
+store. Also: never key an <code>{#each}</code> by <code>Date.now()</code> — two chips in
+one column resolve in the same sim tick.</p></div>
+<h3>6.8 Offline &amp; debug</h3>
+<p><code>mockRgs.ts</code> monkey-patches <code>fetch</code> (dev or <code>?demo=1</code>
+only) with live-faithful settlement — a win stays <code>active</code> until end-round, so
+the real machine path runs offline. Debug handles (dev builds only):
+<code>window.__tt</code> (sim time, cfg, tapState), <code>window.__ttHistory</code>;
+the demo exposes <code>window.__cpg</code>.</p>
+
+<!-- ================================================================ 7 -->
+<h2 class="pagebreak"><span class="no">7</span>Status &amp; Roadmap</h2>
+<h3>7.1 Done (as of 2026-07-22)</h3>
+<ul>
+  <li>Math: production build verified — 28 modes, SHA-256 + payout-hash checks green,
+  <code>build_odds_bundle.py</code> re-verification passes, 13 engine tests.</li>
+  <li>Demo (<code>frontend_demo/</code>, Vite): feature-complete — history + landing shots +
+  replay, splash, settings, production hardening; its own vitest suite + CI.</li>
+  <li>Web app (<code>apps/2-6-tap-trade</code>): full demo parity — tap queue, masked
+  ledger, history, splash, settings, jurisdiction, currency, demo gating, mobile layout;
+  22 unit tests; verified against the built bundle.</li>
+</ul>
+<h3>7.2 Launch gates</h3>
+<ol>
+  <li>Set the ACP-assigned <code>provider_number</code>; re-run the prod chain
+  (<code>run.py</code> → <code>build_odds_bundle.py</code> → demo data).</li>
+  <li>ACP upload (<code>index.json</code>, <code>books_*.jsonl.zst</code>,
+  <code>lookUpTable_*.csv</code>) + bet-level template in the dashboard.</li>
+  <li>LIVE smoke test on a real session: resume, multi-chip, balance-vs-RGS lockstep.</li>
+</ol>
+<h3>7.3 Later</h3>
+<ul>
+  <li>Autobet — “repeat my last tap” loop over <code>tapQueue.waitForReveal()</code>
+  (the placement-offset hook already records <code>stateGame.lastOffset</code>).</li>
+  <li><code>/wallet/end-round</code> retry with backoff — lives in shared
+  <code>utils-xstate</code>; reload + resume covers the stuck-win case meanwhile.</li>
+  <li>Storybook interaction tests for the bet picker and history panel.</li>
+</ul>
+
+<!-- ================================================================ 8 -->
+<h2><span class="no">8</span>Appendix</h2>
+<h3>8.1 Key files</h3>
+<pre>math-sdk/games/2_6_tap_trade/
+  game_config.py        <span class="c"># ladder, BetModes (max_win = own M), _simplest_fraction_in, _validate</span>
+  game_events.py        <span class="c"># cell_call_event</span>
+  build_odds_bundle.py  <span class="c"># post-build verifier + odds_bundle.json</span>
+  frontend_demo/        <span class="c"># Vite reference client (src/main.js, splash.js, style.css …)</span>
+
+apps/2-6-tap-trade/src/
+  game/tapQueue.svelte.ts      <span class="c"># tap queue + masked ledger (core design)</span>
+  game/bookEventHandlerMap.ts  <span class="c"># cellCall / wincap / finalWin</span>
+  game/history.svelte.ts       <span class="c"># landing shots + entries (link by id!)</span>
+  game/{betGrid,money,themes,constants}.ts
+  components/Scene.svelte      <span class="c"># canvas engine (steering, zoom, capture)</span>
+  components/{ControlPanel,HistoryPanel,SessionStrip,Splash,…}.svelte</pre>
+<h3>8.2 localStorage keys</h3>
+<p class="num">taptrade.betSize · taptrade.theme · taptrade.muted · taptrade.seenHint ·
+taptrade.speed · taptrade.tapConfirm</p>
+<h3>8.3 Glossary</h3>
+<table class="data">
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tr><td>Book</td><td>Pre-generated per-round event sequence served by the RGS</td></tr>
+  <tr><td>LUT</td><td>Lookup table — one row per book with its payout; row counts are the odds</td></tr>
+  <tr><td>Rung / mode</td><td>One ladder multiplier = one published bet mode <code>call_&lt;cents&gt;</code></td></tr>
+  <tr><td>Chip</td><td>One placed bet on one cell — one RGS round</td></tr>
+  <tr><td>Reveal</td><td>The visual moment the line resolves a chip (ledger effects land here)</td></tr>
+  <tr><td>Reconcile</td><td>Snapping the display balance to the server truth at quiescence</td></tr>
+  <tr><td>Landing shot</td><td>JPEG crop of the canvas around a resolved cell for the history panel</td></tr>
+</table>
+<h3>8.4 Version history</h3>
+<table class="data">
+  <thead><tr><th>Version</th><th>Date</th><th>Notes</th></tr></thead>
+  <tr><td class="num">1.0</td><td class="num">2026-07-22</td><td>Initial GDD — game feature-complete, pre-ACP-upload</td></tr>
+</table>
+
+</body>
+</html>
