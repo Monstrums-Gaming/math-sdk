@@ -199,6 +199,7 @@
   var CFG = {
     startPrice: 2993.0,
     tick: 0.1,
+    timeScale: 1.3,        // sim-time speed multiplier — 1.3 = whole game runs 30% faster
     velDamping: 1.4,
     velNoise: 1.1,
     meanRevert: 0.10,
@@ -1250,13 +1251,16 @@
 
   // ---------------------------------------------------------------- loop
 
+  // Console/debug handle (read-only peek at sim pacing; not used by the game).
+  window.__cpg = { simTime: function () { return simTime; }, cfg: CFG };
+
   var lastFrame = performance.now();
   var acc = 0;
 
   function frame(nowMs) {
     var dt = (nowMs - lastFrame) / 1000;
     lastFrame = nowMs;
-    acc += Math.min(dt, 2);
+    acc += Math.min(dt, 2) * CFG.timeScale;
     while (acc >= CFG.tick) { stepSim(CFG.tick); acc -= CFG.tick; }
     stepVisuals(Math.min(dt, 0.1));
     render(nowMs / 1000);
