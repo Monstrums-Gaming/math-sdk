@@ -212,7 +212,7 @@
      TAP = text, TRADE = accent, market marks = gain — so contrast is guaranteed
      on every theme and it re-inks on theme change like the Juice wordmark. */
   #gameTitle{position:absolute; left:50%; bottom:30px; transform:translateX(-50%);
-    width:150px; z-index:8; pointer-events:none; opacity:.95}
+    width:110px; z-index:8; pointer-events:none; opacity:.6}
   #gameTitle svg{display:block; width:100%; height:auto}
   #gameTitle .tt-plate{fill:var(--panel); fill-opacity:.88; stroke:var(--border); stroke-width:6}
   #gameTitle .tt-tap{fill:var(--text)}
