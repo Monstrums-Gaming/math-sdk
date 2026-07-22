@@ -9,9 +9,11 @@ the top ~57% and contain **no title lettering**:
 - `foreground.png` — transparent emblem (tap ring, hand cursor, market line +
   arrow, candlesticks) rendered from `foreground.svg`; fully transparent below
   57% of the tile.
-- `background.png` — the game's chart scene (Stake-teal `#041721` → near-black
-  gradient, cell grid, glowing rising line with the live dot, faint multiplier
-  labels), falling to a quiet near-black lower half for the title overlay.
+- `background.png` — the game's chart scene (lit teal gradient, cell grid,
+  glowing rising line with area fill and the live dot, faint multiplier labels),
+  falling to a quiet dark lower half for the title overlay. Mean luminance is
+  kept ~20% (52/255): the platform's brightness check auto-lightens anything
+  darker, so keep any re-render at or above this level.
 
 Re-render: serve this folder over HTTP and screenshot `foreground.svg` in a
 1254×1254 page (`omitBackground` for the transparency); the background is a
