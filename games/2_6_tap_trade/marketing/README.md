@@ -16,6 +16,10 @@ the top ~57% and contain **no title lettering**:
   13/255 (+35%), 52/255 (+20%) and 81/255 (+10%) — the corrections model out to
   a floor near mean 95/255, so keep any re-render at 105/255 or above.
 
+`tile_preview.png` is a local visualization only — the two layers composited
+with a mock of the platform's title overlay — so the intended result is
+reviewable without uploading. Regenerate it after changing either layer.
+
 Re-render: serve this folder over HTTP and screenshot `foreground.svg` in a
 1254×1254 page (`omitBackground` for the transparency); the background is a
 one-shot canvas drawing — both scripts live in the session history / can be
