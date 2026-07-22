@@ -16,8 +16,13 @@ var CURRENCY = qs.get('currency') || 'USD';
 var LANG     = qs.get('lang') || 'en';
 var IS_LIVE  = Boolean(RGS_URL && SESSION);
 // LOCAL play-money mode is a dev/review tool, not a production surface:
-// available in dev builds always, in production only behind ?demo=1.
-var DEMO_OK  = import.meta.env.DEV || qs.get('demo') === '1';
+// available in dev builds always; in built output only when the build was
+// made with VITE_DEMO_OK=1 (the staging/demo deployment, e.g. Vercel
+// staging) or behind an explicit ?demo=1. Stake uploads use the default
+// production build, which stays locked to casino launches.
+var DEMO_OK  = import.meta.env.DEV
+  || import.meta.env.VITE_DEMO_OK === '1'
+  || qs.get('demo') === '1';
 var MONEY = 1000000; // RGS integer money scale
 
 // docs/rgs_docs/RGS.md "Response Codes" — 400s carry {error, message} bodies

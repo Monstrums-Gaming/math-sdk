@@ -25,10 +25,23 @@ npm run build       # production build → dist/ (minified, sourcemapped, relati
 npm run preview     # serve the built dist/ on http://localhost:7922
 ```
 
-**Deploy**: upload the *contents* of `dist/` (index.html at the root) to the Stake
-Engine game's Files page, then Publish → Front End. `base: './'` keeps every asset
-URL relative, so the build also works from any static subpath. LIVE mode is the
-same `?rgs_url=…&sessionID=…` launch params as always.
+**Deploy (Stake Engine)**: upload the *contents* of `dist/` (index.html at the
+root) to the Stake Engine game's Files page, then Publish → Front End.
+`base: './'` keeps every asset URL relative, so the build also works from any
+static subpath. LIVE mode is the same `?rgs_url=…&sessionID=…` launch params
+as always.
+
+**Deploy (Vercel)**: `vercel.json` is included (`npm ci` / `npm run build` /
+`dist`). In the Vercel dashboard: New Project → import the math-sdk repo → set
+**Root Directory** to `games/2_6_tap_trade/frontend_demo` (framework
+auto-detects as Vite). Two flavors:
+
+- **Staging / public demo** — playable play-money at the bare URL: either run
+  `npm run build:staging` (uses `.env.staging` → `VITE_DEMO_OK=1`) or set the
+  `VITE_DEMO_OK=1` environment variable on the Vercel environment.
+- **Production** — the default `npm run build`: locked to casino launches (a
+  paramless visit shows the "launch from the casino" screen; `?demo=1` still
+  opens play-money for ad-hoc review). This is also the build for Stake uploads.
 
 `public/tap_trade_rgs.json` must exist — rebuild it after any math change:
 
