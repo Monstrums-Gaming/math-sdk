@@ -1,9 +1,10 @@
 """
-Crypto Pulse Grid (2_11) — game configuration.
+Tap Trade (2_6) — game configuration.
 
-A **tap-cell-to-bet** game (formerly "Price Grid"; renamed 2026-07-20 to take over
-the `2_10_crypto_pulse_grid` slug/name after that earlier, sparser-ladder build was
-retired). A live-looking price chart runs continuously; the future region of the
+A **tap-cell-to-bet** game (formerly `2_11_crypto_pulse_grid`; renamed 2026-07-22 to
+pair with the web-sdk app `apps/2-6-tap-trade`. Before that "Price Grid", renamed
+2026-07-20 to take over the `2_10_crypto_pulse_grid` slug/name after that earlier,
+sparser-ladder build was retired). A live-looking price chart runs continuously; the future region of the
 chart is covered by a grid of (time x price) multiplier cells. The player taps a
 cell to place a chip; if the price line reaches that cell the chip pays
 `bet x cellMultiplier`, otherwise it loses. WHERE the cell sits is pure client-side
@@ -93,7 +94,7 @@ def _simplest_fraction_in(lo: Fraction, hi: Fraction) -> Fraction:
 
 
 class GameConfig(Config):
-    """Crypto Pulse Grid configuration — a 28-rung win/lose multiplier ladder."""
+    """Tap Trade configuration — a 28-rung win/lose multiplier ladder."""
 
     _instance = None
 
@@ -104,11 +105,11 @@ class GameConfig(Config):
 
     def __init__(self):
         super().__init__()
-        self.game_id = "2_11_crypto_pulse_grid"
+        self.game_id = "2_6_tap_trade"
         self.provider_number = 2  # placeholder — confirm ACP-assigned value before prod upload
         self.provider_name = "monstrum"
-        self.game_name = "Crypto Pulse Grid"
-        self.working_name = "Crypto Pulse Grid"
+        self.game_name = "Tap Trade"
+        self.working_name = "Tap Trade"
         self.win_type = "scatter"
         self.lut_grid_exempt = False
         self.construct_paths()

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Crypto Pulse Grid — demo</title>
+<title>Tap Trade — demo</title>
 <style>
   :root{
     --bg:#170a10; --panel:#0d0509; --border:#3a1c2a; --text:#f3e9ee; --dim:#8d7a84;
@@ -478,7 +478,7 @@
   // ---------------------------------------------------------------- sound (synth, no assets)
 
   var muted = false;
-  try { muted = localStorage.getItem('pricegrid.muted') === '1'; } catch (e) { /* ignore */ }
+  try { muted = localStorage.getItem('taptrade.muted') === '1'; } catch (e) { /* ignore */ }
   var audioCtx = null;
 
   function synthNote(freq, t0, dur, type, gain) {
@@ -539,18 +539,18 @@
   }
 
   var hintEl = document.getElementById('hint');
-  try { if (localStorage.getItem('pricegrid.seenHint') === '1') hintEl.style.display = 'none'; } catch (e) { /* ignore */ }
+  try { if (localStorage.getItem('taptrade.seenHint') === '1') hintEl.style.display = 'none'; } catch (e) { /* ignore */ }
   function dismissHint() {
     if (!hintEl) return;
     hintEl.classList.add('gone');
-    try { localStorage.setItem('pricegrid.seenHint', '1'); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('taptrade.seenHint', '1'); } catch (e) { /* ignore */ }
     var el = hintEl; hintEl = null;
     setTimeout(function () { el.remove(); }, 900);
   }
 
   // ---------------------------------------------------------------- odds bundle
 
-  fetch('crypto_pulse_grid_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
+  fetch('tap_trade_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
     LADDER = Object.keys(b.modes).map(function (k) {
       var m = b.modes[k];
       return { modeKey: k, multiplier: m.multiplier, cents: m.multiplierCents,
@@ -568,7 +568,7 @@
         toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
       });
     }
-  }).catch(function () { toast('Failed to load crypto_pulse_grid_rgs.json', 'warn', 4); });
+  }).catch(function () { toast('Failed to load tap_trade_rgs.json', 'warn', 4); });
 
   // The cell's displayed multiplier: fair pricing from the local vol model, snapped
   // to the nearest ladder rung (log space) so every offered value is a real,
@@ -1307,7 +1307,7 @@
   }
   muteBtn.addEventListener('click', function () {
     muted = !muted;
-    try { localStorage.setItem('pricegrid.muted', muted ? '1' : '0'); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('taptrade.muted', muted ? '1' : '0'); } catch (e) { /* ignore */ }
     renderMute();
   });
   renderMute();
@@ -1315,7 +1315,7 @@
   // ---- theme picker: an explicit select-from-menu, not a cycling button ----
   var themeKey = 'rose';
   try {
-    var storedTheme = localStorage.getItem('pricegrid.theme');
+    var storedTheme = localStorage.getItem('taptrade.theme');
     if (storedTheme && THEMES[storedTheme]) themeKey = storedTheme;
   } catch (e) { /* ignore */ }
 
@@ -1352,7 +1352,7 @@
     themeKey = key;
     applyTheme(themeKey);
     renderThemeSelection();
-    try { localStorage.setItem('pricegrid.theme', themeKey); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('taptrade.theme', themeKey); } catch (e) { /* ignore */ }
     toast('Theme: ' + THEMES[themeKey].label, '', 1.6);
   }
 

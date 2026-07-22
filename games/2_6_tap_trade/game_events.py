@@ -1,4 +1,4 @@
-"""Event emitters for Crypto Pulse Grid (2_11).
+"""Event emitters for Tap Trade (2_6).
 
 Per-round book = ONE chip (a tap-cell win/lose bet at a fixed multiplier). Event
 order: `cellCall` -> (`wincap` on a win, emitted by the base engine) -> `finalWin`.

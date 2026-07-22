@@ -1,5 +1,9 @@
-Crypto Pulse Grid (2_11) — tap-cell-to-bet multiplier grid (dense ladder)
+Tap Trade (2_6) — tap-cell-to-bet multiplier grid (dense ladder)
 ==================================================================
+
+(Formerly `2_11_crypto_pulse_grid`; renamed 2026-07-22 to pair with the web-sdk app
+`apps/2-6-tap-trade`. Only the identity changed — the ladder, odds, and book/event
+contract are untouched.)
 
 Mechanic
 --------
@@ -130,16 +134,16 @@ Files
 Build
 -----
 Config sanity + dev build (readable JSON books, eyeball win + lose):
-  rm -rf games/2_11_crypto_pulse_grid/library && \
-    PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/run.py
+  rm -rf games/2_6_tap_trade/library && \
+    PYTHONPATH="$PWD" ./env/bin/python games/2_6_tap_trade/run.py
 
 Production (mandatory — execute_all_tests rejects non-.jsonl.zst books):
   COMPRESSION=1 RUN_FORMAT_CHECKS=1 PYTHONPATH="$PWD" \
-    ./env/bin/python games/2_11_crypto_pulse_grid/run.py
+    ./env/bin/python games/2_6_tap_trade/run.py
 
 Then re-verify artifacts + emit the odds bundle, and rebuild the demo data:
-  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/build_odds_bundle.py
-  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/frontend_demo/build_demo_data.py
+  PYTHONPATH="$PWD" ./env/bin/python games/2_6_tap_trade/build_odds_bundle.py
+  PYTHONPATH="$PWD" ./env/bin/python games/2_6_tap_trade/frontend_demo/build_demo_data.py
   make test
 
 Publish files: library/publish_files/ — index.json (28 modes, cost 1.0),

@@ -1,5 +1,5 @@
 """
-Crypto Pulse Grid (2_11) — one tap-cell chip resolves to a win or a loss.
+Tap Trade (2_6) — one tap-cell chip resolves to a win or a loss.
 
 Per-round event order:
     cellCall -> (wincap on a win) -> finalWin
@@ -25,5 +25,5 @@ class GameState(GameStateOverride):
         self.imprint_wins()
 
     def run_freespin(self) -> None:
-        # Crypto Pulse Grid has no free-spin phase; required only to satisfy the base.
-        raise NotImplementedError("Crypto Pulse Grid has no free-spin round.")
+        # Tap Trade has no free-spin phase; required only to satisfy the base.
+        raise NotImplementedError("Tap Trade has no free-spin round.")

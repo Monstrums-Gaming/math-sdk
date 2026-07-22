@@ -1,4 +1,4 @@
-"""Post-build verifier + odds-bundle emitter for Crypto Pulse Grid (2_11).
+"""Post-build verifier + odds-bundle emitter for Tap Trade (2_6).
 
 Run AFTER a prod build (COMPRESSION=1 RUN_FORMAT_CHECKS=1). Re-verifies every
 published artifact against the authoritative GameConfig, then emits `odds_bundle.json`
@@ -15,7 +15,7 @@ books_<mode>.jsonl.zst:
     payout, win books emit `cellCall -> wincap -> finalWin` (wincap.amount == payout),
     lose books emit `cellCall -> finalWin` (no wincap).
 
-Usage:  PYTHONPATH="$PWD" ./env/bin/python games/2_11_crypto_pulse_grid/build_odds_bundle.py
+Usage:  PYTHONPATH="$PWD" ./env/bin/python games/2_6_tap_trade/build_odds_bundle.py
 """
 
 import io

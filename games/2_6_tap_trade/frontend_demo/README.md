@@ -1,6 +1,6 @@
-# Crypto Pulse Grid (2_11) — frontend demo
+# Tap Trade (2_6) — frontend demo
 
-A self-contained browser demo of the Crypto Pulse Grid mechanic: a live price line
+A self-contained browser demo of the Tap Trade mechanic: a live price line
 scrolls across a canvas; the future region is a grid of (time × price) cells, each
 labelled with a multiplier **snapped to the published 28-rung ladder**. Click a cell
 to place a chip; when the line reaches the cell's column the chip wins
@@ -21,7 +21,7 @@ anything about outcomes already drawn.
 ./run.sh            # http://localhost:7921 (LOCAL mode)
 ```
 
-`crypto_pulse_grid_rgs.json` must exist — rebuild it after any math change:
+`tap_trade_rgs.json` must exist — rebuild it after any math change:
 
 ```bash
 PYTHONPATH="$(git rev-parse --show-toplevel 2>/dev/null || pwd)" \
@@ -57,21 +57,22 @@ a production build.)
 ## UX notes
 
 - First visit shows a one-line hint; it disappears after your first chip
-  (`localStorage: pricegrid.seenHint`).
+  (`localStorage: taptrade.seenHint`).
 - Session strip under the balance: net P/L, amount in play, and the last 8 results.
 - Win celebration scales with the multiplier (<5x / 5–20x / ≥20x adds a screen flash);
   hot chips show a depleting countdown bar until their column resolves.
 - Synth sound cues (place / win / loss), mute toggle next to the bet sizes
-  (`localStorage: pricegrid.muted`).
+  (`localStorage: taptrade.muted`).
 - On touch devices the first tap previews a cell ("tap again to confirm"), the
   second places the chip.
 
-  (The `pricegrid.*` localStorage keys predate the 2026-07-20 rename from "Price
-  Grid" and were left as-is — internal storage keys only, not user-facing.)
+  (The localStorage keys were renamed `pricegrid.*` → `taptrade.*` with the
+  2026-07-22 Tap Trade rename — internal storage keys only; worst-case fallout of
+  the key change is the first-visit hint showing once more.)
 
 ## Files
 
 - `index.html` — the whole demo (canvas renderer, feed + steering, RGS client).
 - `build_demo_data.py` — verifies + copies `../library/odds_bundle.json` →
-  `crypto_pulse_grid_rgs.json`.
+  `tap_trade_rgs.json`.
 - `run.sh` — local HTTP server (the demo fetches JSON, so `file://` won't work).

@@ -2,8 +2,8 @@
 name: stake-price-grid-game
 description: >-
   Build, modify, or extend a PRICE-GRID (tap-cell-to-bet / "Euphoria") game in the
-  math-sdk — the family led by games/2_11_crypto_pulse_grid (formerly
-  2_11_price_grid; its retired predecessor 2_10_crypto_pulse_grid followed the same
+  math-sdk — the family led by games/2_6_tap_trade (formerly
+  2_11_crypto_pulse_grid / 2_11_price_grid; its retired predecessor 2_10_crypto_pulse_grid followed the same
   recipe): a live price line scrolls across a chart, the future region is a grid of
   (time x price) multiplier cells, and each tapped cell is an independent win/lose
   bet at a fixed ladder multiplier. Use when creating a new grid variant (new
@@ -25,12 +25,14 @@ cell the chip pays `bet × cellMultiplier`, else it loses. Reference implementat
 
 | Game | Folder | Ladder |
 |---|---|---|
-| Crypto Pulse Grid (2_11) | `games/2_11_crypto_pulse_grid` | 28 rungs, 1.4x–100x, dense below 10x |
+| Tap Trade (2_6) | `games/2_6_tap_trade` | 28 rungs, 1.4x–100x, dense below 10x |
 
 (Its predecessor, also named Crypto Pulse Grid, lived at `2_10_crypto_pulse_grid`
-with a sparser 20-rung ladder; it was removed 2026-07-20 and 2_11 — then named
-`2_11_price_grid` — was renamed to `2_11_crypto_pulse_grid` to take over the
-slug/name as the sole surviving grid game.)
+with a sparser 20-rung ladder; it was removed 2026-07-20 and the survivor — then
+named `2_11_price_grid` — was renamed to `2_11_crypto_pulse_grid` to take over the
+slug/name as the sole surviving grid game. On 2026-07-22 it was renamed again to
+`2_6_tap_trade` ("Tap Trade") to pair with the web-sdk app `apps/2-6-tap-trade`;
+only the identity changed, never the ladder/odds/contract.)
 
 ## The model in one paragraph
 
@@ -128,7 +130,7 @@ team separately; it is NOT an RGS artifact.
 - **Never spoil the outcome**: defer balance-display updates to the reveal (the line
   reaching the cell), even though the book settles at bet time. Camera should frame
   both the line and the nearest chip through its resolution beat.
-- Established UX conventions (see `games/2_11_crypto_pulse_grid/frontend_demo/`): first-play
+- Established UX conventions (see `games/2_6_tap_trade/frontend_demo/`): first-play
   hint, cause-specific rejection copy ("Too close to the line" / "Column full — max 2
   chips" / "Chip already there"), session strip (P/L, at-risk, last-8 ticker),
   win tiers (<5x / 5–20x / ≥20x with escalating beat), hot-chip countdown bar,
