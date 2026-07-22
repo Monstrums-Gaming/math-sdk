@@ -397,6 +397,10 @@
   var rejects = [];             // {t1,low,age} — red flash on an invalid tap
   var mouse = { x: -1, y: -1, inside: false };
   var betChain = Promise.resolve();  // serializes RGS rounds (one active round per session)
+  var rgsBalance = null;             // LIVE: latest AUTHORITATIVE server balance (display units).
+                                     // Updated as each round settles through betChain (serialized,
+                                     // so the last-settled round carries the current server truth);
+                                     // the pill reconciles to it only when no chips are in flight.
   var gaussSpare = null;
 
   var COARSE = matchMedia('(pointer: coarse)').matches;
@@ -558,7 +562,7 @@
         // rgs() already rejects on a {error,...} body (see RGS_ERROR_MESSAGES),
         // so res here is always a genuine success payload.
         var bal = extractBalance(res);
-        if (bal !== null) setBalance(bal / MONEY);
+        if (bal !== null) { rgsBalance = bal / MONEY; setBalance(rgsBalance); }
       }).catch(function (err) {
         toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
       });
@@ -600,8 +604,7 @@
     var isWin = pick.payoutCents > 0;
     return Promise.resolve({
       isWin: isWin, payoutMult: rung.multiplier,
-      payoutAmount: isWin ? stake * rung.multiplier : 0,
-      finalBalance: null
+      payoutAmount: isWin ? stake * rung.multiplier : 0
     });
   }
 
@@ -642,16 +645,22 @@
       // the production noWin/singleRoundWin split in monstrums-web-sdk's
       // packages/utils-xstate/createPrimaryMachines.ts).
       if (!isWin) {
-        return { isWin: false, payoutMult: rung.multiplier, payoutAmount: 0,
-                 finalBalance: playBal !== null ? playBal / MONEY : null };
+        // Record the authoritative server balance (this round is fully settled here).
+        // The pill is NOT set from this snapshot — it is a per-round value taken before
+        // any still-in-flight chips are staked server-side, so assigning it to the pill
+        // when chips reveal out of settlement order drifts the display by whole stakes
+        // (the "double-deducted" bug). Reconciliation happens only when nothing is in
+        // play; see the optimistic ledger in stepSim.
+        if (playBal !== null) rgsBalance = playBal / MONEY;
+        return { isWin: false, payoutMult: rung.multiplier, payoutAmount: 0 };
       }
 
       return rgs('/wallet/end-round', { sessionID: SESSION }).then(function (end) {
         // RGS.md documents balance as { amount, currency }, not a bare number.
         var bal = extractBalance(end) !== null ? extractBalance(end) : playBal;
+        if (bal !== null) rgsBalance = bal / MONEY;
         return { isWin: true, payoutMult: mult || rung.multiplier,
-                 payoutAmount: playPayout !== null ? playPayout / MONEY : stake * mult,
-                 finalBalance: bal !== null ? bal / MONEY : null };
+                 payoutAmount: playPayout !== null ? playPayout / MONEY : stake * mult };
       });
     });
   }
@@ -851,8 +860,11 @@
           ? b.outcome.payoutAmount : b.stake * b.outcome.payoutMult;
         // celebration scales with rarity: <5x normal, 5–20x big, >=20x epic
         b.tier = b.outcome.payoutMult >= 20 ? 2 : b.outcome.payoutMult >= 5 ? 1 : 0;
-        if (b.outcome.finalBalance !== null) setBalance(b.outcome.finalBalance);
-        else setBalance(balance + payout);
+        // Optimistic ledger: stake already left at placement, so credit the full
+        // return here (both modes). NOT the RGS per-round balance snapshot — that
+        // drifts when chips reveal out of settlement order; LIVE re-syncs to the
+        // authoritative balance only when nothing is in play (reconcile below).
+        setBalance(balance + payout);
         sessionPL += payout;
         floats.push({ x: (b.t1 + b.t2) / 2, y: (b.low + b.high) / 2,
                       text: '+' + fmtAmt(payout), kind: 'win', tier: b.tier, age: 0 });
@@ -862,14 +874,27 @@
         recordResult(true, payout);
       } else if (simTime >= resolveT) {
         b.state = 'lost'; b.stateAge = 0;
-        if (b.outcome.finalBalance !== null) setBalance(b.outcome.finalBalance);
+        // No balance change: the stake already left at placement (optimistic ledger,
+        // both modes). The float below is the chip's OUTCOME marker, not a second debit.
         floats.push({ x: (b.t1 + b.t2) / 2, y: (b.low + b.high) / 2,
-                      text: '−' + fmtAmt(b.stake), kind: 'loss', age: 0 });
+                      text: 'Missed', kind: 'loss', age: 0 });
         sound('loss');
         recordResult(false, b.stake);
       } else {
         b.state = (b.t1 - simTime) < CFG.guideLeadSec * 0.8 ? 'hot' : 'active';
       }
+    }
+
+    // LIVE reconcile: when nothing is in play, snap the pill to the authoritative RGS
+    // balance. At quiescence the optimistic ledger already equals it, so this is normally
+    // a silent no-op — it only corrects residual drift, never a mid-flight jump.
+    if (IS_LIVE && rgsBalance !== null && Math.abs(rgsBalance - balance) > 0.005) {
+      var anyLive = false;
+      for (var q = 0; q < bets.length; q++) {
+        var s = bets[q].state;
+        if (s === 'pending' || s === 'active' || s === 'hot') { anyLive = true; break; }
+      }
+      if (!anyLive) setBalance(rgsBalance);
     }
   }
 
