@@ -42,9 +42,11 @@ a production build.)
 
 ## Modes
 
-- **LOCAL** (default): play-money wallet ($2,000, click the balance pill to reset).
-  Outcomes are weighted draws over the **published lookup-table odds** for the chosen
-  rung — the exact certified probabilities, replayed client-side.
+- **LOCAL** (play-money wallet, $2,000, click the balance pill to reset): outcomes
+  are weighted draws over the **published lookup-table odds** for the chosen rung —
+  the exact certified probabilities, replayed client-side. Dev builds default to
+  LOCAL; a **production build requires `?demo=1`** for it (a paramless launch shows
+  a blocking "launch from the casino" screen instead of silently degrading).
 - **LIVE**: launch with RGS parameters and every chip places a real bet:
 
   ```
@@ -63,12 +65,26 @@ a production build.)
   The balance display defers to the reveal so the wallet movement never
   spoils the outcome.
 
+  Production hardening on this path: bets are blocked until `/wallet/authenticate`
+  succeeds; an **unfinished round returned by authenticate is settled immediately**
+  (end-round + "Last round settled" toast — rounds are serial, so an orphan round
+  would block the whole session); `/wallet/end-round` retries with backoff, and a
+  win whose release keeps failing raises a blocking reload prompt (reload
+  re-authenticates and the resume path settles it); session-level errors
+  (`ERR_IS`/`ERR_ATE`) raise a blocking overlay instead of a toast. The
+  authenticate `config` is authoritative: `betLevels` + `minBet`/`maxBet` rebuild
+  the picker, `defaultBetLevel` seeds the selection, and `jurisdiction` flags are
+  honored (`disabledTurbo` removes the 1.5x/2x speeds, `socialCasino` relabels the
+  bet row). All money strings format via `Intl.NumberFormat` from the `currency` +
+  `lang` params (crypto codes fall back to a `CODE 1.23` prefix).
+
 ## UX notes
 
-- Splash on load: one loop of the Stake Engine loader (`stake_engine_loader.gif`,
+- Splash on load: one loop of the Stake Engine loader (`stake_engine_loader.webp`,
   on its baked `#041721` ground) then the Monstrums sting (`monstrums_logo.webm`,
-  on black) — always auto-proceeds (falls back to muted autoplay when the browser
-  blocks audio), click or Escape skips, 20s failsafe dismiss.
+  on black, lazy-loaded during the loader phase) — always auto-proceeds (falls back
+  to muted autoplay when the browser blocks audio), click or Escape skips, 20s
+  failsafe dismiss.
 - First visit shows a one-line hint; it disappears after your first chip
   (`localStorage: taptrade.seenHint`).
 - Session strip top-right: net P/L, amount in play, and the last 8 results as
@@ -126,6 +142,9 @@ a production build.)
   `tap_trade_rgs.json` (the odds bundle), `juice_logo.svg` (wordmark; paths
   classed `lf`/`ls` for CSS-variable theming), `tap_trade_logo.svg` (title art;
   classes `tt-*`), `stake_engine_loader.gif` + `monstrums_logo.webm` (splash).
+- `src/betGrid.js`, `src/money.js` — pure helpers (bet-grid snapping, currency
+  formatting) with vitest suites (`src/*.test.js`, `npm test`); CI runs test+build
+  on every demo change (`.github/workflows/tap-trade-demo.yml`).
 - `vite.config.mjs`, `package.json` — the build (`base './'`, es2017, sourcemaps).
 - `build_demo_data.py` — verifies + copies `../library/odds_bundle.json` →
   `public/tap_trade_rgs.json`.

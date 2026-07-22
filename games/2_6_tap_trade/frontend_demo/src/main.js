@@ -1,8 +1,10 @@
 import './style.css';
 import './splash.js';
-import { SESSION, CURRENCY, IS_LIVE, MONEY, rgs } from './rgs.js';
+import { SESSION, CURRENCY, LANG, IS_LIVE, DEMO_OK, MONEY, rgs, isFatalRgsError, extractBalance } from './rgs.js';
 import { CFG, MONO } from './config.js';
 import { THEMES, THEME_ORDER, COLOR, applyTheme } from './themes.js';
+import { snapGrid, nearestOnGrid, quickPicksFromGrid } from './betGrid.js';
+import { makeMoneyFormat } from './money.js';
 
 var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -73,10 +75,9 @@ function phi(x) {
   return 0.5 * (1 + sign * y);
 }
 
-function fmtMoney(v) {
-  return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtAmt(v) { return '$' + (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)); }
+var MONEYFMT = makeMoneyFormat(LANG, CURRENCY);
+function fmtMoney(v) { return MONEYFMT.full(v); }
+function fmtAmt(v) { return MONEYFMT.compact(v); }
 function fmtMult(m) { return (m >= 10 ? m.toFixed(0) : m.toFixed(1)) + 'x'; }
 function fmtClock(t) {
   var d = new Date(startEpochMs + t * 1000);
@@ -89,16 +90,6 @@ function fmtClock(t) {
 function setBalance(v) {
   balance = v;
   document.getElementById('balanceValue').textContent = fmtMoney(balance);
-}
-
-// RGS.md documents balance as {amount, currency}; some responses (or a
-// demo mock) may return a bare number instead — accept either, in API
-// integer units (caller divides by MONEY). Returns null if absent.
-function extractBalance(payload) {
-  if (!payload) return null;
-  if (payload.balance && typeof payload.balance.amount === 'number') return payload.balance.amount;
-  if (typeof payload.balance === 'number') return payload.balance;
-  return null;
 }
 
 // Inline stroke icons (no emoji) — currentColor so they inherit theme + toast tint.
@@ -189,31 +180,96 @@ function dismissHint() {
   setTimeout(function () { el.remove(); }, 900);
 }
 
-// ---------------------------------------------------------------- odds bundle
+// ---------------------------------------------------------------- odds bundle + session
 
-fetch('tap_trade_rgs.json').then(function (r) { return r.json(); }).then(function (b) {
-  LADDER = Object.keys(b.modes).map(function (k) {
-    var m = b.modes[k];
-    return { modeKey: k, multiplier: m.multiplier, cents: m.multiplierCents,
-             winChance: m.winChance, outcomes: m.outcomes };
-  }).sort(function (a, c) { return a.cents - c.cents; });
-  if (IS_LIVE) {
-    var bd = document.getElementById('modeBadge');
-    bd.textContent = 'LIVE'; bd.classList.add('live');
-    rgs('/wallet/authenticate', { sessionID: SESSION }).then(function (res) {
-      // rgs() already rejects on a {error,...} body (see RGS_ERROR_MESSAGES),
-      // so res here is always a genuine success payload.
-      var bal = extractBalance(res);
-      if (bal !== null) { rgsBalance = bal / MONEY; setBalance(rgsBalance); }
-      // config.betLevels (×1e6 ints) is the authoritative bet grid — an
-      // off-grid /wallet/play amount is rejected with ERR_VAL, so the whole
-      // picker (chips + menu) is rebuilt from it.
-      if (res.config && res.config.betLevels) applyBetLevels(res.config.betLevels);
-    }).catch(function (err) {
-      toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
-    });
-  }
-}).catch(function () { toast('Failed to load tap_trade_rgs.json', 'warn', 4); });
+var authReady = !IS_LIVE;   // LIVE: no bets until the session is validated
+var fatal = false;          // a blocking failure — the wallet path is stopped
+
+// Blocking error overlay: unlike a toast, the game cannot look playable when
+// no wallet call can succeed. Reload is the default recovery; a retry callback
+// replaces it for transient asset failures.
+function fatalError(message, opts) {
+  opts = opts || {};
+  if (fatal) return; // first failure wins
+  fatal = true;
+  authReady = false;
+  var modal = document.getElementById('fatalModal');
+  document.getElementById('fatalMsg').textContent = message;
+  var retryBtn = document.getElementById('fatalRetry');
+  retryBtn.style.display = opts.retry ? '' : 'none';
+  retryBtn.onclick = opts.retry ? function () {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    fatal = false;
+    opts.retry();
+  } : null;
+  document.getElementById('fatalReload').style.display = opts.reload === false ? 'none' : '';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+document.getElementById('fatalReload').addEventListener('click', function () { location.reload(); });
+
+// /wallet/end-round with backoff — a failed release leaves the round open
+// server-side, and rounds are serial: an open round blocks the whole session.
+function endRoundWithRetry(attempts) {
+  return rgs('/wallet/end-round', { sessionID: SESSION }).catch(function (err) {
+    if (isFatalRgsError(err) || attempts <= 1) throw err;
+    return new Promise(function (r) { setTimeout(r, 900); })
+      .then(function () { return endRoundWithRetry(attempts - 1); });
+  });
+}
+
+function startSession() {
+  var bd = document.getElementById('modeBadge');
+  bd.textContent = 'LIVE'; bd.classList.add('live');
+  rgs('/wallet/authenticate', { sessionID: SESSION }).then(function (res) {
+    var bal = extractBalance(res);
+    if (bal !== null) { rgsBalance = bal / MONEY; setBalance(rgsBalance); }
+    // config is authoritative: bet grid (off-grid /wallet/play is ERR_VAL),
+    // min/max/default, and jurisdiction flags.
+    if (res.config) applyBetConfig(res.config);
+    if (res.config && res.config.jurisdiction) applyJurisdiction(res.config.jurisdiction);
+    // Resume: an unfinished round from a previous visit blocks every future
+    // /wallet/play. Books are position-neutral — no cell to repaint — so
+    // settle silently and report the recovered outcome.
+    if (res.round && res.round.active) {
+      return endRoundWithRetry(3).then(function (end) {
+        var b2 = extractBalance(end);
+        if (b2 !== null) { rgsBalance = b2 / MONEY; setBalance(rgsBalance); }
+        var payout = typeof res.round.payout === 'number' ? res.round.payout / MONEY : 0;
+        toast(payout > 0 ? 'Last round settled: +' + fmtAmt(payout) : 'Last round settled',
+              payout > 0 ? 'win' : '', 3.2);
+      });
+    }
+  }).then(function () {
+    authReady = true;
+  }).catch(function (err) {
+    var detail = err && err.message ? ' — ' + err.message.replace(/\.$/, '') : '';
+    fatalError('Could not start the game session' + detail + '. Relaunch the game from the casino.');
+  });
+}
+
+function loadOdds() {
+  fetch('tap_trade_rgs.json').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function (b) {
+    LADDER = Object.keys(b.modes).map(function (k) {
+      var m = b.modes[k];
+      return { modeKey: k, multiplier: m.multiplier, cents: m.multiplierCents,
+               winChance: m.winChance, outcomes: m.outcomes };
+    }).sort(function (a, c) { return a.cents - c.cents; });
+    if (IS_LIVE) startSession();
+  }).catch(function () {
+    fatalError('Could not load the game odds.', { retry: loadOdds });
+  });
+}
+// LOCAL play-money is a dev/review surface only — in a production build it
+// must be explicit (?demo=1), never a silent fallback for a broken launch.
+if (!IS_LIVE && !DEMO_OK) {
+  fatalError('This game must be launched from the casino.', { reload: false });
+}
+loadOdds();
 
 // Brand art, inlined so its classed paths take the theme's CSS vars and
 // recolor on theme change for free. Purely decorative — skip silently on error.
@@ -311,12 +367,15 @@ function livePlay(rung, stake) {
       return { isWin: false, payoutMult: rung.multiplier, payoutAmount: 0 };
     }
 
-    return rgs('/wallet/end-round', { sessionID: SESSION }).then(function (end) {
+    return endRoundWithRetry(3).then(function (end) {
       // RGS.md documents balance as { amount, currency }, not a bare number.
       var bal = extractBalance(end) !== null ? extractBalance(end) : playBal;
       if (bal !== null) rgsBalance = bal / MONEY;
       return { isWin: true, payoutMult: mult || rung.multiplier,
                payoutAmount: playPayout !== null ? playPayout / MONEY : stake * mult };
+    }).catch(function (err) {
+      err.pendingWin = true; // round played and WON server-side; only the release failed
+      throw err;
     });
   });
 }
@@ -353,6 +412,8 @@ function rejectCell(c, why) {
 }
 
 function placeBet(clientX, clientY) {
+  if (fatal) return;
+  if (IS_LIVE && !authReady) { toast('Connecting to the casino…', 'warn'); return; }
   if (!LADDER) { toast('Odds not loaded yet', 'warn'); return; }
   var c = cellAt(clientX, clientY);
 
@@ -397,7 +458,15 @@ function placeBet(clientX, clientY) {
     setBalance(balance + stake); // refund the display — the bet never happened
     sessionPL += stake;
     updateStrip();
-    toast('RGS error: ' + (err && err.message ? err.message : 'bet rejected'), 'warn', 3);
+    if (isFatalRgsError(err)) {
+      fatalError('Your session has expired. Relaunch the game from the casino.');
+    } else if (err && err.pendingWin) {
+      // the win exists server-side but its release kept failing — reload
+      // re-authenticates and the resume path settles it
+      fatalError('Connection lost while collecting a win. Reload to settle it.');
+    } else {
+      toast('RGS error: ' + (err && err.message ? err.message : 'bet rejected'), 'warn', 3);
+    }
   });
 }
 
@@ -697,12 +766,12 @@ function drawChip(b, tSec) {
   ctx.fillStyle = b.state === 'lost' ? COLOR.lossText : COLOR.betText;
   if (bh >= 28) {
     ctx.font = 'bold ' + Math.max(8, Math.round(13 * ts)) + 'px ' + MONO;
-    ctx.fillText((b.state === 'lost' ? '−$' : '$') + b.stake, bx + bw / 2, by + bh / 2 - 7 * ts);
+    ctx.fillText((b.state === 'lost' ? '−' : '') + fmtAmt(b.stake), bx + bw / 2, by + bh / 2 - 7 * ts);
     ctx.font = Math.max(7, Math.round(10 * ts)) + 'px ' + MONO;
     ctx.fillText(b.state === 'lost' ? 'MISS' : fmtMult(b.mult), bx + bw / 2, by + bh / 2 + 8 * ts);
   } else {
     ctx.font = 'bold ' + Math.max(8, Math.round(12 * ts)) + 'px ' + MONO;
-    ctx.fillText((b.state === 'lost' ? '−$' : '$') + b.stake, bx + bw / 2, by + bh / 2);
+    ctx.fillText((b.state === 'lost' ? '−' : '') + fmtAmt(b.stake), bx + bw / 2, by + bh / 2);
   }
   ctx.restore();
 }
@@ -915,12 +984,14 @@ function render(tSec) {
 // ---------------------------------------------------------------- loop
 
 // Console/debug handle (read-only peek at sim pacing; not used by the game).
-window.__cpg = {
-  simTime: function () { return simTime; },
-  cfg: CFG,
-  speedMult: function () { return speedMult; },
-  tapConfirm: function () { return tapConfirm; }
-};
+if (import.meta.env.DEV) {
+  window.__cpg = {
+    simTime: function () { return simTime; },
+    cfg: CFG,
+    speedMult: function () { return speedMult; },
+    tapConfirm: function () { return tapConfirm; }
+  };
+}
 
 var lastFrame = performance.now();
 var acc = 0;
@@ -947,6 +1018,14 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+
+// A hidden tab pauses rAF; on return the accumulator would replay up to
+// 2s×speed of sim in one frame — chips could resolve invisibly. Drop the
+// backlog instead (LIVE outcomes are already settled server-side; only
+// presentation time is discarded).
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) { lastFrame = performance.now(); acc = 0; }
+});
 
 function setZoom(z) {
   zoom = Math.min(2.5, Math.max(0.5, z));
@@ -1080,9 +1159,7 @@ var menuBets = CFG.betLevels.filter(function (v) {
   return v >= CFG.minBet && v <= CFG.maxBet;
 });
 
-function fmtBet(v) {
-  return '$' + (v % 1 === 0 ? v.toLocaleString('en-US') : v.toFixed(2));
-}
+function fmtBet(v) { return fmtAmt(v); }
 
 function quickChipFor(v) {
   var chips = betRow.querySelectorAll('[data-v]');
@@ -1129,7 +1206,7 @@ function buildBetMenu() {
   menuBets.forEach(function (v) {
     var opt = document.createElement('button');
     opt.type = 'button';
-    var isMax = v >= CFG.maxBet;
+    var isMax = menuBets.length > 1 && v === menuBets[menuBets.length - 1];
     opt.className = 'betOpt num' + (isMax ? ' max' : '');
     opt.setAttribute('role', 'menuitemradio');
     opt.dataset.v = String(v);
@@ -1164,21 +1241,14 @@ document.addEventListener('click', function (e) {
 // LIVE: rebuild the whole picker from the RGS bet grid (display dollars, capped
 // at CFG.maxBet). Quick chips snap to their nearest grid values; the menu gets
 // every grid value above the quick chips; any off-grid selection snaps too.
-function applyBetLevels(levels) {
-  var grid = levels.map(function (v) { return v / MONEY; })
-    .filter(function (v) { return v >= CFG.minBet && v <= CFG.maxBet; })
-    .sort(function (a, b) { return a - b; });
+function applyBetConfig(config) {
+  if (!config.betLevels || !config.betLevels.length) return;
+  // operator limits win over the demo defaults; the demo caps are fallbacks
+  var minB = typeof config.minBet === 'number' ? config.minBet / MONEY : CFG.minBet;
+  var maxB = typeof config.maxBet === 'number' ? config.maxBet / MONEY : CFG.maxBet;
+  var grid = snapGrid(config.betLevels, minB, maxB, MONEY);
   if (!grid.length) return;
-  var nearest = function (target) {
-    return grid.reduce(function (a, b) {
-      return Math.abs(b - target) < Math.abs(a - target) ? b : a;
-    });
-  };
-  var quick = [];
-  CFG.betSizes.forEach(function (v) {
-    var g = nearest(v);
-    if (quick.indexOf(g) < 0) quick.push(g);
-  });
+  var quick = quickPicksFromGrid(grid, CFG.betSizes);
   var staticChips = Array.prototype.filter.call(betRow.querySelectorAll('[data-v]'),
     function (b) { return b !== customBetBtn; });
   staticChips.forEach(function (chip, i) {
@@ -1196,7 +1266,29 @@ function applyBetLevels(levels) {
   }
   menuBets = grid;
   buildBetMenu();
-  if (grid.indexOf(betSize) < 0) selectBet(nearest(betSize));
+  if (grid.indexOf(betSize) < 0) {
+    // current selection is off-grid: prefer the operator's default level
+    var preferred = typeof config.defaultBetLevel === 'number'
+      ? config.defaultBetLevel / MONEY : betSize;
+    selectBet(nearestOnGrid(grid, preferred));
+  }
+}
+
+// Regulated-market flags from the authenticate config.
+function applyJurisdiction(jur) {
+  if (jur.disabledTurbo) {
+    speedSeg.querySelectorAll('button').forEach(function (b) {
+      if (Number(b.dataset.s) > 1) b.style.display = 'none';
+    });
+    if (speedMult !== 1) {
+      speedMult = 1;
+      try { localStorage.setItem('taptrade.speed', '1'); } catch (e) { /* ignore */ }
+      renderSettings();
+    }
+  }
+  if (jur.socialCasino) {
+    document.querySelector('#betSizes .label').textContent = 'Play';
+  }
 }
 
 betRow.addEventListener('click', function (e) {

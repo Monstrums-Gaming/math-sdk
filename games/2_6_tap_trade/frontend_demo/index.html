@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Tap Trade — demo</title>
+<link rel="preload" href="./tap_trade_rgs.json" as="fetch" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23050708'/%3E%3Cpolyline points='4,16 9,10 13,13 20,5' fill='none' stroke='%2322ff9a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -82,9 +83,20 @@
     <button id="zoomIn" class="num" aria-label="Zoom in">+</button>
   </div>
 
+  <div id="fatalModal" aria-hidden="true">
+    <div class="histCard fatalCard" role="alertdialog" aria-modal="true" aria-label="Game error">
+      <div class="menuTitle">Something went wrong</div>
+      <p id="fatalMsg"></p>
+      <div class="fatalActions">
+        <button id="fatalRetry" type="button">Try again</button>
+        <button id="fatalReload" type="button">Reload</button>
+      </div>
+    </div>
+  </div>
+
   <div id="splash" role="dialog" aria-label="Loading Tap Trade">
-    <img id="splashLoader" src="stake_engine_loader.gif" alt="Loading">
-    <video id="splashVideo" class="hidden" src="monstrums_logo.webm" preload="auto" playsinline></video>
+    <img id="splashLoader" src="stake_engine_loader.webp" alt="Loading">
+    <video id="splashVideo" class="hidden" src="monstrums_logo.webm" preload="none" playsinline></video>
   </div>
 
   <div id="betSizes" role="group" aria-label="Bet size">

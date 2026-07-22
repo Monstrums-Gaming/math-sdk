@@ -46,6 +46,9 @@
   vid.addEventListener('ended', dismiss);
   vid.addEventListener('error', dismiss);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dismiss(); });
+  // preload="none" in markup keeps the sting off the critical path; start
+  // fetching it once the loader phase is underway and game boot has begun
+  setTimeout(function () { try { vid.load(); } catch (e) { /* ignore */ } }, 300);
   setTimeout(trySting, 2200);   // one full loader loop (the gif runs ~2.1s)
   setTimeout(dismiss, 20000);   // failsafe: never trap the player on the splash
 })();
