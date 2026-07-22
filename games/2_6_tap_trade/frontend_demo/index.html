@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Tap Trade — demo</title>
 <style>
   :root{
@@ -18,7 +18,7 @@
   .num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
   #game{position:absolute; inset:0; width:100%; height:100%; cursor:crosshair}
 
-  #balancePill{position:absolute; top:14px; left:14px; display:flex; align-items:center; gap:8px;
+  #balancePill{position:absolute; top:14px; left:152px; display:flex; align-items:center; gap:8px;
     padding:7px 14px; background:var(--panel); border:1px solid var(--border); border-radius:999px;
     font-size:14px; font-weight:600; cursor:pointer; z-index:10}
   #balancePill .dot{width:8px; height:8px; border-radius:50%; background:#35d07f; box-shadow:0 0 6px #35d07f}
@@ -57,40 +57,119 @@
     text-shadow:0 2px 8px rgba(0,0,0,.4)}
   #hint.gone{opacity:0}
 
-  #sessionStrip{position:absolute; top:56px; left:14px; display:none; align-items:center;
-    gap:12px; padding:6px 12px; background:var(--panel); border:1px solid var(--border);
-    border-radius:10px; font-size:12px; z-index:10}
+  /* session strip: top-right instrument cluster — P/L | in play | last results.
+     The canvas price ladder starts below it (labels skip the top band). */
+  #sessionStrip{position:absolute; top:14px; right:14px; display:none; align-items:center;
+    gap:10px; padding:7px 12px; background:var(--panel); border:1px solid var(--border);
+    border-radius:999px; font-size:12px; z-index:10; max-width:min(60vw, 560px)}
   #sessionStrip.show{display:flex}
-  #sessionStrip .pl{font-weight:700}
+  #sessionStrip .sep{width:1px; align-self:stretch; background:var(--border); flex:none}
+  #sessionStrip .sep:has(+ .ticker:empty){display:none}
+  #sessionStrip .pl{font-weight:700; font-size:13px; white-space:nowrap}
   #sessionStrip .pl.up{color:var(--gain)}
   #sessionStrip .pl.down{color:var(--loss)}
-  #sessionStrip .risk{color:var(--dim)}
-  #sessionStrip .ticker{display:flex; gap:4px}
-  #sessionStrip .pip{padding:1px 6px; border-radius:6px; font-size:10px; font-weight:700}
+  #sessionStrip .risk{color:var(--dim); white-space:nowrap}
+  #sessionStrip .ticker{display:flex; gap:4px; overflow:hidden; cursor:pointer}
+  #sessionStrip .ticker:hover .pip{filter:brightness(1.2)}
+  #sessionStrip .pip{padding:2px 7px; border-radius:999px; font-size:10px; font-weight:700; white-space:nowrap}
+  #sessionStrip .pip:first-child{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent)}
   #sessionStrip .pip.w{background:color-mix(in srgb, var(--win) 16%, transparent); color:var(--win)}
   #sessionStrip .pip.l{background:color-mix(in srgb, var(--loss) 14%, transparent); color:var(--loss)}
 
-  #muteBtn, #themeBtn{display:flex; align-items:center; gap:6px; min-width:40px; padding:8px 10px;
+  #muteBtn, #themeBtn, #betMoreBtn, #histBtn{display:flex; align-items:center; gap:6px; min-width:40px; padding:8px 10px;
     border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--dim);
     font:inherit; font-size:13px; cursor:pointer}
-  #muteBtn svg, #themeBtn svg{flex:none}
-  #muteBtn:hover, #themeBtn:hover{color:var(--text); filter:brightness(1.15)}
-  #muteBtn:focus-visible, #themeBtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-  #themeBtn[aria-expanded="true"]{border-color:var(--accent)}
-  #themeBtn .chevron{transition:transform .15s ease}
-  #themeBtn[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+  #muteBtn svg, #themeBtn svg, #betMoreBtn svg, #histBtn svg{flex:none}
+  #muteBtn:hover, #themeBtn:hover, #betMoreBtn:hover, #histBtn:hover{color:var(--text); filter:brightness(1.15)}
+  #muteBtn:focus-visible, #themeBtn:focus-visible, #betMoreBtn:focus-visible, #histBtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  #themeBtn[aria-expanded="true"], #betMoreBtn[aria-expanded="true"], #histBtn[aria-expanded="true"]{border-color:var(--accent)}
+  #themeBtn .chevron, #betMoreBtn .chevron{transition:transform .15s ease}
+  #themeBtn[aria-expanded="true"] .chevron, #betMoreBtn[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+  #betMoreBtn .plus{font-weight:700; font-size:14px; line-height:1}
 
   .swatch{width:16px; height:16px; border-radius:50%; flex:none;
     border:1px solid rgba(255,255,255,.18); box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
 
-  #themeMenu{position:absolute; right:20px; bottom:84px; z-index:15;
+  #themeMenu, #betMenu, #histPanel{position:absolute; right:20px; bottom:84px; z-index:15;
     background:var(--panel); border:1px solid var(--border); border-radius:12px;
     padding:6px; min-width:196px; box-shadow:0 12px 32px rgba(0,0,0,.45);
-    opacity:0; transform:translateY(6px) scale(.98); pointer-events:none;
-    transition:opacity .15s ease, transform .15s ease}
-  #themeMenu.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto}
-  #themeMenu .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    opacity:0; visibility:hidden; transform:translateY(6px) scale(.98); pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease, visibility .15s}
+  #themeMenu.open, #betMenu.open, #histPanel.open{opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto}
+  #themeMenu .menuTitle, #betMenu .menuTitle, #histPanel .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
     color:var(--dim); padding:7px 10px 5px}
+  #betMenu{display:grid; grid-template-columns:repeat(3, minmax(64px, 1fr)); gap:5px;
+    min-width:236px; max-height:min(60vh, 420px); overflow-y:auto}
+  #betMenu .menuTitle{grid-column:1 / -1}
+  .betOpt{padding:9px 6px; border-radius:8px; border:1px solid var(--border); background:none;
+    color:var(--text); font:inherit; font-size:13px; font-weight:600; cursor:pointer; text-align:center}
+  .betOpt:hover{background:var(--border)}
+  .betOpt:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .betOpt[aria-checked="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  .betOpt.max{grid-column:1 / -1; color:var(--accent);
+    border-color:color-mix(in srgb, var(--accent) 45%, transparent); letter-spacing:.08em}
+  .betOpt.max[aria-checked="true"]{color:var(--accent-text)}
+
+  /* themed slim scrollbars on every scrollable panel */
+  .histCard, #histPanel, #betMenu, #themeMenu{
+    scrollbar-width:thin; scrollbar-color:var(--border) transparent}
+  .histCard::-webkit-scrollbar, #histPanel::-webkit-scrollbar,
+  #betMenu::-webkit-scrollbar, #themeMenu::-webkit-scrollbar{width:10px}
+  .histCard::-webkit-scrollbar-track, #histPanel::-webkit-scrollbar-track,
+  #betMenu::-webkit-scrollbar-track, #themeMenu::-webkit-scrollbar-track{
+    background:transparent; margin:10px 0}
+  .histCard::-webkit-scrollbar-thumb, #histPanel::-webkit-scrollbar-thumb,
+  #betMenu::-webkit-scrollbar-thumb, #themeMenu::-webkit-scrollbar-thumb{
+    background:var(--border); border-radius:99px; border:3px solid var(--panel)}
+  .histCard::-webkit-scrollbar-thumb:hover, #histPanel::-webkit-scrollbar-thumb:hover,
+  #betMenu::-webkit-scrollbar-thumb:hover, #themeMenu::-webkit-scrollbar-thumb:hover{
+    background:var(--dim)}
+
+  #histPanel{min-width:268px; max-height:min(60vh, 440px); overflow-y:auto}
+  .histRow{width:100%; display:flex; gap:10px; padding:6px; border-radius:8px; border:none;
+    background:none; color:var(--text); font:inherit; cursor:pointer; text-align:left; align-items:center}
+  .histRow:hover{background:var(--border)}
+  .histRow:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .histRow img, .histRow .thumbless{width:72px; height:48px; border-radius:6px;
+    border:1px solid var(--border); object-fit:cover; background:var(--bg); flex:none}
+  .histRow .col{display:flex; flex-direction:column; gap:1px; min-width:0}
+  .histRow .amt{font-weight:700; font-size:13px}
+  .histRow .amt.w{color:var(--gain)}
+  .histRow .amt.l{color:var(--loss)}
+  .histRow .sub{font-size:11px; color:var(--dim)}
+  #histEmpty{padding:10px; font-size:12px; color:var(--dim)}
+  #sessionStrip .ticker{cursor:pointer}
+
+  #histModal{position:absolute; inset:0; z-index:30; display:none; align-items:center;
+    justify-content:center; background:rgba(0,0,0,.55)}
+  #histModal.open{display:flex}
+  .histCard{position:relative; background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:14px; width:min(508px, calc(100vw - 32px));
+    max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto;
+    box-shadow:0 16px 48px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:10px}
+  #replayCanvas{width:100%; height:auto; border-radius:8px; background:var(--bg);
+    border:1px solid var(--border); display:block}
+  #histShot{width:100%; border-radius:8px; border:1px solid var(--border); display:block}
+  #histShot.none{display:none}
+  .histCap{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; gap:10px}
+  .histCap .w{color:var(--gain); font-weight:700}
+  .histCap .l{color:var(--loss); font-weight:700}
+  #histCapSub{color:var(--dim); font-size:11px}
+  #histModalClose{position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:8px;
+    border:1px solid var(--border); background:var(--panel); color:var(--dim); font:inherit;
+    font-size:16px; line-height:1; cursor:pointer; z-index:1}
+  #histModalClose:hover{color:var(--text)}
+  #replayBtn{align-self:flex-start; padding:7px 14px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer}
+  #replayBtn:hover{filter:brightness(1.15)}
+  #replayBtn:focus-visible, #histModalClose:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  #zoomCtrl{position:absolute; left:20px; bottom:36px; display:flex; gap:6px; padding:6px;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; z-index:10}
+  #zoomCtrl button{min-width:36px; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--dim); font:inherit; font-size:14px; font-weight:700; cursor:pointer}
+  #zoomCtrl button:hover{color:var(--text); filter:brightness(1.15)}
+  #zoomCtrl button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
   .themeOption{width:100%; display:flex; align-items:center; gap:10px; padding:8px 10px;
     border-radius:8px; border:none; background:none; color:var(--text); font:inherit;
     font-size:13px; cursor:pointer; text-align:left}
@@ -101,10 +180,71 @@
   .themeOption[aria-checked="true"]{background:color-mix(in srgb, var(--accent) 14%, transparent)}
   .themeOption[aria-checked="true"] .themeOption-check{visibility:visible}
 
+  #brand{position:absolute; left:16px; top:18px; width:120px; z-index:9;
+    opacity:.92; pointer-events:none}
+  #brand svg{display:block; width:100%; height:auto}
+  #brand .lf{fill:var(--accent)}
+  #brand .ls{fill:var(--loss)}
+
+  /* game title badge — bottom center, clear of the time labels along the bottom
+     edge. The inlined SVG takes the theme's own contract: plate = panel/border,
+     TAP = text, TRADE = accent, market marks = gain — so contrast is guaranteed
+     on every theme and it re-inks on theme change like the Juice wordmark. */
+  #gameTitle{position:absolute; left:50%; bottom:30px; transform:translateX(-50%);
+    width:150px; z-index:8; pointer-events:none; opacity:.95}
+  #gameTitle svg{display:block; width:100%; height:auto}
+  #gameTitle .tt-plate{fill:var(--panel); fill-opacity:.88; stroke:var(--border); stroke-width:6}
+  #gameTitle .tt-tap{fill:var(--text)}
+  #gameTitle .tt-trade{fill:var(--accent)}
+  #gameTitle .tt-ring{stroke:var(--gain)}
+  #gameTitle .tt-ring-inner{fill:var(--panel); stroke:var(--gain)}
+  #gameTitle .tt-dot, #gameTitle .tt-arrow{fill:var(--gain)}
+  #gameTitle .tt-hand{stroke:var(--text); fill:var(--panel)}
+  #gameTitle .tt-line{stroke:var(--gain)}
+  #gameTitle .tt-candles{stroke:var(--gain); fill:var(--gain)}
+
+  /* splash: Stake Engine loader, then the Monstrums sting. Constant dark ground —
+     a cinematic intro moment, independent of the game theme behind it. */
+  #splash{position:absolute; inset:0; z-index:50; background:#050708; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:24px;
+    transition:opacity .5s ease}
+  #splash.fade{opacity:0; pointer-events:none}
+  #splash .hidden{display:none}
+  #splashLoader{width:min(46vw, 250px); height:auto}
+  #splashVideo{width:min(70vw, 340px); height:auto}
+  #splashStart{padding:12px 28px; border-radius:999px; border:1px solid #2a3340;
+    background:rgba(255,255,255,.06); color:#e8ecf2; font:inherit; font-size:13px;
+    font-weight:600; letter-spacing:.18em; text-transform:uppercase; cursor:pointer}
+  #splashStart:hover{filter:brightness(1.35)}
+  #splashStart:focus-visible{outline:2px solid #22ff9a; outline-offset:2px}
+
   @media (prefers-reduced-motion: reduce){
+    #splash{transition:none}
     .toast{animation:none}
     #hint{transition:none}
-    #themeMenu, #themeBtn .chevron{transition:none}
+    #themeMenu, #betMenu, #histPanel, #themeBtn .chevron, #betMoreBtn .chevron{transition:none}
+  }
+
+  /* small screens: full-width bottom bar, docked zoom rail, stretched panels */
+  @media (max-width: 700px){
+    #brand{width:88px; top:16px; left:12px}
+    #balancePill{left:110px; top:12px; font-size:13px; padding:6px 11px}
+    #sessionStrip{left:110px; right:12px; top:46px; flex-wrap:wrap; row-gap:4px;
+      column-gap:8px; padding:5px 10px}
+    #toastContainer{left:12px; right:12px; transform:none; align-items:stretch}
+    .toast{white-space:normal; justify-content:center; text-align:center}
+    #hint{white-space:normal; max-width:82vw; text-align:center}
+    #betSizes{left:12px; right:12px; bottom:max(10px, env(safe-area-inset-bottom, 0px));
+      flex-wrap:wrap; justify-content:center; row-gap:6px}
+    #betSizes .label{display:none}
+    #betSizes button{min-width:44px; padding:9px 8px}
+    #zoomCtrl{left:12px; right:auto; top:50%; bottom:auto; transform:translateY(-50%);
+      flex-direction:column}
+    #themeMenu, #betMenu, #histPanel{left:12px; right:12px;
+      bottom:calc(104px + env(safe-area-inset-bottom, 0px)); max-height:48vh}
+    #gameTitle{display:none} /* the full-width bet bar owns the bottom on phones */
+    .histCard{padding:12px; gap:8px}
+    #replayBtn, #histModalClose{min-height:38px}
   }
 </style>
 </head>
@@ -119,24 +259,64 @@
 
   <div id="sessionStrip" class="num">
     <span class="pl up" id="plValue">+$0.00</span>
+    <span class="sep"></span>
     <span class="risk" id="riskValue">nothing in play</span>
-    <span class="ticker" id="tickerPips"></span>
+    <span class="sep"></span>
+    <span class="ticker" id="tickerPips" title="Bet history"></span>
   </div>
 
   <div id="hint">Tap a square — if the line reaches it, you win that multiplier.</div>
 
   <div id="toastContainer"></div>
 
+  <div id="brand" aria-hidden="true"></div>
+
+  <div id="gameTitle" aria-hidden="true"></div>
+
   <div id="themeMenu" role="menu" aria-label="Theme" aria-hidden="true">
     <div class="menuTitle">Theme</div>
+  </div>
+
+  <div id="betMenu" role="menu" aria-label="Bet amount" aria-hidden="true">
+    <div class="menuTitle">Bet amount</div>
+  </div>
+
+  <div id="histPanel" role="menu" aria-label="Bet history" aria-hidden="true">
+    <div class="menuTitle">Bet history</div>
+    <div id="histList"></div>
+  </div>
+
+  <div id="histModal" aria-hidden="true">
+    <div class="histCard" role="dialog" aria-modal="true" aria-label="Bet replay">
+      <button id="histModalClose" aria-label="Close">&times;</button>
+      <canvas id="replayCanvas" width="480" height="260"></canvas>
+      <img id="histShot" class="none" alt="Where the line landed">
+      <div class="histCap">
+        <span id="histCapAmt" class="num"></span>
+        <span id="histCapSub" class="num"></span>
+      </div>
+      <button id="replayBtn">Replay</button>
+    </div>
+  </div>
+
+  <div id="zoomCtrl" role="group" aria-label="Chart zoom">
+    <button id="zoomOut" class="num" aria-label="Zoom out">&minus;</button>
+    <button id="zoomIn" class="num" aria-label="Zoom in">+</button>
   </div>
 
   <div id="betSizes" role="group" aria-label="Bet size">
     <span class="label">Bet</span>
     <button class="num" data-v="1">$1</button>
+    <button class="num" data-v="2">$2</button>
     <button class="num on" data-v="5">$5</button>
-    <button class="num" data-v="10">$10</button>
-    <button class="num" data-v="25">$25</button>
+    <button class="num" data-v="20">$20</button>
+    <button id="betMoreBtn" aria-label="More bet amounts" aria-haspopup="menu" aria-expanded="false">
+      <span class="plus num">+</span>
+      <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+    <button id="histBtn" aria-label="Bet history" aria-haspopup="menu" aria-expanded="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+    </button>
     <button id="muteBtn" aria-label="Toggle sound" aria-pressed="false"></button>
     <button id="themeBtn" aria-label="Choose theme" aria-haspopup="menu" aria-expanded="false">
       <span class="swatch" id="themeSwatch"></span>
@@ -218,9 +398,15 @@
                            // full grid cell wide — only the resolution moment is
                            // early, so chips never drift into the history zone)
     houseEdge: 0.035,      // display pricing only — true odds come from the ladder modes
-    betSizes: [1, 5, 10, 25],
+    betSizes: [1, 2, 5, 20],  // quick chips — a subset of betLevels
+    // The offered bet grid (mirrors the production Stake bet menu), clamped to
+    // [minBet, maxBet]. LOCAL uses it as-is; LIVE rebuilds it from the RGS
+    // config.betLevels. Everything not on a quick chip goes in the "+" menu.
+    betLevels: [1, 1.4, 2, 5, 7, 8, 14, 20, 40, 50, 100, 150, 200, 400, 500, 1000],
+    minBet: 1,             // hard floor on any offered bet
+    maxBet: 1000,          // hard cap on any offered bet
     startBalance: 2000,
-    historySeconds: 90
+    historySeconds: 140    // covers the visible past even at the 0.5x zoom floor
   };
 
   var MONO = 'ui-monospace,"SF Mono",Menlo,Consolas,monospace';
@@ -406,6 +592,12 @@
 
   var COARSE = matchMedia('(pointer: coarse)').matches;
   var armed = null;                 // touch flow: first tap arms a cell, second confirms
+  var zoom = 1;                     // chart zoom — scales pixels-per-unit only, never the odds
+  var pinch = null;                 // {dist, zoom} — an active two-finger pinch
+  var pinchGuard = 0;               // timestamp of the last pinch end (swallows the ghost tap)
+  var histEntries = [];             // resolved bets, newest first: {ts, stake, mult, won, payout, shot, cell, line}
+  var HIST_CAP = 24;                // in-memory only — the JPEG landing shots are too big for localStorage
+  var shotCanvas = null, shotCtx = null;   // lazy offscreen canvas for landing-shot capture
   var vignette = null;              // {age} — screen-edge flash for epic (>=20x) wins
   var sessionPL = 0;                // net profit/loss since load
   var results = [];                 // last 8 resolutions, newest first: {w, amt}
@@ -564,11 +756,25 @@
         // so res here is always a genuine success payload.
         var bal = extractBalance(res);
         if (bal !== null) { rgsBalance = bal / MONEY; setBalance(rgsBalance); }
+        // config.betLevels (×1e6 ints) is the authoritative bet grid — an
+        // off-grid /wallet/play amount is rejected with ERR_VAL, so the whole
+        // picker (chips + menu) is rebuilt from it.
+        if (res.config && res.config.betLevels) applyBetLevels(res.config.betLevels);
       }).catch(function (err) {
         toast('RGS authenticate failed: ' + (err && err.message ? err.message : 'unknown error'), 'warn', 4);
       });
     }
   }).catch(function () { toast('Failed to load tap_trade_rgs.json', 'warn', 4); });
+
+  // Brand art, inlined so its classed paths take the theme's CSS vars and
+  // recolor on theme change for free. Purely decorative — skip silently on error.
+  function inlineSvg(url, elId) {
+    fetch(url).then(function (r) { return r.ok ? r.text() : ''; }).then(function (svg) {
+      if (svg.indexOf('<svg') === 0) document.getElementById(elId).innerHTML = svg;
+    }).catch(function () { /* decorative only */ });
+  }
+  inlineSvg('juice_logo.svg', 'brand');       // .lf face → --accent, .ls extrusion → --loss
+  inlineSvg('tap_trade_logo.svg', 'gameTitle'); // plate → --panel, TAP → --text, TRADE → --accent, marks → --gain
 
   // The cell's displayed multiplier: fair pricing from the local vol model, snapped
   // to the nearest ladder rung (log space) so every offered value is a real,
@@ -873,6 +1079,7 @@
         if (b.tier === 2 && !REDUCED) vignette = { age: 0 };
         sound('win', b.tier);
         recordResult(true, payout);
+        pushHist(b, true, payout);
       } else if (simTime >= resolveT) {
         b.state = 'lost'; b.stateAge = 0;
         // No balance change: the stake already left at placement (optimistic ledger,
@@ -881,6 +1088,7 @@
                       text: 'Missed', kind: 'loss', age: 0 });
         sound('loss');
         recordResult(false, b.stake);
+        pushHist(b, false, 0);
       } else {
         b.state = (b.t1 - simTime) < CFG.guideLeadSec * 0.8 ? 'hot' : 'active';
       }
@@ -941,10 +1149,12 @@
   // ---------------------------------------------------------------- coords
 
   function nowX() { return W * CFG.nowFrac; }
-  function xForTime(t) { return nowX() + (t - viewTime) * CFG.pxPerSec; }
-  function yForPrice(p) { return H / 2 - (p - camPrice) * CFG.pxPerDollar; }
-  function timeForX(x) { return viewTime + (x - nowX()) / CFG.pxPerSec; }
-  function priceForY(y) { return camPrice + (H / 2 - y) / CFG.pxPerDollar; }
+  function pxSec() { return CFG.pxPerSec * zoom; }
+  function pxDol() { return CFG.pxPerDollar * zoom; }
+  function xForTime(t) { return nowX() + (t - viewTime) * pxSec(); }
+  function yForPrice(p) { return H / 2 - (p - camPrice) * pxDol(); }
+  function timeForX(x) { return viewTime + (x - nowX()) / pxSec(); }
+  function priceForY(y) { return camPrice + (H / 2 - y) / pxDol(); }
 
   // ---------------------------------------------------------------- render
 
@@ -962,8 +1172,8 @@
     return {
       x: xForTime(b.t1) + 3,
       y: yForPrice(b.high) + 3,
-      w: CFG.cellSeconds * CFG.pxPerSec - 6,
-      h: CFG.cellDollars * CFG.pxPerDollar - 6
+      w: CFG.cellSeconds * pxSec() - 6,
+      h: CFG.cellDollars * pxDol() - 6
     };
   }
 
@@ -1030,19 +1240,20 @@
       ctx.globalAlpha = alpha;
     }
 
+    // the label scales down with the chip so a placed bet is always readable;
+    // below two-line height it collapses to just the stake
+    var ts = Math.min(bw / 64, bh / 49, 1);
     ctx.textAlign = 'center';
-    if (b.state === 'lost') {
-      ctx.fillStyle = COLOR.lossText;
-      ctx.font = 'bold 13px ' + MONO;
-      ctx.fillText('−$' + b.stake, bx + bw / 2, by + bh / 2 - 7);
-      ctx.font = '10px ' + MONO;
-      ctx.fillText('MISS', bx + bw / 2, by + bh / 2 + 8);
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = b.state === 'lost' ? COLOR.lossText : COLOR.betText;
+    if (bh >= 28) {
+      ctx.font = 'bold ' + Math.max(8, Math.round(13 * ts)) + 'px ' + MONO;
+      ctx.fillText((b.state === 'lost' ? '−$' : '$') + b.stake, bx + bw / 2, by + bh / 2 - 7 * ts);
+      ctx.font = Math.max(7, Math.round(10 * ts)) + 'px ' + MONO;
+      ctx.fillText(b.state === 'lost' ? 'MISS' : fmtMult(b.mult), bx + bw / 2, by + bh / 2 + 8 * ts);
     } else {
-      ctx.fillStyle = COLOR.betText;
-      ctx.font = 'bold 13px ' + MONO;
-      ctx.fillText('$' + b.stake, bx + bw / 2, by + bh / 2 - 7);
-      ctx.font = '10px ' + MONO;
-      ctx.fillText(fmtMult(b.mult), bx + bw / 2, by + bh / 2 + 8);
+      ctx.font = 'bold ' + Math.max(8, Math.round(12 * ts)) + 'px ' + MONO;
+      ctx.fillText((b.state === 'lost' ? '−$' : '$') + b.stake, bx + bw / 2, by + bh / 2);
     }
     ctx.restore();
   }
@@ -1094,8 +1305,9 @@
       }
     }
 
-    // cell multipliers (ladder-snapped) — future zone only
-    if (LADDER) {
+    // cell multipliers (ladder-snapped) — future zone only; skipped when zoomed
+    // out far enough that the labels would collide
+    if (LADDER && CFG.cellSeconds * pxSec() >= 34 && CFG.cellDollars * pxDol() >= 22) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = '11px ' + MONO;
       var firstCol = Math.max(col0, Math.ceil(simTime / CFG.cellSeconds) * CFG.cellSeconds);
@@ -1117,7 +1329,7 @@
     // hover highlight: cell outline + concrete payout preview
     if (hover) {
       var hx = xForTime(hover.t1), hy = yForPrice(hover.high);
-      var hw = CFG.cellSeconds * CFG.pxPerSec, hh = CFG.cellDollars * CFG.pxPerDollar;
+      var hw = CFG.cellSeconds * pxSec(), hh = CFG.cellDollars * pxDol();
       var hRung = cellRung(hover.low, hover.high, hover.t1, hover.t2);
       ctx.save();
       ctx.strokeStyle = COLOR.hover;
@@ -1143,7 +1355,7 @@
       ctx.globalAlpha = Math.max(0, 1 - rj.age / 0.5);
       ctx.strokeStyle = COLOR.reject;
       ctx.lineWidth = 1.5;
-      roundRect(rx + 2, ry + 2, CFG.cellSeconds * CFG.pxPerSec - 4, CFG.cellDollars * CFG.pxPerDollar - 4, 6);
+      roundRect(rx + 2, ry + 2, CFG.cellSeconds * pxSec() - 4, CFG.cellDollars * pxDol() - 4, 6);
       ctx.stroke();
       ctx.restore();
     }
@@ -1153,7 +1365,9 @@
     ctx.fillStyle = COLOR.axisText;
     ctx.font = '11px ' + MONO;
     ctx.textAlign = 'right';
-    for (var lp = row0; lp <= pTop + CFG.cellDollars; lp += CFG.cellDollars) {
+    // label every other row when zoomed out enough that rows crowd
+    var lStep = CFG.cellDollars * (CFG.cellDollars * pxDol() < 34 ? 2 : 1);
+    for (var lp = Math.floor(pBot / lStep) * lStep; lp <= pTop + lStep; lp += lStep) {
       var ly = yForPrice(lp);
       if (ly < 20 || ly > H - 24) continue;
       if (Math.abs((ly - 7) - tagYv) < 17) continue;
@@ -1264,6 +1478,7 @@
     while (acc >= CFG.tick) { stepSim(CFG.tick); acc -= CFG.tick; }
     stepVisuals(Math.min(dt, 0.1));
     render(nowMs / 1000);
+    captureShots(); // grab landing shots off the freshly-rendered frame
     requestAnimationFrame(frame);
   }
 
@@ -1279,7 +1494,37 @@
   window.addEventListener('resize', resize);
   resize();
 
+  function setZoom(z) {
+    zoom = Math.min(2.5, Math.max(0.5, z));
+  }
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    setZoom(zoom * Math.exp(-e.deltaY * 0.0012));
+  }, { passive: false });
+  canvas.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pinch = { dist: Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                                 e.touches[0].clientY - e.touches[1].clientY), zoom: zoom };
+      armed = null; // a pinch is not a tap
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', function (e) {
+    if (pinch && e.touches.length === 2) {
+      e.preventDefault();
+      var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                         e.touches[0].clientY - e.touches[1].clientY);
+      if (pinch.dist > 0) setZoom(pinch.zoom * d / pinch.dist);
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', function () {
+    if (pinch) pinchGuard = performance.now();
+    pinch = null;
+  });
+  document.getElementById('zoomIn').addEventListener('click', function () { setZoom(zoom * 1.25); });
+  document.getElementById('zoomOut').addEventListener('click', function () { setZoom(zoom / 1.25); });
+
   canvas.addEventListener('click', function (e) {
+    if (performance.now() - pinchGuard < 400) return; // ghost tap right after a pinch
     if (COARSE) {
       // touch: first tap arms the cell (shows the offer), second tap confirms
       var c = cellAt(e.clientX, e.clientY);
@@ -1357,6 +1602,7 @@
   }
 
   function openThemeMenu() {
+    closeBetMenu(); closeHistPanel(); // only one menu open at a time
     themeMenu.classList.add('open');
     themeMenu.setAttribute('aria-hidden', 'false');
     themeBtn.setAttribute('aria-expanded', 'true');
@@ -1374,19 +1620,365 @@
     if (!themeMenu.contains(e.target) && e.target !== themeBtn) closeThemeMenu();
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeThemeMenu();
+    if (e.key === 'Escape') { closeThemeMenu(); closeBetMenu(); closeHistPanel(); closeHistModal(); }
   });
 
   applyTheme(themeKey);
   renderThemeSelection();
 
-  document.getElementById('betSizes').addEventListener('click', function (e) {
+  // ---- bet-amount picker: quick chips + a "+" menu (same pattern as the theme menu) ----
+  // LOCAL offers CFG.menuBets; LIVE rebuilds everything from the RGS betLevels grid.
+  // A single custom slot before "+" holds the menu pick, so the row never overflows.
+  var betRow = document.getElementById('betSizes');
+  var betMoreBtn = document.getElementById('betMoreBtn');
+  var betMenu = document.getElementById('betMenu');
+  var customBetBtn = null;
+  // the menu shows the FULL grid (quick-chip values included), like the real bet menu
+  var menuBets = CFG.betLevels.filter(function (v) {
+    return v >= CFG.minBet && v <= CFG.maxBet;
+  });
+
+  function fmtBet(v) {
+    return '$' + (v % 1 === 0 ? v.toLocaleString('en-US') : v.toFixed(2));
+  }
+
+  function quickChipFor(v) {
+    var chips = betRow.querySelectorAll('[data-v]');
+    for (var i = 0; i < chips.length; i++) {
+      if (chips[i] !== customBetBtn && Number(chips[i].dataset.v) === v &&
+          chips[i].style.display !== 'none') return chips[i];
+    }
+    return null;
+  }
+
+  function renderBetSelection() {
+    betRow.querySelectorAll('[data-v]').forEach(function (b) {
+      b.classList.toggle('on', Number(b.dataset.v) === betSize);
+    });
+    betMenu.querySelectorAll('.betOpt').forEach(function (opt) {
+      opt.setAttribute('aria-checked', String(Number(opt.dataset.v) === betSize));
+    });
+  }
+
+  function setBetSize(v) {
+    betSize = v;
+    try { localStorage.setItem('taptrade.betSize', String(v)); } catch (e) { /* ignore */ }
+    renderBetSelection();
+  }
+
+  // a menu pick lands in the row: reuse the matching quick chip if one exists,
+  // otherwise fill/replace the single custom slot before the "+" button
+  function selectBet(v) {
+    if (!quickChipFor(v)) {
+      if (!customBetBtn) {
+        customBetBtn = document.createElement('button');
+        customBetBtn.type = 'button';
+        customBetBtn.className = 'num';
+        betRow.insertBefore(customBetBtn, betMoreBtn);
+      }
+      customBetBtn.dataset.v = String(v);
+      customBetBtn.textContent = fmtBet(v);
+    }
+    setBetSize(v);
+  }
+
+  function buildBetMenu() {
+    betMenu.querySelectorAll('.betOpt').forEach(function (o) { o.remove(); });
+    menuBets.forEach(function (v) {
+      var opt = document.createElement('button');
+      opt.type = 'button';
+      var isMax = v >= CFG.maxBet;
+      opt.className = 'betOpt num' + (isMax ? ' max' : '');
+      opt.setAttribute('role', 'menuitemradio');
+      opt.dataset.v = String(v);
+      opt.textContent = isMax ? 'MAX' : fmtBet(v);
+      if (isMax) opt.title = fmtBet(v);
+      opt.addEventListener('click', function () { selectBet(v); closeBetMenu(); });
+      betMenu.appendChild(opt);
+    });
+    betMoreBtn.style.display = menuBets.length ? '' : 'none';
+    renderBetSelection();
+  }
+
+  function openBetMenu() {
+    closeThemeMenu(); closeHistPanel(); // only one menu open at a time
+    betMenu.classList.add('open');
+    betMenu.setAttribute('aria-hidden', 'false');
+    betMoreBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeBetMenu() {
+    betMenu.classList.remove('open');
+    betMenu.setAttribute('aria-hidden', 'true');
+    betMoreBtn.setAttribute('aria-expanded', 'false');
+  }
+  betMoreBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (betMenu.classList.contains('open')) closeBetMenu(); else openBetMenu();
+  });
+  document.addEventListener('click', function (e) {
+    if (!betMenu.contains(e.target) && !betMoreBtn.contains(e.target)) closeBetMenu();
+  });
+
+  // LIVE: rebuild the whole picker from the RGS bet grid (display dollars, capped
+  // at CFG.maxBet). Quick chips snap to their nearest grid values; the menu gets
+  // every grid value above the quick chips; any off-grid selection snaps too.
+  function applyBetLevels(levels) {
+    var grid = levels.map(function (v) { return v / MONEY; })
+      .filter(function (v) { return v >= CFG.minBet && v <= CFG.maxBet; })
+      .sort(function (a, b) { return a - b; });
+    if (!grid.length) return;
+    var nearest = function (target) {
+      return grid.reduce(function (a, b) {
+        return Math.abs(b - target) < Math.abs(a - target) ? b : a;
+      });
+    };
+    var quick = [];
+    CFG.betSizes.forEach(function (v) {
+      var g = nearest(v);
+      if (quick.indexOf(g) < 0) quick.push(g);
+    });
+    var staticChips = Array.prototype.filter.call(betRow.querySelectorAll('[data-v]'),
+      function (b) { return b !== customBetBtn; });
+    staticChips.forEach(function (chip, i) {
+      if (i < quick.length) {
+        chip.dataset.v = String(quick[i]);
+        chip.textContent = fmtBet(quick[i]);
+        chip.style.display = '';
+      } else {
+        chip.style.display = 'none';
+      }
+    });
+    if (customBetBtn && grid.indexOf(Number(customBetBtn.dataset.v)) < 0) {
+      customBetBtn.remove();
+      customBetBtn = null;
+    }
+    menuBets = grid;
+    buildBetMenu();
+    if (grid.indexOf(betSize) < 0) selectBet(nearest(betSize));
+  }
+
+  betRow.addEventListener('click', function (e) {
     var b = e.target.closest('[data-v]');
     if (!b) return;
-    betSize = Number(b.dataset.v);
-    this.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
-    b.classList.add('on');
+    setBetSize(Number(b.dataset.v));
   });
+
+  buildBetMenu();
+  // restore the last bet size — only values the picker actually offers
+  try {
+    var storedBet = parseFloat(localStorage.getItem('taptrade.betSize'));
+    if (menuBets.indexOf(storedBet) >= 0) selectBet(storedBet);
+  } catch (e) { /* ignore */ }
+
+  // ---- bet history: every resolved bet keeps a landing shot + an animated replay ----
+  var histBtn = document.getElementById('histBtn');
+  var histPanel = document.getElementById('histPanel');
+  var histList = document.getElementById('histList');
+
+  function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function clockFromTs(ts) {
+    var d = new Date(ts);
+    var h = d.getHours(), mi = d.getMinutes(), s = d.getSeconds();
+    var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    var two = function (n) { return (n < 10 ? '0' : '') + n; };
+    return two(h) + ':' + two(mi) + ':' + two(s) + ' ' + ap;
+  }
+
+  // called at resolution (stepSim); the shot + line slice land ~0.5s later in
+  // captureShots, once the win/loss beat has actually been rendered
+  function pushHist(b, won, payout) {
+    var entry = {
+      ts: Date.now(), stake: b.stake, mult: b.outcome ? b.outcome.payoutMult : b.mult,
+      won: won, payout: payout, shot: null,
+      cell: { t1: b.t1, t2: b.t2, low: b.low, high: b.high }, line: null
+    };
+    b.histEntry = entry;
+    b.pendingShot = true;
+    histEntries.unshift(entry);
+    if (histEntries.length > HIST_CAP) histEntries.pop();
+    renderHistPanel();
+  }
+
+  function captureShots() {
+    for (var i = 0; i < bets.length; i++) {
+      var b = bets[i];
+      if (!b.pendingShot || !b.histEntry || b.stateAge < 0.5) continue;
+      b.pendingShot = false;
+      var e = b.histEntry;
+      // the line slice that approaches + resolves this cell, for the replay
+      var t0 = b.t1 - 8, t1 = b.t1 + CFG.resolveSec, pts = [];
+      for (var j = 0; j < history.length; j++) {
+        if (history[j].t >= t0 && history[j].t <= t1) pts.push({ t: history[j].t, p: history[j].p });
+      }
+      e.line = pts;
+      // landing shot: the freshly-rendered canvas region around the cell
+      // (source coords ×DPR — the backing store is W*DPR wide)
+      var r = chipRect(b);
+      var sw = Math.min(260, W), sh = Math.min(170, H);
+      var sx = Math.max(0, Math.min(W - sw, r.x + r.w / 2 - sw / 2));
+      var sy = Math.max(0, Math.min(H - sh, r.y + r.h / 2 - sh / 2));
+      if (!shotCanvas) {
+        shotCanvas = document.createElement('canvas');
+        shotCtx = shotCanvas.getContext('2d');
+      }
+      shotCanvas.width = sw * 2; shotCanvas.height = sh * 2; // 2x for crisp thumbnails
+      try {
+        shotCtx.drawImage(canvas, sx * DPR, sy * DPR, sw * DPR, sh * DPR, 0, 0, sw * 2, sh * 2);
+        e.shot = shotCanvas.toDataURL('image/jpeg', 0.75);
+      } catch (err) { /* capture is decorative — keep the entry without a shot */ }
+      renderHistPanel();
+    }
+  }
+
+  function renderHistPanel() {
+    if (!histEntries.length) {
+      histList.innerHTML = '<div id="histEmpty">No bets yet — tap a square to play.</div>';
+      return;
+    }
+    histList.innerHTML = '';
+    histEntries.forEach(function (e) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'histRow';
+      row.setAttribute('role', 'menuitem');
+      row.innerHTML =
+        (e.shot ? '<img src="' + e.shot + '" alt="Where the line landed">'
+                : '<span class="thumbless"></span>') +
+        '<span class="col">' +
+        '<span class="amt ' + (e.won ? 'w' : 'l') + ' num">' +
+          (e.won ? '+' : '−') + escHtml(fmtAmt(e.won ? e.payout : e.stake)) + '</span>' +
+        '<span class="sub num">' + escHtml(fmtMult(e.mult)) + ' · ' + escHtml(fmtAmt(e.stake)) + ' stake</span>' +
+        '<span class="sub num">' + escHtml(clockFromTs(e.ts)) + '</span>' +
+        '</span>';
+      row.addEventListener('click', function () { closeHistPanel(); openHistModal(e); });
+      histList.appendChild(row);
+    });
+  }
+
+  function openHistPanel() {
+    closeThemeMenu(); closeBetMenu();
+    renderHistPanel();
+    histPanel.classList.add('open');
+    histPanel.setAttribute('aria-hidden', 'false');
+    histBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeHistPanel() {
+    histPanel.classList.remove('open');
+    histPanel.setAttribute('aria-hidden', 'true');
+    histBtn.setAttribute('aria-expanded', 'false');
+  }
+  histBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (histPanel.classList.contains('open')) closeHistPanel(); else openHistPanel();
+  });
+  document.addEventListener('click', function (e) {
+    if (!histPanel.contains(e.target) && !histBtn.contains(e.target)) closeHistPanel();
+  });
+  // the session-strip pips are the miniature of this feature — clicking them opens it
+  document.getElementById('tickerPips').addEventListener('click', openHistPanel);
+  renderHistPanel();
+
+  // ---- replay modal: animated approach + the authentic landing shot ----
+  var histModal = document.getElementById('histModal');
+  var replayCanvas = document.getElementById('replayCanvas');
+  var replayCtx = replayCanvas.getContext('2d');
+  var replayAnim = null;
+  var modalEntry = null;
+
+  function drawReplayFrame(e, frac) {
+    var w = replayCanvas.width, h = replayCanvas.height, pad = 26;
+    var pts = e.line || [];
+    var t0 = pts.length ? pts[0].t : e.cell.t1 - 8;
+    var t1 = e.cell.t2 + 0.5;
+    var pMin = e.cell.low, pMax = e.cell.high;
+    for (var i = 0; i < pts.length; i++) {
+      if (pts[i].p < pMin) pMin = pts[i].p;
+      if (pts[i].p > pMax) pMax = pts[i].p;
+    }
+    var pPad = (pMax - pMin) * 0.15 + 0.05;
+    pMin -= pPad; pMax += pPad;
+    var X = function (t) { return pad + (t - t0) / (t1 - t0) * (w - pad * 2); };
+    var Y = function (p) { return h - pad - (p - pMin) / (pMax - pMin) * (h - pad * 2); };
+
+    replayCtx.fillStyle = COLOR.bg;
+    replayCtx.fillRect(0, 0, w, h);
+
+    // the tapped cell; fills with the outcome once the line arrives
+    var cx1 = X(e.cell.t1), cx2 = X(e.cell.t2), cy1 = Y(e.cell.high), cy2 = Y(e.cell.low);
+    var done = frac >= 1;
+    replayCtx.fillStyle = done ? (e.won ? COLOR.chip2 : COLOR.lossFill1) : COLOR.hoverFill;
+    replayCtx.globalAlpha = done ? 0.9 : 1;
+    replayCtx.fillRect(cx1, cy1, cx2 - cx1, cy2 - cy1);
+    replayCtx.globalAlpha = 1;
+    replayCtx.strokeStyle = done ? (e.won ? COLOR.ring : COLOR.lossGlow) : COLOR.hover;
+    replayCtx.lineWidth = 1.5;
+    replayCtx.strokeRect(cx1, cy1, cx2 - cx1, cy2 - cy1);
+
+    // the line, drawn up to the current playhead
+    if (pts.length > 1) {
+      var upto = Math.max(1, Math.round(frac * (pts.length - 1)));
+      replayCtx.save();
+      replayCtx.strokeStyle = COLOR.line;
+      replayCtx.lineWidth = 1.8; replayCtx.lineJoin = 'round';
+      replayCtx.shadowColor = COLOR.lineGlow; replayCtx.shadowBlur = 6;
+      replayCtx.beginPath();
+      replayCtx.moveTo(X(pts[0].t), Y(pts[0].p));
+      for (var j = 1; j <= upto; j++) replayCtx.lineTo(X(pts[j].t), Y(pts[j].p));
+      replayCtx.stroke();
+      replayCtx.fillStyle = COLOR.dot; replayCtx.shadowBlur = 10;
+      replayCtx.beginPath();
+      replayCtx.arc(X(pts[upto].t), Y(pts[upto].p), 3, 0, Math.PI * 2);
+      replayCtx.fill();
+      replayCtx.restore();
+    }
+
+    if (done) {
+      replayCtx.fillStyle = e.won ? COLOR.betText : COLOR.lossText;
+      replayCtx.font = 'bold 13px ' + MONO;
+      replayCtx.textAlign = 'center'; replayCtx.textBaseline = 'middle';
+      replayCtx.fillText(e.won ? '+' + fmtAmt(e.payout) : 'MISS',
+                         (cx1 + cx2) / 2, (cy1 + cy2) / 2);
+    }
+  }
+
+  function runReplay() {
+    if (!modalEntry) return;
+    if (replayAnim) { cancelAnimationFrame(replayAnim); replayAnim = null; }
+    var e = modalEntry;
+    if (REDUCED || !e.line || e.line.length < 2) { drawReplayFrame(e, 1); return; }
+    var start = performance.now(), DUR = 1400;
+    var tick = function (now) {
+      var frac = Math.min(1, (now - start) / DUR);
+      drawReplayFrame(e, frac);
+      replayAnim = frac < 1 ? requestAnimationFrame(tick) : null;
+    };
+    replayAnim = requestAnimationFrame(tick);
+  }
+
+  function openHistModal(e) {
+    modalEntry = e;
+    var amtEl = document.getElementById('histCapAmt');
+    amtEl.textContent = (e.won ? '+' : '−') + fmtAmt(e.won ? e.payout : e.stake);
+    amtEl.className = 'num ' + (e.won ? 'w' : 'l');
+    document.getElementById('histCapSub').textContent =
+      fmtMult(e.mult) + ' · ' + fmtAmt(e.stake) + ' stake · ' + clockFromTs(e.ts);
+    var shotEl = document.getElementById('histShot');
+    if (e.shot) { shotEl.src = e.shot; shotEl.classList.remove('none'); }
+    else shotEl.classList.add('none');
+    histModal.classList.add('open');
+    histModal.setAttribute('aria-hidden', 'false');
+    runReplay();
+  }
+  function closeHistModal() {
+    if (replayAnim) { cancelAnimationFrame(replayAnim); replayAnim = null; }
+    histModal.classList.remove('open');
+    histModal.setAttribute('aria-hidden', 'true');
+    modalEntry = null;
+  }
+  document.getElementById('replayBtn').addEventListener('click', runReplay);
+  document.getElementById('histModalClose').addEventListener('click', closeHistModal);
+  histModal.addEventListener('click', function (e) { if (e.target === histModal) closeHistModal(); });
 
   document.getElementById('balancePill').addEventListener('click', function () {
     if (IS_LIVE) return; // live balance is the wallet's, not ours to reset
