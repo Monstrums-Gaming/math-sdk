@@ -6,10 +6,12 @@
 	"description": "Tap Trade frontend demo — canvas game over the published 2_6_tap_trade odds",
 	"scripts": {
 		"dev": "vite",
+		"staging": "vite build --mode staging",
+		"prod": "vite build",
 		"build": "vite build",
+		"build:staging": "vite build --mode staging",
 		"preview": "vite preview",
-		"test": "vitest run",
-		"build:staging": "vite build --mode staging"
+		"test": "vitest run"
 	},
 	"devDependencies": {
 		"vite": "^6.3.5",

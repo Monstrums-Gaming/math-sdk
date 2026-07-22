@@ -21,9 +21,13 @@ Vite project (Node >= 20; vite is the only dependency, dev-only):
 
 ```bash
 ./run.sh            # npm install (first run) + vite dev on http://localhost:7921
-npm run build       # production build → dist/ (minified, sourcemapped, relative URLs)
+npm run prod        # production build → dist/ (LOCAL locked to casino launches / ?demo=1)
+npm run staging     # staging build → dist/ (play-money playable at the bare URL)
 npm run preview     # serve the built dist/ on http://localhost:7922
 ```
+
+(`npm run build` / `npm run build:staging` are aliases of `prod` / `staging` —
+Vercel and the CI call `build`.)
 
 **Deploy (Stake Engine)**: upload the *contents* of `dist/` (index.html at the
 root) to the Stake Engine game's Files page, then Publish → Front End.
@@ -37,11 +41,12 @@ as always.
 auto-detects as Vite). Two flavors:
 
 - **Staging / public demo** — playable play-money at the bare URL: either run
-  `npm run build:staging` (uses `.env.staging` → `VITE_DEMO_OK=1`) or set the
+  `npm run staging` (uses `.env.staging` → `VITE_DEMO_OK=1`) or set the
   `VITE_DEMO_OK=1` environment variable on the Vercel environment.
-- **Production** — the default `npm run build`: locked to casino launches (a
-  paramless visit shows the "launch from the casino" screen; `?demo=1` still
-  opens play-money for ad-hoc review). This is also the build for Stake uploads.
+- **Production** — `npm run prod` (the default `build`): locked to casino
+  launches (a paramless visit shows the "launch from the casino" screen;
+  `?demo=1` still opens play-money for ad-hoc review). This is also the build
+  for Stake uploads.
 
 `public/tap_trade_rgs.json` must exist — rebuild it after any math change:
 
