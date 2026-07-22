@@ -30,7 +30,8 @@ var CFG = {
   minBet: 1,             // hard floor on any offered bet
   maxBet: 1000,          // hard cap on any offered bet
   startBalance: 2000,
-  historySeconds: 140    // covers the visible past even at the 0.5x zoom floor
+  historySeconds: 140,   // covers the visible past even at the 0.5x zoom floor
+  incidentSlope: 5       // debug inspector: a >5 $/sim-s segment auto-captures an incident
 };
 
 var MONO = 'ui-monospace,"SF Mono",Menlo,Consolas,monospace';

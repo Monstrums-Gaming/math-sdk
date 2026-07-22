@@ -83,13 +83,13 @@
   .swatch{width:16px; height:16px; border-radius:50%; flex:none;
     border:1px solid rgba(255,255,255,.18); box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
 
-  #themeMenu, #betMenu, #histPanel, #settingsPanel{position:absolute; right:20px; bottom:84px; z-index:15;
+  #themeMenu, #betMenu, #histPanel, #settingsPanel, #debugPanel{position:absolute; right:20px; bottom:84px; z-index:15;
     background:var(--panel); border:1px solid var(--border); border-radius:12px;
     padding:6px; min-width:196px; box-shadow:0 12px 32px rgba(0,0,0,.45);
     opacity:0; visibility:hidden; transform:translateY(6px) scale(.98); pointer-events:none;
     transition:opacity .15s ease, transform .15s ease, visibility .15s}
-  #themeMenu.open, #betMenu.open, #histPanel.open, #settingsPanel.open{opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto}
-  #themeMenu .menuTitle, #betMenu .menuTitle, #histPanel .menuTitle, #settingsPanel .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  #themeMenu.open, #betMenu.open, #histPanel.open, #settingsPanel.open, #debugPanel.open{opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto}
+  #themeMenu .menuTitle, #betMenu .menuTitle, #histPanel .menuTitle, #settingsPanel .menuTitle, #debugPanel .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
     color:var(--dim); padding:7px 10px 5px}
   #betMenu{display:grid; grid-template-columns:repeat(3, minmax(64px, 1fr)); gap:5px;
     min-width:236px; max-height:min(60vh, 420px); overflow-y:auto}
@@ -134,6 +134,29 @@
   #sessionStrip .ticker{cursor:pointer}
 
   #settingsPanel{min-width:248px}
+
+  #debugPanel{min-width:296px}
+  .dbgRow{padding:5px 8px}
+  .dbgRow textarea{width:100%; resize:vertical; background:var(--bg); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:7px 9px;
+    font:12px ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  .dbgRow textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .dbgBtns{display:flex; flex-wrap:wrap; gap:5px}
+  .dbgBtns button{padding:6px 9px; border-radius:8px; border:1px solid var(--border);
+    background:none; color:var(--text); font:inherit; font-size:11px; font-weight:600; cursor:pointer}
+  .dbgBtns button:hover{background:var(--border)}
+  .dbgBtns button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  #dbgRun{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  .dbgStats{font-size:11px; color:var(--dim); line-height:1.6; white-space:pre-wrap}
+  .dbgStats .bad{color:var(--loss); font-weight:700}
+  .dbgRepeat{display:inline-flex; align-items:center; gap:2px; font-size:11px; color:var(--dim)}
+  .dbgRepeat input{width:34px; padding:5px; border-radius:6px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font:inherit; font-size:11px}
+  .dbgInspLabel{font-size:10px; color:var(--dim); line-height:1.3; align-self:center}
+  #dbgHud{position:absolute; left:14px; top:92px; z-index:14; pointer-events:none;
+    display:none; white-space:pre; padding:8px 10px; border-radius:8px;
+    background:rgba(8,11,14,.82); border:1px solid var(--border); color:var(--text);
+    font:11px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
   .setRow{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:9px 10px}
   .setRow + .setRow{border-top:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
   .setLabel{font-size:13px}

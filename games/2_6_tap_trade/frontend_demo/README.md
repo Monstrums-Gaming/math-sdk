@@ -148,6 +148,41 @@ a production build.)
   re-inks on every theme change. Sits above the time labels, clear of the bet bar
   and zoom rail; hidden on phones where the bet bar spans the width.
 
+## Debug harness (`?debug=1`, LOCAL only)
+
+Reproduce any chip arrangement and outcome pattern, watch the chart react, and
+inspect the judgment data. A bug button appears in the control bar; its panel takes
+a scenario string — one token per chip, `[col:]row[W|L]`:
+
+- `col` — column index ahead of the first placeable column (default 0)
+- `row` — signed cell-row offset from the current price row (`+2` = two above)
+- `W`/`L` — force that chip's outcome (omit for a normal draw)
+
+`0:+2W 0:-2L` places a winner two rows up and a loser two rows down in the same
+column. Placement order = forced-outcome order; the column cap is two chips on
+distinct cells, so scenario tokens beyond that are rejected (as a live tap would
+be). Presets cover a win+loss pair, two winners, two losses, and a two-column
+spread. The scenario runner takes a **×N repeat** (re-fires each time the board
+goes idle). Forcing only affects LOCAL draws — LIVE outcomes come from the RGS
+book and the panel never appears in a LIVE session.
+
+The recorder logs every judgment (line `price` vs the cell `band` at resolution,
+plus an honesty flag — a won chip must be inside its band and a lost chip clear of
+it) and any teleport (a >$3/tick jump from the hard-guarantee). "Copy report JSON"
+exports the full log with the active CFG, per-chip `bandIntervals` (enter/exit +
+inside-at-resolution), and captured incidents.
+
+### Inspector
+
+Toggle **Inspector overlay** to draw, on the live canvas: collision rectangles per
+chip (active chip bright, won/lost colored), per-chip band entry/exit, persistent
+judgment rings (where the line sat at each resolution), and the **phase-colored
+price line** — grey free-wander · green steering-to-a-winner · red parked-off-a-
+loser · amber post-resolve hold — so a steep segment shows which steering owned it.
+A HUD (top-left) reads the active chip's distance-to-band, live velocity, phase,
+and rolling steepest slope. All of it is `?debug=1` LOCAL-only and read-only — zero
+effect on behavior or production.
+
 ## Files
 
 - `index.html` — markup shell; all logic lives under `src/`.

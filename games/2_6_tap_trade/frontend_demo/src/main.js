@@ -1,10 +1,11 @@
 import './style.css';
 import './splash.js';
-import { SESSION, CURRENCY, LANG, IS_LIVE, DEMO_OK, MONEY, rgs, isFatalRgsError, extractBalance } from './rgs.js';
+import { SESSION, CURRENCY, LANG, IS_LIVE, DEMO_OK, DEBUG_PARAM, MONEY, rgs, isFatalRgsError, extractBalance } from './rgs.js';
 import { CFG, MONO } from './config.js';
 import { THEMES, THEME_ORDER, COLOR, applyTheme } from './themes.js';
 import { snapGrid, nearestOnGrid, quickPicksFromGrid } from './betGrid.js';
 import { makeMoneyFormat } from './money.js';
+import { parseScenario, summarizeLog, steepestSlope, bandIntervals, detectIncident } from './debug.js';
 
 var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -54,6 +55,20 @@ var shotCanvas = null, shotCtx = null;   // lazy offscreen canvas for landing-sh
 var vignette = null;              // {age} — screen-edge flash for epic (>=20x) wins
 var sessionPL = 0;                // net profit/loss since load
 var results = [];                 // last 8 resolutions, newest first: {w, amt}
+
+// ---- ?debug=1 developer harness state (LOCAL only; wiring lives near the end) ----
+// The harness records every judgment (line vs cell band at resolution) and lets a
+// developer force outcomes to reproduce any arrangement. Forcing needs LOCAL draws,
+// so DEBUG is off in a LIVE session — the panel and its button never appear.
+var DEBUG = DEBUG_PARAM && !IS_LIVE;
+var forcedQueue = [];             // 'W' | 'L' | null per upcoming localPlay, FIFO
+var debugLog = { reveals: [], trace: [], incidents: [], chips: [], teleports: [] };
+var inspectorOn = false;          // inspector overlay + HUD (debug only)
+var steerPhase = 'f';             // flight recorder: which steering owned this tick
+var prevTickPrice = CFG.startPrice;
+var incidentCooldown = 0;
+// f free-wander · w steering to a pending winner · m parked off a loser · g hold after all wins
+var PHASE_COLOR = { f: '#8d7a84', w: '#39ff6a', m: '#ff5c7a', g: '#e3b341' };
 
 // ---------------------------------------------------------------- utils
 
@@ -314,6 +329,12 @@ function localPlay(rung, stake) {
     if ((r -= rung.outcomes[i].weight) < 0) { pick = rung.outcomes[i]; break; }
   }
   var isWin = pick.payoutCents > 0;
+  // debug: a queued W/L overrides the draw so a scenario reproduces exactly.
+  // FIFO matches betChain order (chips settle in the order they were placed).
+  if (DEBUG && forcedQueue.length) {
+    var forced = forcedQueue.shift();
+    if (forced === 'W' || forced === 'L') isWin = forced === 'W';
+  }
   return Promise.resolve({
     isWin: isWin, payoutMult: rung.multiplier,
     payoutAmount: isWin ? stake * rung.multiplier : 0
@@ -440,6 +461,10 @@ function placeBet(clientX, clientY) {
     missTarget: null
   };
   bets.push(bet);
+  if (DEBUG) {
+    debugLog.chips.push({ t: +simTime.toFixed(2), t1: bet.t1, low: bet.low, high: bet.high });
+    if (debugLog.chips.length > 100) debugLog.chips.shift();
+  }
   setBalance(balance - stake); // stake leaves the display immediately, win credit at reveal
   sessionPL -= stake;
   sound('place');
@@ -481,6 +506,7 @@ function stepFeed(dt) {
   // isWin flags decide the line's fate — the cells are presentation, the drawn
   // books are the truth. Winners: converge on one, then sweep to the other.
   // Losers: hold a miss lane clear of every losing band.
+  steerPhase = 'f';               // free-wander unless a column claims the line below
   var colT1 = null;
   for (var i = 0; i < bets.length; i++) {
     var b = bets[i];
@@ -507,6 +533,7 @@ function stepFeed(dt) {
       // switches to the other one and the line sweeps over
       var pendingW = winners.filter(function (b) { return b.state !== 'won'; });
       goal = center(nearest(pendingW.length ? pendingW : winners));
+      steerPhase = pendingW.length ? 'w' : 'g';  // chasing a winner vs holding after all won
     } else if (losers.length) {
       if (losers[0].missTarget === null) {
         // a miss lane clear of EVERY losing band, on the side the price favours
@@ -516,6 +543,7 @@ function stepFeed(dt) {
         losers[0].missTarget = Math.abs(price - up) <= Math.abs(price - down) ? up : down;
       }
       goal = losers[0].missTarget;
+      steerPhase = 'm';           // parked in a miss lane clear of every losing band
     }
     if (goal !== null) {
       var tau = colT1 - simTime;
@@ -562,11 +590,46 @@ function updateVolEst() {
 
 var volEstCountdown = 0;
 
+// ---- debug recorder (only called when DEBUG) ----
+// One sample per fixed tick: position + owning phase, plus teleport (a snap the
+// eased steering could never draw) and auto-captured incidents (steep segments).
+function recordDebugTick(dt) {
+  if (prevTickPrice !== null && Math.abs(price - prevTickPrice) > 3.0) {
+    debugLog.teleports.push({ t: +simTime.toFixed(2), jump: +(price - prevTickPrice).toFixed(2) });
+    if (debugLog.teleports.length > 100) debugLog.teleports.shift();
+  }
+  prevTickPrice = price;
+  debugLog.trace.push({ t: +simTime.toFixed(1), p: +price.toFixed(3), m: steerPhase });
+  if (debugLog.trace.length > 1200) debugLog.trace.shift();
+  incidentCooldown -= dt;                     // one incident per steep move, not a burst
+  if (incidentCooldown <= 0) {
+    var inc = detectIncident(debugLog.trace.slice(-6), CFG.incidentSlope, 5);
+    if (inc) {
+      incidentCooldown = 1.5;
+      debugLog.incidents.push({ at: inc.atT, slope: inc.slope, phase: inc.phase,
+        span: [inc.fromP, inc.toP], window: debugLog.trace.slice(-18), chips: debugLog.chips.slice(-8) });
+      if (debugLog.incidents.length > 20) debugLog.incidents.shift();
+    }
+  }
+}
+
+// A judgment record: the line's price vs the cell band at the resolve moment. A
+// won chip must be inside its band; a lost chip must be clear of it. ok=false
+// flags a dishonest reveal (the drawn line contradicting the book).
+function recordReveal(b, won) {
+  var inside = price >= b.low && price < b.high;
+  debugLog.reveals.push({ t: +simTime.toFixed(2), t1: b.t1, low: b.low, high: b.high,
+    band: [+b.low.toFixed(2), +b.high.toFixed(2)], won: won,
+    price: +price.toFixed(3), inside: inside, ok: inside === won });
+  if (debugLog.reveals.length > 200) debugLog.reveals.shift();
+}
+
 function stepSim(dt) {
   stepFeed(dt);
   simTime += dt;
-  history.push({ t: simTime, p: price });
+  history.push(DEBUG ? { t: simTime, p: price, m: steerPhase } : { t: simTime, p: price });
   while (history.length && history[0].t < simTime - CFG.historySeconds) history.shift();
+  if (DEBUG) recordDebugTick(dt);
   volEstCountdown -= dt;
   if (volEstCountdown <= 0) { updateVolEst(); volEstCountdown = 1; }
 
@@ -598,6 +661,7 @@ function stepSim(dt) {
       sound('win', b.tier);
       recordResult(true, payout);
       pushHist(b, true, payout);
+      if (DEBUG) recordReveal(b, true);
     } else if (simTime >= resolveT) {
       b.state = 'lost'; b.stateAge = 0;
       // No balance change: the stake already left at placement (optimistic ledger,
@@ -607,6 +671,7 @@ function stepSim(dt) {
       sound('loss');
       recordResult(false, b.stake);
       pushHist(b, false, 0);
+      if (DEBUG) recordReveal(b, false);
     } else {
       b.state = (b.t1 - simTime) < CFG.guideLeadSec * 0.8 ? 'hot' : 'active';
     }
@@ -776,6 +841,93 @@ function drawChip(b, tSec) {
   ctx.restore();
 }
 
+// Inspector overlay (debug only): per-chip collision rects + keep-out zones, the
+// band entry/exit interval (when the line was actually inside), and persistent
+// judgment rings (a contradiction is crossed out). Read-only — never affects play.
+function drawInspector() {
+  var margin = CFG.cellDollars * 0.5;
+  ctx.save();
+  ctx.font = '10px ' + MONO;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  var activeT1 = null;            // the column currently steering the line
+  for (var i = 0; i < bets.length; i++) {
+    var b = bets[i];
+    if ((b.state === 'active' || b.state === 'hot') && (activeT1 === null || b.t1 < activeT1)) activeT1 = b.t1;
+  }
+  for (var j = 0; j < bets.length; j++) {
+    var bt = bets[j];
+    var x1 = xForTime(bt.t1), x2 = xForTime(bt.t2);
+    if (x2 < -20 || x1 > W + 20) continue;
+    var yTop = yForPrice(bt.high), yBot = yForPrice(bt.low);
+    var active = bt.t1 === activeT1 && (bt.state === 'active' || bt.state === 'hot');
+    var col = bt.state === 'won' ? COLOR.gain : bt.state === 'lost' ? COLOR.loss
+            : active ? COLOR.accent : COLOR.dim;
+    // keep-out zone (band ± margin), dashed
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.28; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.strokeRect(x1, yForPrice(bt.high + margin), x2 - x1, yForPrice(bt.low - margin) - yForPrice(bt.high + margin));
+    // band rect
+    ctx.setLineDash([]); ctx.globalAlpha = active ? 0.95 : 0.6; ctx.lineWidth = active ? 2 : 1;
+    ctx.strokeRect(x1, yTop, x2 - x1, yBot - yTop);
+    ctx.globalAlpha = 1; ctx.fillStyle = col;
+    ctx.fillText((active ? 'ACTIVE ' : '') + (bt.outcome ? (bt.outcome.isWin ? 'WIN' : 'LOSS') : 'pending'), x1 + 3, yTop - 3);
+    // band entry/exit interval: the span the line was actually inside this band
+    var en = null, ex = null;
+    for (var t = 0; t < debugLog.trace.length; t++) {
+      if (debugLog.trace[t].p >= bt.low && debugLog.trace[t].p < bt.high) {
+        if (en === null) en = debugLog.trace[t].t;
+        ex = debugLog.trace[t].t;
+      }
+    }
+    if (en !== null) {
+      var ymid = yForPrice((bt.low + bt.high) / 2);
+      ctx.strokeStyle = col; ctx.globalAlpha = 0.85; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(xForTime(en), ymid); ctx.lineTo(xForTime(ex), ymid); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  // judgment rings from the recorder (persist on the live canvas)
+  for (var k = 0; k < debugLog.reveals.length; k++) {
+    var r = debugLog.reveals[k];
+    var jx = xForTime(r.t), jy = yForPrice(r.price);
+    if (jx < -20 || jx > W + 20) continue;
+    ctx.strokeStyle = r.won ? COLOR.gain : COLOR.loss; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.arc(jx, jy, 6, 0, Math.PI * 2); ctx.stroke();
+    if (!r.ok) {                  // a contradiction — cross it out so it is unmissable
+      ctx.beginPath(); ctx.moveTo(jx - 6, jy - 6); ctx.lineTo(jx + 6, jy + 6);
+      ctx.moveTo(jx + 6, jy - 6); ctx.lineTo(jx - 6, jy + 6); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// HUD text (debug only) — active chip's distance-to-band, velocity, phase, slope.
+function updateHud() {
+  var hud = document.getElementById('dbgHud');
+  if (!hud) return;
+  if (!(DEBUG && inspectorOn)) { hud.style.display = 'none'; return; }
+  hud.style.display = 'block';
+  var active = null, best = Infinity;
+  for (var i = 0; i < bets.length; i++) {
+    var b = bets[i];
+    if ((b.state === 'active' || b.state === 'hot') && b.t1 < best) { best = b.t1; active = b; }
+  }
+  var lines = ['phase ' + steerPhase + '  vel ' + vel.toFixed(1) + ' $/s  zoom ' + zoom.toFixed(2) + '  x' + speedMult];
+  if (active) {
+    var mid = (active.low + active.high) / 2;
+    var dEdge = price < active.low ? active.low - price : price > active.high ? price - active.high : 0;
+    lines.push('active ' + (active.outcome ? (active.outcome.isWin ? 'WIN' : 'LOSS') : 'pending') +
+      '  Δcenter ' + (mid - price).toFixed(2) + '  dEdge ' + dEdge.toFixed(2) +
+      '  resolves in ' + (active.t1 + CFG.resolveSec - simTime).toFixed(1) + 's');
+  } else {
+    lines.push('no active chip');
+  }
+  var st = steepestSlope(debugLog.trace.slice(-30), 5);
+  if (st) lines.push('steepest(3s) ' + st.slope.toFixed(1) + ' $/s @' + st.phase);
+  lines.push('reveals ' + debugLog.reveals.length + '  incidents ' + debugLog.incidents.length);
+  hud.textContent = lines.join('\n');
+}
+
 function render(tSec) {
   ctx.fillStyle = COLOR.bg;
   ctx.fillRect(0, 0, W, H);
@@ -919,26 +1071,53 @@ function render(tSec) {
     }
   }
 
+  // inspector collision overlay (debug only) — under the line so the line reads
+  // on top; read-only, never affects behavior
+  if (DEBUG && inspectorOn) drawInspector();
+
   // price line
   if (history.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = COLOR.line;
-    ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
-    ctx.shadowColor = COLOR.lineGlow; ctx.shadowBlur = 8;
-    ctx.beginPath();
-    var started = false;
-    for (var hi = 0; hi < history.length; hi++) {
-      var hxp = xForTime(history[hi].t);
-      if (hxp < -10) continue;
-      var hyp = yForPrice(history[hi].p);
-      if (!started) { ctx.moveTo(hxp, hyp); started = true; } else ctx.lineTo(hxp, hyp);
-    }
     var dx = nowX(), dy = yForPrice(dispPrice);
-    ctx.lineTo(dx, dy);
-    ctx.stroke();
-    ctx.fillStyle = COLOR.dot; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(dx, dy, 3.2, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    if (DEBUG && inspectorOn) {
+      // phase-colored: each segment takes the color of the phase that drew its
+      // endpoint, so the line literally shows which steering owns it
+      ctx.save();
+      ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      var pX = null, pY = null;
+      for (var hp = 0; hp < history.length; hp++) {
+        var cx = xForTime(history[hp].t), cy = yForPrice(history[hp].p);
+        if (cx >= -10 && pX !== null) {
+          ctx.strokeStyle = PHASE_COLOR[history[hp].m] || COLOR.line;
+          ctx.beginPath(); ctx.moveTo(pX, pY); ctx.lineTo(cx, cy); ctx.stroke();
+        }
+        pX = cx; pY = cy;
+      }
+      if (pX !== null) {
+        ctx.strokeStyle = PHASE_COLOR[steerPhase] || COLOR.line;
+        ctx.beginPath(); ctx.moveTo(pX, pY); ctx.lineTo(dx, dy); ctx.stroke();
+      }
+      ctx.fillStyle = COLOR.dot;
+      ctx.beginPath(); ctx.arc(dx, dy, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.strokeStyle = COLOR.line;
+      ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      ctx.shadowColor = COLOR.lineGlow; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      var started = false;
+      for (var hi = 0; hi < history.length; hi++) {
+        var hxp = xForTime(history[hi].t);
+        if (hxp < -10) continue;
+        var hyp = yForPrice(history[hi].p);
+        if (!started) { ctx.moveTo(hxp, hyp); started = true; } else ctx.lineTo(hxp, hyp);
+      }
+      ctx.lineTo(dx, dy);
+      ctx.stroke();
+      ctx.fillStyle = COLOR.dot; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(dx, dy, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
   }
 
   // current price tag
@@ -1004,6 +1183,7 @@ function frame(nowMs) {
   stepVisuals(Math.min(dt, 0.1));
   render(nowMs / 1000);
   captureShots(); // grab landing shots off the freshly-rendered frame
+  if (DEBUG) updateHud();
   requestAnimationFrame(frame);
 }
 
@@ -1473,6 +1653,126 @@ document.addEventListener('click', function (e) {
   if (!settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) closeSettingsPanel();
 });
 renderSettings();
+
+// ---- ?debug=1 developer harness: scenario runner + judgment recorder ----
+var debugBtn = document.getElementById('debugBtn');
+var debugPanel = document.getElementById('debugPanel');
+
+function openDebugPanel() {
+  closeThemeMenu(); closeBetMenu(); closeHistPanel(); closeSettingsPanel();
+  debugPanel.classList.add('open');
+  debugPanel.setAttribute('aria-hidden', 'false');
+  debugBtn.setAttribute('aria-expanded', 'true');
+}
+function closeDebugPanel() {
+  debugPanel.classList.remove('open');
+  debugPanel.setAttribute('aria-hidden', 'true');
+  debugBtn.setAttribute('aria-expanded', 'false');
+}
+
+// Reproduce an arrangement: place each scenario chip programmatically (synthesized
+// canvas coords round-trip through cellAt) and queue its forced result for
+// localPlay — FIFO matches betChain order. Cells beyond the two-per-column cap are
+// rejected exactly as a live tap would be, and their force token is not queued.
+function debugRunScenario(text) {
+  var items = parseScenario(text);
+  if (!items.length) { toast('Scenario is empty — tokens look like 0:+2W', 'warn'); return; }
+  var baseT1 = Math.ceil((simTime + CFG.minLeadSec + 1.2) / CFG.cellSeconds) * CFG.cellSeconds;
+  var baseRow = Math.floor(price / CFG.cellDollars);
+  var placed = 0, rejected = 0;
+  items.forEach(function (it) {
+    var t1 = baseT1 + it.col * CFG.cellSeconds;
+    var rowLow = (baseRow + it.row) * CFG.cellDollars;
+    var before = bets.length;
+    placeBet(xForTime(t1 + CFG.cellSeconds / 2), yForPrice(rowLow + CFG.cellDollars / 2));
+    if (bets.length > before) { placed++; forcedQueue.push(it.force); }
+    else rejected++;
+  });
+  toast('Scenario: ' + placed + ' placed' + (rejected ? ', ' + rejected + ' rejected' : ''), '', 2.4);
+}
+
+// repeat runner: re-fires the scenario each time the board goes idle, N times
+var debugRepeatLeft = 0, debugLastScenario = '';
+function debugRepeatTick() {
+  if (debugRepeatLeft <= 0) return;
+  var idle = true;
+  for (var i = 0; i < bets.length; i++) {
+    var s = bets[i].state;
+    if (s === 'pending' || s === 'active' || s === 'hot') { idle = false; break; }
+  }
+  if (idle) { debugRepeatLeft--; debugRunScenario(debugLastScenario); }
+}
+
+function renderDebugStats() {
+  var el = document.getElementById('dbgStats');
+  if (!el) return;
+  var s = summarizeLog(debugLog);
+  if (!s.reveals && !s.teleports) { el.textContent = 'no reveals yet'; return; }
+  var last = debugLog.reveals[debugLog.reveals.length - 1];
+  el.innerHTML =
+    'reveals ' + s.reveals + ' · honest ' + s.honest +
+    (s.violations ? ' · <span class="bad">violations ' + s.violations + '</span>' : ' · violations 0') +
+    '<br>teleports ' + (s.teleports ? '<span class="bad">' + s.teleports + '</span>' : '0') +
+    (debugLog.incidents.length ? ' · <span class="bad">incidents ' + debugLog.incidents.length + '</span>' : ' · incidents 0') +
+    (last ? '<br>last: ' + (last.won ? 'WIN' : 'LOSS') + ' @ ' + last.price +
+      ' in [' + last.band[0] + ',' + last.band[1] + ') ' +
+      (last.ok ? 'ok' : '<span class="bad">CONTRADICTION</span>') : '');
+}
+
+if (DEBUG) {
+  debugBtn.style.display = '';
+  debugBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (debugPanel.classList.contains('open')) closeDebugPanel(); else openDebugPanel();
+  });
+  document.addEventListener('click', function (e) {
+    if (!debugPanel.contains(e.target) && !debugBtn.contains(e.target)) closeDebugPanel();
+  });
+  var startRun = function (text) {
+    var n = Math.max(1, Math.min(20, parseInt(document.getElementById('dbgRepeat').value, 10) || 1));
+    debugLastScenario = text;
+    debugRepeatLeft = n - 1; // this run is the first; the rest fire as the board goes idle
+    debugRunScenario(text);
+  };
+  document.getElementById('dbgRun').addEventListener('click', function () {
+    startRun(document.getElementById('dbgScenario').value);
+  });
+  debugPanel.querySelectorAll('[data-sc]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('dbgScenario').value = b.dataset.sc;
+      startRun(b.dataset.sc);
+    });
+  });
+  var inspectorToggle = document.getElementById('dbgInspector');
+  inspectorToggle.addEventListener('click', function () {
+    inspectorOn = !inspectorOn;
+    inspectorToggle.setAttribute('aria-checked', String(inspectorOn));
+  });
+  document.getElementById('dbgCopy').addEventListener('click', function () {
+    var report = JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      cfg: { resolveSec: CFG.resolveSec, guideLeadSec: CFG.guideLeadSec,
+             minLeadSec: CFG.minLeadSec, incidentSlope: CFG.incidentSlope,
+             speedMult: speedMult, zoom: +zoom.toFixed(2) },
+      summary: summarizeLog(debugLog),
+      bandIntervals: bandIntervals(debugLog.trace, debugLog.chips, debugLog.reveals),
+      log: debugLog
+    }, null, 1);
+    var fall = function () { console.log('[taptrade debug report]', report); toast('Report logged to console', '', 2.4); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(report)
+        .then(function () { toast('Report copied to clipboard', '', 2); })
+        .catch(fall);
+    } else fall();
+  });
+  document.getElementById('dbgReset').addEventListener('click', function () {
+    debugLog.reveals = []; debugLog.teleports = []; debugLog.chips = [];
+    debugLog.trace = []; debugLog.incidents = [];
+    forcedQueue = []; debugRepeatLeft = 0;
+    renderDebugStats();
+  });
+  setInterval(function () { renderDebugStats(); debugRepeatTick(); }, 600);
+}
 
 // ---- replay modal: animated approach + the authentic landing shot ----
 var histModal = document.getElementById('histModal');

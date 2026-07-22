@@ -130,6 +130,8 @@ Files
                          grid). LOCAL mode replays the published LUT odds; LIVE mode
                          places real bets against the Stake Engine RGS when launched
                          with ?rgs_url=...&sessionID=... (see frontend_demo/README.md).
+                         Append ?debug=1 (LOCAL only) for the scenario runner +
+                         judgment-honesty inspector — see frontend_demo/README.md.
 
 Build
 -----

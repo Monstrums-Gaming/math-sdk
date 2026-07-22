@@ -23,6 +23,9 @@ var IS_LIVE  = Boolean(RGS_URL && SESSION);
 var DEMO_OK  = import.meta.env.DEV
   || import.meta.env.VITE_DEMO_OK === '1'
   || qs.get('demo') === '1';
+// ?debug=1 opens the developer harness (scenario forcing + judgment recorder);
+// it is LOCAL-only — book outcomes cannot be forced against a real wallet.
+var DEBUG_PARAM = qs.get('debug') === '1';
 var MONEY = 1000000; // RGS integer money scale
 
 // docs/rgs_docs/RGS.md "Response Codes" — 400s carry {error, message} bodies
@@ -35,11 +38,17 @@ var RGS_ERROR_MESSAGES = {
 };
 
 function rgs(path, body) {
+  // Hard timeout: a request that hangs without an HTTP error would otherwise
+  // freeze the whole serial round chain (betChain) and leave chips pending
+  // forever. Aborting surfaces the normal error path.
+  var ctl = new AbortController();
+  var timer = setTimeout(function () { ctl.abort(); }, 15000);
   return fetch(RGS_URL + path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  }).then(function (r) {
+    body: JSON.stringify(body),
+    signal: ctl.signal
+  }).finally(function () { clearTimeout(timer); }).then(function (r) {
     // RGS.md: errors are real HTTP 400/500s that STILL carry a JSON body
     // ({error, message}) — parse it first so that detail isn't discarded
     // in favor of a bare "HTTP 400".
@@ -71,4 +80,4 @@ function extractBalance(payload) {
   return null;
 }
 
-export { SESSION, CURRENCY, LANG, IS_LIVE, DEMO_OK, MONEY, rgs, isFatalRgsError, extractBalance };
+export { SESSION, CURRENCY, LANG, IS_LIVE, DEMO_OK, DEBUG_PARAM, MONEY, rgs, isFatalRgsError, extractBalance };

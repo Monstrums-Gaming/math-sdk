@@ -65,6 +65,33 @@
     </div>
   </div>
 
+  <div id="debugPanel" role="menu" aria-label="Debug" aria-hidden="true">
+    <div class="menuTitle">Debug — scenario</div>
+    <div class="dbgRow">
+      <textarea id="dbgScenario" rows="2" spellcheck="false"
+        placeholder="0:+2W 0:-2L   (col:rowOffset + W/L per chip · max 2 per column)"></textarea>
+    </div>
+    <div class="dbgRow dbgBtns">
+      <button id="dbgRun" type="button">Run scenario</button>
+      <label class="dbgRepeat">×<input id="dbgRepeat" type="number" min="1" max="20" value="1"></label>
+      <button type="button" data-sc="0:+2W 0:-2L">Win + loss</button>
+      <button type="button" data-sc="0:+3W 0:-3W">Two winners</button>
+      <button type="button" data-sc="0:+3L 0:-3L">Two losses</button>
+      <button type="button" data-sc="0:+2W 0:-2L 1:+2W 1:-2L">Two columns</button>
+    </div>
+    <div class="dbgRow">
+      <button id="dbgInspector" class="switch" role="switch" aria-checked="false" aria-label="Inspector overlay"><span class="knob"></span></button>
+      <span class="dbgInspLabel">Inspector overlay (collision rects · bands · phase-colored line)</span>
+    </div>
+    <div class="dbgRow dbgStats num" id="dbgStats">no reveals yet</div>
+    <div class="dbgRow dbgBtns">
+      <button id="dbgCopy" type="button">Copy report JSON</button>
+      <button id="dbgReset" type="button">Reset data</button>
+    </div>
+  </div>
+
+  <div id="dbgHud" aria-hidden="true"></div>
+
   <div id="histModal" aria-hidden="true">
     <div class="histCard" role="dialog" aria-modal="true" aria-label="Bet replay">
       <button id="histModalClose" aria-label="Close">&times;</button>
@@ -111,6 +138,9 @@
     </button>
     <button id="histBtn" aria-label="Bet history" aria-haspopup="menu" aria-expanded="false">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+    </button>
+    <button id="debugBtn" aria-label="Debug" aria-haspopup="menu" aria-expanded="false" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="8" height="14" rx="4"></rect><path d="M19 7l-3 2"></path><path d="M5 7l3 2"></path><path d="M19 19l-3-2"></path><path d="M5 19l3-2"></path><path d="M12 20v-9"></path><path d="M9.5 6a2.5 2.5 0 0 1 5 0"></path></svg>
     </button>
     <button id="settingsBtn" aria-label="Settings" aria-haspopup="menu" aria-expanded="false">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
