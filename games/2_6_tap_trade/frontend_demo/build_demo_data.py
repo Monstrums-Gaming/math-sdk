@@ -24,7 +24,7 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUNDLE = os.path.join(HERE, "..", "library", "odds_bundle.json")
-OUT_FILE = os.path.join(HERE, "tap_trade_rgs.json")
+OUT_FILE = os.path.join(HERE, "public", "tap_trade_rgs.json")
 
 RTP_FLOOR, RTP_CEIL = 0.90, 0.967
 

@@ -1,0 +1,259 @@
+  :root{
+    --bg:#170a10; --panel:#0d0509; --border:#3a1c2a; --text:#f3e9ee; --dim:#8d7a84;
+    --accent:#e8dd4e; --accent-text:#4a4310; --gain:#7fe0a8; --loss:#ff8ba0;
+    --win:#ffe94a; --toast-bg:rgba(20,9,14,0.92);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;
+    background:var(--bg); color:var(--text);
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    user-select:none; -webkit-user-select:none}
+  .num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  #game{position:absolute; inset:0; width:100%; height:100%; cursor:crosshair}
+
+  #balancePill{position:absolute; top:14px; left:152px; display:flex; align-items:center; gap:8px;
+    padding:7px 14px; background:var(--panel); border:1px solid var(--border); border-radius:999px;
+    font-size:14px; font-weight:600; cursor:pointer; z-index:10}
+  #balancePill .dot{width:8px; height:8px; border-radius:50%; background:#35d07f; box-shadow:0 0 6px #35d07f}
+  #balancePill:hover{filter:brightness(1.15)}
+  #balancePill .badge{font-size:10px; padding:1px 7px; border-radius:10px;
+    border:1px solid var(--border); color:var(--dim); margin-left:4px}
+  #balancePill .badge.live{color:#35d07f; border-color:#1e7a4f}
+
+  #betSizes{position:absolute; right:20px; bottom:36px; display:flex; gap:6px;
+    padding:6px; background:var(--panel); border:1px solid var(--border); border-radius:12px; z-index:10}
+  #betSizes .label{align-self:center; font-size:10px; letter-spacing:.14em; color:var(--dim);
+    text-transform:uppercase; padding:0 4px 0 8px}
+  #betSizes button{min-width:46px; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--dim); font:inherit; font-size:13px; font-weight:700; cursor:pointer}
+  #betSizes button:hover{color:var(--text); filter:brightness(1.15)}
+  #betSizes button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  #betSizes button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  #toastContainer{position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px; z-index:20; pointer-events:none}
+  .toast{display:flex; align-items:center; gap:8px; padding:9px 18px;
+    background:var(--toast-bg); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-size:13px; font-weight:600; white-space:nowrap;
+    animation:toast-in .25s ease-out, toast-out .3s ease-in forwards;
+    animation-delay:0s, var(--ttl,2.2s); box-shadow:0 4px 18px rgba(0,0,0,.35)}
+  .toast .icon{flex:none; display:inline-flex}
+  .toast.warn .icon{color:#f0b429}
+  .toast.win .icon{color:var(--win)}
+  .toast.win{color:var(--win); border-color:color-mix(in srgb, var(--win) 45%, transparent)}
+  @keyframes toast-in{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
+  @keyframes toast-out{to{opacity:0; transform:translateY(-8px)}}
+
+  #hint{position:absolute; top:32%; left:50%; transform:translateX(-50%);
+    color:var(--dim); font-size:15px; letter-spacing:.02em; z-index:5;
+    pointer-events:none; transition:opacity .8s ease; white-space:nowrap;
+    text-shadow:0 2px 8px rgba(0,0,0,.4)}
+  #hint.gone{opacity:0}
+
+  /* session strip: top-right instrument cluster — P/L | in play | last results.
+     The canvas price ladder starts below it (labels skip the top band). */
+  #sessionStrip{position:absolute; top:14px; right:14px; display:none; align-items:center;
+    gap:10px; padding:7px 12px; background:var(--panel); border:1px solid var(--border);
+    border-radius:999px; font-size:12px; z-index:10; max-width:min(60vw, 560px)}
+  #sessionStrip.show{display:flex}
+  #sessionStrip .sep{width:1px; align-self:stretch; background:var(--border); flex:none}
+  #sessionStrip .sep:has(+ .ticker:empty){display:none}
+  #sessionStrip .pl{font-weight:700; font-size:13px; white-space:nowrap}
+  #sessionStrip .pl.up{color:var(--gain)}
+  #sessionStrip .pl.down{color:var(--loss)}
+  #sessionStrip .risk{color:var(--dim); white-space:nowrap}
+  #sessionStrip .ticker{display:flex; gap:4px; overflow:hidden; cursor:pointer}
+  #sessionStrip .ticker:hover .pip{filter:brightness(1.2)}
+  #sessionStrip .pip{padding:2px 7px; border-radius:999px; font-size:10px; font-weight:700; white-space:nowrap}
+  #sessionStrip .pip:first-child{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent)}
+  #sessionStrip .pip.w{background:color-mix(in srgb, var(--win) 16%, transparent); color:var(--win)}
+  #sessionStrip .pip.l{background:color-mix(in srgb, var(--loss) 14%, transparent); color:var(--loss)}
+
+  #themeBtn, #betMoreBtn, #histBtn, #settingsBtn{display:flex; align-items:center; gap:6px; min-width:40px; padding:8px 10px;
+    border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--dim);
+    font:inherit; font-size:13px; cursor:pointer}
+  #themeBtn svg, #betMoreBtn svg, #histBtn svg, #settingsBtn svg{flex:none}
+  #themeBtn:hover, #betMoreBtn:hover, #histBtn:hover, #settingsBtn:hover{color:var(--text); filter:brightness(1.15)}
+  #themeBtn:focus-visible, #betMoreBtn:focus-visible, #histBtn:focus-visible, #settingsBtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  #themeBtn[aria-expanded="true"], #betMoreBtn[aria-expanded="true"], #histBtn[aria-expanded="true"], #settingsBtn[aria-expanded="true"]{border-color:var(--accent)}
+  #themeBtn .chevron, #betMoreBtn .chevron{transition:transform .15s ease}
+  #themeBtn[aria-expanded="true"] .chevron, #betMoreBtn[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+  #betMoreBtn .plus{font-weight:700; font-size:14px; line-height:1}
+
+  .swatch{width:16px; height:16px; border-radius:50%; flex:none;
+    border:1px solid rgba(255,255,255,.18); box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+
+  #themeMenu, #betMenu, #histPanel, #settingsPanel{position:absolute; right:20px; bottom:84px; z-index:15;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:6px; min-width:196px; box-shadow:0 12px 32px rgba(0,0,0,.45);
+    opacity:0; visibility:hidden; transform:translateY(6px) scale(.98); pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease, visibility .15s}
+  #themeMenu.open, #betMenu.open, #histPanel.open, #settingsPanel.open{opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto}
+  #themeMenu .menuTitle, #betMenu .menuTitle, #histPanel .menuTitle, #settingsPanel .menuTitle{font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--dim); padding:7px 10px 5px}
+  #betMenu{display:grid; grid-template-columns:repeat(3, minmax(64px, 1fr)); gap:5px;
+    min-width:236px; max-height:min(60vh, 420px); overflow-y:auto}
+  #betMenu .menuTitle{grid-column:1 / -1}
+  .betOpt{padding:9px 6px; border-radius:8px; border:1px solid var(--border); background:none;
+    color:var(--text); font:inherit; font-size:13px; font-weight:600; cursor:pointer; text-align:center}
+  .betOpt:hover{background:var(--border)}
+  .betOpt:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .betOpt[aria-checked="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  .betOpt.max{grid-column:1 / -1; color:var(--accent);
+    border-color:color-mix(in srgb, var(--accent) 45%, transparent); letter-spacing:.08em}
+  .betOpt.max[aria-checked="true"]{color:var(--accent-text)}
+
+  /* themed slim scrollbars on every scrollable panel */
+  .histCard, #histPanel, #betMenu, #themeMenu{
+    scrollbar-width:thin; scrollbar-color:var(--border) transparent}
+  .histCard::-webkit-scrollbar, #histPanel::-webkit-scrollbar,
+  #betMenu::-webkit-scrollbar, #themeMenu::-webkit-scrollbar{width:10px}
+  .histCard::-webkit-scrollbar-track, #histPanel::-webkit-scrollbar-track,
+  #betMenu::-webkit-scrollbar-track, #themeMenu::-webkit-scrollbar-track{
+    background:transparent; margin:10px 0}
+  .histCard::-webkit-scrollbar-thumb, #histPanel::-webkit-scrollbar-thumb,
+  #betMenu::-webkit-scrollbar-thumb, #themeMenu::-webkit-scrollbar-thumb{
+    background:var(--border); border-radius:99px; border:3px solid var(--panel)}
+  .histCard::-webkit-scrollbar-thumb:hover, #histPanel::-webkit-scrollbar-thumb:hover,
+  #betMenu::-webkit-scrollbar-thumb:hover, #themeMenu::-webkit-scrollbar-thumb:hover{
+    background:var(--dim)}
+
+  #histPanel{min-width:268px; max-height:min(60vh, 440px); overflow-y:auto}
+  .histRow{width:100%; display:flex; gap:10px; padding:6px; border-radius:8px; border:none;
+    background:none; color:var(--text); font:inherit; cursor:pointer; text-align:left; align-items:center}
+  .histRow:hover{background:var(--border)}
+  .histRow:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .histRow img, .histRow .thumbless{width:72px; height:48px; border-radius:6px;
+    border:1px solid var(--border); object-fit:cover; background:var(--bg); flex:none}
+  .histRow .col{display:flex; flex-direction:column; gap:1px; min-width:0}
+  .histRow .amt{font-weight:700; font-size:13px}
+  .histRow .amt.w{color:var(--gain)}
+  .histRow .amt.l{color:var(--loss)}
+  .histRow .sub{font-size:11px; color:var(--dim)}
+  #histEmpty{padding:10px; font-size:12px; color:var(--dim)}
+  #sessionStrip .ticker{cursor:pointer}
+
+  #settingsPanel{min-width:248px}
+  .setRow{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:9px 10px}
+  .setRow + .setRow{border-top:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
+  .setLabel{font-size:13px}
+  .setLabel .setHint{display:block; font-size:10px; color:var(--dim)}
+  .setSeg{display:flex; gap:4px}
+  .setSeg button{min-width:40px; padding:6px 8px; border-radius:8px; border:1px solid var(--border);
+    background:none; color:var(--dim); font:inherit; font-size:12px; font-weight:700; cursor:pointer}
+  .setSeg button:hover{color:var(--text)}
+  .setSeg button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  .setSeg button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .switch{position:relative; width:40px; height:22px; border-radius:999px; flex:none;
+    border:1px solid var(--border); background:var(--border); cursor:pointer; padding:0}
+  .switch .knob{position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+    background:var(--dim); transition:left .15s ease, background .15s ease}
+  .switch[aria-checked="true"]{background:var(--accent); border-color:var(--accent)}
+  .switch[aria-checked="true"] .knob{left:20px; background:var(--accent-text)}
+  .switch:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  #histModal{position:absolute; inset:0; z-index:30; display:none; align-items:center;
+    justify-content:center; background:rgba(0,0,0,.55)}
+  #histModal.open{display:flex}
+  .histCard{position:relative; background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:14px; width:min(508px, calc(100vw - 32px));
+    max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto;
+    box-shadow:0 16px 48px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:10px}
+  #replayCanvas{width:100%; height:auto; border-radius:8px; background:var(--bg);
+    border:1px solid var(--border); display:block}
+  #histShot{width:100%; border-radius:8px; border:1px solid var(--border); display:block}
+  #histShot.none{display:none}
+  .histCap{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; gap:10px}
+  .histCap .w{color:var(--gain); font-weight:700}
+  .histCap .l{color:var(--loss); font-weight:700}
+  #histCapSub{color:var(--dim); font-size:11px}
+  #histModalClose{position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:8px;
+    border:1px solid var(--border); background:var(--panel); color:var(--dim); font:inherit;
+    font-size:16px; line-height:1; cursor:pointer; z-index:1}
+  #histModalClose:hover{color:var(--text)}
+  #replayBtn{align-self:flex-start; padding:7px 14px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer}
+  #replayBtn:hover{filter:brightness(1.15)}
+  #replayBtn:focus-visible, #histModalClose:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  #zoomCtrl{position:absolute; left:20px; bottom:36px; display:flex; gap:6px; padding:6px;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; z-index:10}
+  #zoomCtrl button{min-width:36px; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel); color:var(--dim); font:inherit; font-size:14px; font-weight:700; cursor:pointer}
+  #zoomCtrl button:hover{color:var(--text); filter:brightness(1.15)}
+  #zoomCtrl button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .themeOption{width:100%; display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border-radius:8px; border:none; background:none; color:var(--text); font:inherit;
+    font-size:13px; cursor:pointer; text-align:left}
+  .themeOption:hover{background:var(--border)}
+  .themeOption:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .themeOption-label{flex:1}
+  .themeOption-check{width:14px; height:14px; flex:none; color:var(--accent); visibility:hidden}
+  .themeOption[aria-checked="true"]{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  .themeOption[aria-checked="true"] .themeOption-check{visibility:visible}
+
+  #brand{position:absolute; left:16px; top:18px; width:120px; z-index:9;
+    opacity:.92; pointer-events:none}
+  #brand svg{display:block; width:100%; height:auto}
+  #brand .lf{fill:var(--accent)}
+  #brand .ls{fill:var(--loss)}
+
+  /* game title badge — bottom center, clear of the time labels along the bottom
+     edge. The inlined SVG takes the theme's own contract: plate = panel/border,
+     TAP = text, TRADE = accent, market marks = gain — so contrast is guaranteed
+     on every theme and it re-inks on theme change like the Juice wordmark. */
+  #gameTitle{position:absolute; left:50%; bottom:30px; transform:translateX(-50%);
+    width:150px; z-index:8; pointer-events:none; opacity:.95}
+  #gameTitle svg{display:block; width:100%; height:auto}
+  #gameTitle .tt-plate{fill:var(--panel); fill-opacity:.88; stroke:var(--border); stroke-width:6}
+  #gameTitle .tt-tap{fill:var(--text)}
+  #gameTitle .tt-trade{fill:var(--accent)}
+  #gameTitle .tt-ring{stroke:var(--gain)}
+  #gameTitle .tt-ring-inner{fill:var(--panel); stroke:var(--gain)}
+  #gameTitle .tt-dot, #gameTitle .tt-arrow{fill:var(--gain)}
+  #gameTitle .tt-hand{stroke:var(--text); fill:var(--panel)}
+  #gameTitle .tt-line{stroke:var(--gain)}
+  #gameTitle .tt-candles{stroke:var(--gain); fill:var(--gain)}
+
+  /* splash: Stake Engine loader, then the Monstrums sting — full screen, each
+     phase on its asset's own baked ground (#041721 for the loader, black for the
+     sting), independent of the game theme. */
+  #splash{position:absolute; inset:0; z-index:50; background:#041721;
+    transition:opacity .5s ease, background .5s ease}
+  #splash.sting{background:#000}
+  #splash.fade{opacity:0; pointer-events:none}
+  #splash .hidden{display:none}
+  #splashLoader, #splashVideo{position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain; transition:opacity .35s ease}
+  #splashLoader.out{opacity:0}
+  #splashVideo{opacity:0}
+  #splashVideo.in{opacity:1}
+
+  @media (prefers-reduced-motion: reduce){
+    #splash, #splashLoader, #splashVideo{transition:none}
+    .toast{animation:none}
+    #hint{transition:none}
+    #themeMenu, #betMenu, #histPanel, #settingsPanel, #themeBtn .chevron, #betMoreBtn .chevron, .switch .knob{transition:none}
+  }
+
+  /* small screens: full-width bottom bar, docked zoom rail, stretched panels */
+  @media (max-width: 700px){
+    #brand{width:88px; top:16px; left:12px}
+    #balancePill{left:110px; top:12px; font-size:13px; padding:6px 11px}
+    #sessionStrip{left:110px; right:12px; top:46px; flex-wrap:wrap; row-gap:4px;
+      column-gap:8px; padding:5px 10px; max-width:none; border-radius:14px}
+    #toastContainer{left:12px; right:12px; transform:none; align-items:stretch}
+    .toast{white-space:normal; justify-content:center; text-align:center}
+    #hint{white-space:normal; max-width:82vw; text-align:center}
+    #betSizes{left:12px; right:12px; bottom:max(10px, env(safe-area-inset-bottom, 0px));
+      flex-wrap:wrap; justify-content:center; row-gap:6px}
+    #betSizes .label{display:none}
+    #betSizes button{min-width:44px; padding:9px 8px}
+    #zoomCtrl{left:12px; right:auto; top:50%; bottom:auto; transform:translateY(-50%);
+      flex-direction:column}
+    #themeMenu, #betMenu, #histPanel, #settingsPanel{left:12px; right:12px;
+      bottom:calc(104px + env(safe-area-inset-bottom, 0px)); max-height:48vh}
+    #gameTitle{display:none} /* the full-width bet bar owns the bottom on phones */
+    .histCard{padding:12px; gap:8px}
+    #replayBtn, #histModalClose{min-height:38px}
+  }

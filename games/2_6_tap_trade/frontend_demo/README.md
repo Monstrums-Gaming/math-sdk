@@ -17,11 +17,20 @@ anything about outcomes already drawn.
 
 ## Run
 
+Vite project (Node >= 20; vite is the only dependency, dev-only):
+
 ```bash
-./run.sh            # http://localhost:7921 (LOCAL mode)
+./run.sh            # npm install (first run) + vite dev on http://localhost:7921
+npm run build       # production build → dist/ (minified, sourcemapped, relative URLs)
+npm run preview     # serve the built dist/ on http://localhost:7922
 ```
 
-`tap_trade_rgs.json` must exist — rebuild it after any math change:
+**Deploy**: upload the *contents* of `dist/` (index.html at the root) to the Stake
+Engine game's Files page, then Publish → Front End. `base: './'` keeps every asset
+URL relative, so the build also works from any static subpath. LIVE mode is the
+same `?rgs_url=…&sessionID=…` launch params as always.
+
+`public/tap_trade_rgs.json` must exist — rebuild it after any math change:
 
 ```bash
 PYTHONPATH="$(git rev-parse --show-toplevel 2>/dev/null || pwd)" \
@@ -56,9 +65,15 @@ a production build.)
 
 ## UX notes
 
+- Splash on load: one loop of the Stake Engine loader (`stake_engine_loader.gif`,
+  on its baked `#041721` ground) then the Monstrums sting (`monstrums_logo.webm`,
+  on black) — always auto-proceeds (falls back to muted autoplay when the browser
+  blocks audio), click or Escape skips, 20s failsafe dismiss.
 - First visit shows a one-line hint; it disappears after your first chip
   (`localStorage: taptrade.seenHint`).
-- Session strip under the balance: net P/L, amount in play, and the last 8 results.
+- Session strip top-right: net P/L, amount in play, and the last 8 results as
+  pips (click them to open the bet history). The canvas price ladder starts below
+  it so the two never overlap.
 - Bet sizes: four quick chips ($1/$2/$5/$20) plus a "+" menu showing the full bet
   grid as a 3-column cell grid (mirrors the production Stake bet menu; the $1,000
   cap renders as MAX), clamped to the $1 min / $1,000 max. A menu pick fills a
@@ -67,10 +82,12 @@ a production build.)
   the RGS `config.betLevels` grid (off-grid play amounts are ERR_VAL).
 - Win celebration scales with the multiplier (<5x / 5–20x / ≥20x adds a screen flash);
   hot chips show a depleting countdown bar until their column resolves.
-- Synth sound cues (place / win / loss), mute toggle next to the bet sizes
-  (`localStorage: taptrade.muted`).
-- On touch devices the first tap previews a cell ("tap again to confirm"), the
-  second places the chip.
+- Settings (gear button): game speed 1x / 1.5x / 2x (`localStorage: taptrade.speed`,
+  multiplies the sim clock only — odds are untouched), sound on/off
+  (`taptrade.muted`), and tap-to-confirm (`taptrade.tapConfirm`) — when on, the
+  first tap/click previews the cell and the second places the chip, on any pointer;
+  defaults on for touch, off for mouse.
+- Synth sound cues (place / win / loss).
 
   (The localStorage keys were renamed `pricegrid.*` → `taptrade.*` with the
   2026-07-22 Tap Trade rename — internal storage keys only; worst-case fallout of
@@ -86,9 +103,10 @@ a production build.)
 - Bet history (clock button in the bet row, or click the session-strip pips):
   every resolved bet keeps a JPEG "landing shot" captured from the canvas ~0.5s
   after the reveal, plus the line's approach path. Clicking an entry opens a
-  modal that replays the approach into the cell and shows the shot. Last 24
-  bets, in-memory only (screenshots are too big for localStorage — history
-  clears on reload).
+  modal that replays the approach into the cell and shows the shot; the replay
+  redraws the real cell grid at the live chart's own seconds-to-dollars aspect,
+  so it is geometrically the scene the shot captured. Last 24 bets, in-memory
+  only (screenshots are too big for localStorage — history clears on reload).
 
 - Game title badge bottom-center (`tap_trade_logo.svg`, inlined): its rounded
   plate and artwork take the active theme's vars (plate → `--panel`/`--border`,
@@ -98,11 +116,17 @@ a production build.)
 
 ## Files
 
-- `index.html` — the whole demo (canvas renderer, feed + steering, RGS client).
-- `juice_logo.svg` — the Juice wordmark, background plate stripped and paths
-  classed (`lf` face / `ls` extrusion) for CSS-variable theming.
-- `tap_trade_logo.svg` — the Tap Trade title art, colors stripped into classes
-  (`tt-plate`/`tt-tap`/`tt-trade`/`tt-*`) for CSS-variable theming.
+- `index.html` — markup shell; all logic lives under `src/`.
+- `src/main.js` — the game core (state, feed + steering, render, betting,
+  history/replay, menus, settings) — one closure by design; see the module docs.
+- `src/config.js`, `src/themes.js`, `src/rgs.js`, `src/splash.js`,
+  `src/style.css` — the clean-boundary modules (tunables, palettes, RGS client,
+  intro sequence, styles).
+- `public/` — runtime-fetched assets, copied verbatim into `dist/`:
+  `tap_trade_rgs.json` (the odds bundle), `juice_logo.svg` (wordmark; paths
+  classed `lf`/`ls` for CSS-variable theming), `tap_trade_logo.svg` (title art;
+  classes `tt-*`), `stake_engine_loader.gif` + `monstrums_logo.webm` (splash).
+- `vite.config.mjs`, `package.json` — the build (`base './'`, es2017, sourcemaps).
 - `build_demo_data.py` — verifies + copies `../library/odds_bundle.json` →
-  `tap_trade_rgs.json`.
-- `run.sh` — local HTTP server (the demo fetches JSON, so `file://` won't work).
+  `public/tap_trade_rgs.json`.
+- `run.sh` — dev-server launcher (`npm install` guard + `npm run dev`).

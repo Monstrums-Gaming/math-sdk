@@ -1,0 +1,15 @@
+{
+	"name": "tap-trade-demo",
+	"private": true,
+	"version": "1.0.0",
+	"type": "module",
+	"description": "Tap Trade frontend demo — canvas game over the published 2_6_tap_trade odds",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"vite": "^6.3.5"
+	}
+}
