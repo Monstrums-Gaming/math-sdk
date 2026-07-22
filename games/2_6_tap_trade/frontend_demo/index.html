@@ -203,20 +203,16 @@
   #gameTitle .tt-line{stroke:var(--gain)}
   #gameTitle .tt-candles{stroke:var(--gain); fill:var(--gain)}
 
-  /* splash: Stake Engine loader, then the Monstrums sting. Constant dark ground —
-     a cinematic intro moment, independent of the game theme behind it. */
-  #splash{position:absolute; inset:0; z-index:50; background:#050708; display:flex;
-    flex-direction:column; align-items:center; justify-content:center; gap:24px;
-    transition:opacity .5s ease}
+  /* splash: Stake Engine loader, then the Monstrums sting — full screen, each
+     phase on its asset's own baked ground (#041721 for the loader, black for the
+     sting), independent of the game theme. */
+  #splash{position:absolute; inset:0; z-index:50; background:#041721;
+    transition:opacity .5s ease, background .4s ease}
+  #splash.sting{background:#000}
   #splash.fade{opacity:0; pointer-events:none}
   #splash .hidden{display:none}
-  #splashLoader{width:min(46vw, 250px); height:auto}
-  #splashVideo{width:min(70vw, 340px); height:auto}
-  #splashStart{padding:12px 28px; border-radius:999px; border:1px solid #2a3340;
-    background:rgba(255,255,255,.06); color:#e8ecf2; font:inherit; font-size:13px;
-    font-weight:600; letter-spacing:.18em; text-transform:uppercase; cursor:pointer}
-  #splashStart:hover{filter:brightness(1.35)}
-  #splashStart:focus-visible{outline:2px solid #22ff9a; outline-offset:2px}
+  #splashLoader, #splashVideo{position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain}
 
   @media (prefers-reduced-motion: reduce){
     #splash{transition:none}
@@ -230,7 +226,7 @@
     #brand{width:88px; top:16px; left:12px}
     #balancePill{left:110px; top:12px; font-size:13px; padding:6px 11px}
     #sessionStrip{left:110px; right:12px; top:46px; flex-wrap:wrap; row-gap:4px;
-      column-gap:8px; padding:5px 10px}
+      column-gap:8px; padding:5px 10px; max-width:none; border-radius:14px}
     #toastContainer{left:12px; right:12px; transform:none; align-items:stretch}
     .toast{white-space:normal; justify-content:center; text-align:center}
     #hint{white-space:normal; max-width:82vw; text-align:center}
@@ -302,6 +298,11 @@
   <div id="zoomCtrl" role="group" aria-label="Chart zoom">
     <button id="zoomOut" class="num" aria-label="Zoom out">&minus;</button>
     <button id="zoomIn" class="num" aria-label="Zoom in">+</button>
+  </div>
+
+  <div id="splash" role="dialog" aria-label="Loading Tap Trade">
+    <img id="splashLoader" src="stake_engine_loader.gif" alt="Loading">
+    <video id="splashVideo" class="hidden" src="monstrums_logo.webm" preload="auto" playsinline></video>
   </div>
 
   <div id="betSizes" role="group" aria-label="Bet size">
@@ -1369,7 +1370,7 @@
     var lStep = CFG.cellDollars * (CFG.cellDollars * pxDol() < 34 ? 2 : 1);
     for (var lp = Math.floor(pBot / lStep) * lStep; lp <= pTop + lStep; lp += lStep) {
       var ly = yForPrice(lp);
-      if (ly < 20 || ly > H - 24) continue;
+      if (ly < 54 || ly > H - 24) continue; // top band is the session strip's
       if (Math.abs((ly - 7) - tagYv) < 17) continue;
       ctx.fillText('$' + lp.toFixed(1), W - 8, ly - 7);
     }
@@ -1876,7 +1877,11 @@
     if (!histPanel.contains(e.target) && !histBtn.contains(e.target)) closeHistPanel();
   });
   // the session-strip pips are the miniature of this feature — clicking them opens it
-  document.getElementById('tickerPips').addEventListener('click', openHistPanel);
+  // (stopPropagation so the document-level outside-click close doesn't undo the open)
+  document.getElementById('tickerPips').addEventListener('click', function (e) {
+    e.stopPropagation();
+    openHistPanel();
+  });
   renderHistPanel();
 
   // ---- replay modal: animated approach + the authentic landing shot ----
@@ -1996,6 +2001,45 @@
     camPrice = price;
     dispPrice = price;
     updateVolEst();
+  })();
+
+  // ---- splash: one loop of the Stake Engine loader, then the Monstrums sting ----
+  // Always auto-proceeds: plays the sting with audio when the browser allows it,
+  // silently falls back to muted autoplay when it doesn't.
+  (function splash() {
+    var el = document.getElementById('splash');
+    var vid = document.getElementById('splashVideo');
+    var loaderImg = document.getElementById('splashLoader');
+    var over = false;
+    function dismiss() {
+      if (over) return;
+      over = true;
+      try { vid.pause(); } catch (e) { /* ignore */ }
+      el.classList.add('fade');
+      setTimeout(function () { el.remove(); }, 600);
+    }
+    function stingStarted() {
+      el.addEventListener('click', dismiss); // tap to skip
+    }
+    function trySting() {
+      loaderImg.classList.add('hidden');
+      el.classList.add('sting'); // switch ground to the sting's black
+      vid.classList.remove('hidden');
+      var p = vid.play(); // with audio, when the autoplay policy allows it
+      if (p && p.then) {
+        p.then(stingStarted).catch(function () {
+          vid.muted = true; // no gesture yet — proceed silently instead of gating
+          vid.play().then(stingStarted).catch(dismiss);
+        });
+      } else {
+        stingStarted();
+      }
+    }
+    vid.addEventListener('ended', dismiss);
+    vid.addEventListener('error', dismiss);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dismiss(); });
+    setTimeout(trySting, 2200);   // one full loader loop (the gif runs ~2.1s)
+    setTimeout(dismiss, 20000);   // failsafe: never trap the player on the splash
   })();
 
   setBalance(balance);
