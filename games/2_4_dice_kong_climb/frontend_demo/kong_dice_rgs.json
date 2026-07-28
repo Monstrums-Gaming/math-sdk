@@ -1,19 +1,19 @@
 {
  "game_id": "2_4_kong_climb",
- "rtp": 0.966,
+ "rtp": 0.98,
  "modes": [
   {
    "name": "under_02",
    "direction": "under",
    "tier": 2,
-   "multiplier": 48.3,
+   "multiplier": 49.0,
    "winChance": 2,
    "target": 2,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 4830,
+     "payoutCents": 4900,
      "weight": 1
     },
     {
@@ -26,14 +26,14 @@
    "name": "under_03",
    "direction": "under",
    "tier": 3,
-   "multiplier": 32.2,
+   "multiplier": 32.66,
    "winChance": 3,
    "target": 3,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 3220,
+     "payoutCents": 3266,
      "weight": 3
     },
     {
@@ -46,14 +46,14 @@
    "name": "under_04",
    "direction": "under",
    "tier": 4,
-   "multiplier": 24.1,
+   "multiplier": 24.5,
    "winChance": 4,
    "target": 4,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 2410,
+     "payoutCents": 2450,
      "weight": 1
     },
     {
@@ -66,14 +66,14 @@
    "name": "under_05",
    "direction": "under",
    "tier": 5,
-   "multiplier": 19.3,
+   "multiplier": 19.6,
    "winChance": 5,
    "target": 5,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1930,
+     "payoutCents": 1960,
      "weight": 1
     },
     {
@@ -86,14 +86,14 @@
    "name": "under_06",
    "direction": "under",
    "tier": 6,
-   "multiplier": 16.1,
+   "multiplier": 16.33,
    "winChance": 6,
    "target": 6,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1610,
+     "payoutCents": 1633,
      "weight": 3
     },
     {
@@ -106,14 +106,14 @@
    "name": "under_07",
    "direction": "under",
    "tier": 7,
-   "multiplier": 13.8,
+   "multiplier": 14.0,
    "winChance": 7,
    "target": 7,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1380,
+     "payoutCents": 1400,
      "weight": 7
     },
     {
@@ -126,14 +126,14 @@
    "name": "under_08",
    "direction": "under",
    "tier": 8,
-   "multiplier": 12.0,
+   "multiplier": 12.25,
    "winChance": 8,
    "target": 8,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1200,
+     "payoutCents": 1225,
      "weight": 2
     },
     {
@@ -146,14 +146,14 @@
    "name": "under_09",
    "direction": "under",
    "tier": 9,
-   "multiplier": 10.7,
+   "multiplier": 10.88,
    "winChance": 9,
    "target": 9,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1070,
+     "payoutCents": 1088,
      "weight": 9
     },
     {
@@ -166,14 +166,14 @@
    "name": "under_10",
    "direction": "under",
    "tier": 10,
-   "multiplier": 9.6,
+   "multiplier": 9.8,
    "winChance": 10,
    "target": 10,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 960,
+     "payoutCents": 980,
      "weight": 1
     },
     {
@@ -186,14 +186,14 @@
    "name": "under_11",
    "direction": "under",
    "tier": 11,
-   "multiplier": 8.7,
+   "multiplier": 8.9,
    "winChance": 11,
    "target": 11,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 870,
+     "payoutCents": 890,
      "weight": 11
     },
     {
@@ -206,14 +206,14 @@
    "name": "under_12",
    "direction": "under",
    "tier": 12,
-   "multiplier": 8.0,
+   "multiplier": 8.16,
    "winChance": 12,
    "target": 12,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 800,
+     "payoutCents": 816,
      "weight": 3
     },
     {
@@ -226,14 +226,14 @@
    "name": "under_13",
    "direction": "under",
    "tier": 13,
-   "multiplier": 7.4,
+   "multiplier": 7.53,
    "winChance": 13,
    "target": 13,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 740,
+     "payoutCents": 753,
      "weight": 13
     },
     {
@@ -246,14 +246,14 @@
    "name": "under_14",
    "direction": "under",
    "tier": 14,
-   "multiplier": 6.9,
+   "multiplier": 7.0,
    "winChance": 14,
    "target": 14,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 690,
+     "payoutCents": 700,
      "weight": 7
     },
     {
@@ -266,14 +266,14 @@
    "name": "under_15",
    "direction": "under",
    "tier": 15,
-   "multiplier": 6.4,
+   "multiplier": 6.53,
    "winChance": 15,
    "target": 15,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 640,
+     "payoutCents": 653,
      "weight": 3
     },
     {
@@ -286,14 +286,14 @@
    "name": "under_16",
    "direction": "under",
    "tier": 16,
-   "multiplier": 6.0,
+   "multiplier": 6.12,
    "winChance": 16,
    "target": 16,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 600,
+     "payoutCents": 612,
      "weight": 4
     },
     {
@@ -303,17 +303,77 @@
    ]
   },
   {
+   "name": "under_17",
+   "direction": "under",
+   "tier": 17,
+   "multiplier": 5.76,
+   "winChance": 17,
+   "target": 17,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 576,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 83
+    }
+   ]
+  },
+  {
+   "name": "under_18",
+   "direction": "under",
+   "tier": 18,
+   "multiplier": 5.44,
+   "winChance": 18,
+   "target": 18,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 544,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 41
+    }
+   ]
+  },
+  {
+   "name": "under_19",
+   "direction": "under",
+   "tier": 19,
+   "multiplier": 5.15,
+   "winChance": 19,
+   "target": 19,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 515,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 81
+    }
+   ]
+  },
+  {
    "name": "under_20",
    "direction": "under",
    "tier": 20,
-   "multiplier": 4.8,
+   "multiplier": 4.9,
    "winChance": 20,
    "target": 20,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 480,
+     "payoutCents": 490,
      "weight": 1
     },
     {
@@ -326,14 +386,14 @@
    "name": "under_21",
    "direction": "under",
    "tier": 21,
-   "multiplier": 4.6,
+   "multiplier": 4.66,
    "winChance": 21,
    "target": 21,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 460,
+     "payoutCents": 466,
      "weight": 21
     },
     {
@@ -343,17 +403,37 @@
    ]
   },
   {
+   "name": "under_22",
+   "direction": "under",
+   "tier": 22,
+   "multiplier": 4.45,
+   "winChance": 22,
+   "target": 22,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 445,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 39
+    }
+   ]
+  },
+  {
    "name": "under_23",
    "direction": "under",
    "tier": 23,
-   "multiplier": 4.2,
+   "multiplier": 4.26,
    "winChance": 23,
    "target": 23,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 420,
+     "payoutCents": 426,
      "weight": 23
     },
     {
@@ -366,14 +446,14 @@
    "name": "under_24",
    "direction": "under",
    "tier": 24,
-   "multiplier": 4.0,
+   "multiplier": 4.08,
    "winChance": 24,
    "target": 24,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 400,
+     "payoutCents": 408,
      "weight": 6
     },
     {
@@ -383,17 +463,37 @@
    ]
   },
   {
+   "name": "under_25",
+   "direction": "under",
+   "tier": 25,
+   "multiplier": 3.92,
+   "winChance": 25,
+   "target": 25,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 392,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
    "name": "under_26",
    "direction": "under",
    "tier": 26,
-   "multiplier": 3.7,
+   "multiplier": 3.76,
    "winChance": 26,
    "target": 26,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 370,
+     "payoutCents": 376,
      "weight": 13
     },
     {
@@ -403,17 +503,57 @@
    ]
   },
   {
+   "name": "under_27",
+   "direction": "under",
+   "tier": 27,
+   "multiplier": 3.62,
+   "winChance": 27,
+   "target": 27,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 362,
+     "weight": 27
+    },
+    {
+     "payoutCents": 0,
+     "weight": 73
+    }
+   ]
+  },
+  {
+   "name": "under_28",
+   "direction": "under",
+   "tier": 28,
+   "multiplier": 3.5,
+   "winChance": 28,
+   "target": 28,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 350,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 18
+    }
+   ]
+  },
+  {
    "name": "under_29",
    "direction": "under",
    "tier": 29,
-   "multiplier": 3.3,
+   "multiplier": 3.37,
    "winChance": 29,
    "target": 29,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 330,
+     "payoutCents": 337,
      "weight": 29
     },
     {
@@ -426,14 +566,14 @@
    "name": "under_30",
    "direction": "under",
    "tier": 30,
-   "multiplier": 3.2,
+   "multiplier": 3.26,
    "winChance": 30,
    "target": 30,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 320,
+     "payoutCents": 326,
      "weight": 3
     },
     {
@@ -446,14 +586,14 @@
    "name": "under_31",
    "direction": "under",
    "tier": 31,
-   "multiplier": 3.1,
+   "multiplier": 3.16,
    "winChance": 31,
    "target": 31,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 310,
+     "payoutCents": 316,
      "weight": 31
     },
     {
@@ -466,14 +606,14 @@
    "name": "under_32",
    "direction": "under",
    "tier": 32,
-   "multiplier": 3.0,
+   "multiplier": 3.06,
    "winChance": 32,
    "target": 32,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 300,
+     "payoutCents": 306,
      "weight": 8
     },
     {
@@ -486,14 +626,14 @@
    "name": "under_33",
    "direction": "under",
    "tier": 33,
-   "multiplier": 2.9,
+   "multiplier": 2.96,
    "winChance": 33,
    "target": 33,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 290,
+     "payoutCents": 296,
      "weight": 33
     },
     {
@@ -503,17 +643,77 @@
    ]
   },
   {
+   "name": "under_34",
+   "direction": "under",
+   "tier": 34,
+   "multiplier": 2.88,
+   "winChance": 34,
+   "target": 34,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 288,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 33
+    }
+   ]
+  },
+  {
+   "name": "under_35",
+   "direction": "under",
+   "tier": 35,
+   "multiplier": 2.8,
+   "winChance": 35,
+   "target": 35,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 280,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 13
+    }
+   ]
+  },
+  {
+   "name": "under_36",
+   "direction": "under",
+   "tier": 36,
+   "multiplier": 2.72,
+   "winChance": 36,
+   "target": 36,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 272,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 16
+    }
+   ]
+  },
+  {
    "name": "under_37",
    "direction": "under",
    "tier": 37,
-   "multiplier": 2.6,
+   "multiplier": 2.64,
    "winChance": 37,
    "target": 37,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 260,
+     "payoutCents": 264,
      "weight": 37
     },
     {
@@ -523,17 +723,57 @@
    ]
   },
   {
+   "name": "under_38",
+   "direction": "under",
+   "tier": 38,
+   "multiplier": 2.57,
+   "winChance": 38,
+   "target": 38,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 257,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 31
+    }
+   ]
+  },
+  {
+   "name": "under_39",
+   "direction": "under",
+   "tier": 39,
+   "multiplier": 2.51,
+   "winChance": 39,
+   "target": 39,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 251,
+     "weight": 39
+    },
+    {
+     "payoutCents": 0,
+     "weight": 61
+    }
+   ]
+  },
+  {
    "name": "under_40",
    "direction": "under",
    "tier": 40,
-   "multiplier": 2.4,
+   "multiplier": 2.45,
    "winChance": 40,
    "target": 40,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 240,
+     "payoutCents": 245,
      "weight": 2
     },
     {
@@ -543,17 +783,37 @@
    ]
   },
   {
+   "name": "under_41",
+   "direction": "under",
+   "tier": 41,
+   "multiplier": 2.39,
+   "winChance": 41,
+   "target": 41,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 239,
+     "weight": 41
+    },
+    {
+     "payoutCents": 0,
+     "weight": 59
+    }
+   ]
+  },
+  {
    "name": "under_42",
    "direction": "under",
    "tier": 42,
-   "multiplier": 2.3,
+   "multiplier": 2.33,
    "winChance": 42,
    "target": 42,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 230,
+     "payoutCents": 233,
      "weight": 21
     },
     {
@@ -563,17 +823,77 @@
    ]
   },
   {
+   "name": "under_43",
+   "direction": "under",
+   "tier": 43,
+   "multiplier": 2.27,
+   "winChance": 43,
+   "target": 43,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 227,
+     "weight": 43
+    },
+    {
+     "payoutCents": 0,
+     "weight": 57
+    }
+   ]
+  },
+  {
+   "name": "under_44",
+   "direction": "under",
+   "tier": 44,
+   "multiplier": 2.22,
+   "winChance": 44,
+   "target": 44,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 222,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 14
+    }
+   ]
+  },
+  {
+   "name": "under_45",
+   "direction": "under",
+   "tier": 45,
+   "multiplier": 2.17,
+   "winChance": 45,
+   "target": 45,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 217,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
    "name": "under_46",
    "direction": "under",
    "tier": 46,
-   "multiplier": 2.1,
+   "multiplier": 2.13,
    "winChance": 46,
    "target": 46,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 210,
+     "payoutCents": 213,
      "weight": 23
     },
     {
@@ -583,17 +903,37 @@
    ]
   },
   {
+   "name": "under_47",
+   "direction": "under",
+   "tier": 47,
+   "multiplier": 2.08,
+   "winChance": 47,
+   "target": 47,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 208,
+     "weight": 47
+    },
+    {
+     "payoutCents": 0,
+     "weight": 53
+    }
+   ]
+  },
+  {
    "name": "under_48",
    "direction": "under",
    "tier": 48,
-   "multiplier": 2.0,
+   "multiplier": 2.04,
    "winChance": 48,
    "target": 48,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 200,
+     "payoutCents": 204,
      "weight": 12
     },
     {
@@ -603,17 +943,237 @@
    ]
   },
   {
+   "name": "under_49",
+   "direction": "under",
+   "tier": 49,
+   "multiplier": 2.0,
+   "winChance": 49,
+   "target": 49,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 200,
+     "weight": 49
+    },
+    {
+     "payoutCents": 0,
+     "weight": 51
+    }
+   ]
+  },
+  {
+   "name": "under_50",
+   "direction": "under",
+   "tier": 50,
+   "multiplier": 1.96,
+   "winChance": 50,
+   "target": 50,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 196,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "under_51",
+   "direction": "under",
+   "tier": 51,
+   "multiplier": 1.92,
+   "winChance": 51,
+   "target": 51,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 192,
+     "weight": 51
+    },
+    {
+     "payoutCents": 0,
+     "weight": 49
+    }
+   ]
+  },
+  {
+   "name": "under_52",
+   "direction": "under",
+   "tier": 52,
+   "multiplier": 1.88,
+   "winChance": 52,
+   "target": 52,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 188,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 12
+    }
+   ]
+  },
+  {
+   "name": "under_53",
+   "direction": "under",
+   "tier": 53,
+   "multiplier": 1.84,
+   "winChance": 53,
+   "target": 53,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 184,
+     "weight": 53
+    },
+    {
+     "payoutCents": 0,
+     "weight": 47
+    }
+   ]
+  },
+  {
+   "name": "under_54",
+   "direction": "under",
+   "tier": 54,
+   "multiplier": 1.81,
+   "winChance": 54,
+   "target": 54,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 181,
+     "weight": 27
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  {
+   "name": "under_55",
+   "direction": "under",
+   "tier": 55,
+   "multiplier": 1.78,
+   "winChance": 55,
+   "target": 55,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 178,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "under_56",
+   "direction": "under",
+   "tier": 56,
+   "multiplier": 1.75,
+   "winChance": 56,
+   "target": 56,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 175,
+     "weight": 14
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "under_57",
+   "direction": "under",
+   "tier": 57,
+   "multiplier": 1.71,
+   "winChance": 57,
+   "target": 57,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 171,
+     "weight": 57
+    },
+    {
+     "payoutCents": 0,
+     "weight": 43
+    }
+   ]
+  },
+  {
+   "name": "under_58",
+   "direction": "under",
+   "tier": 58,
+   "multiplier": 1.68,
+   "winChance": 58,
+   "target": 58,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 168,
+     "weight": 29
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  {
+   "name": "under_59",
+   "direction": "under",
+   "tier": 59,
+   "multiplier": 1.66,
+   "winChance": 59,
+   "target": 59,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 166,
+     "weight": 59
+    },
+    {
+     "payoutCents": 0,
+     "weight": 41
+    }
+   ]
+  },
+  {
    "name": "under_60",
    "direction": "under",
    "tier": 60,
-   "multiplier": 1.6,
+   "multiplier": 1.63,
    "winChance": 60,
    "target": 60,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 160,
+     "payoutCents": 163,
      "weight": 3
     },
     {
@@ -623,17 +1183,77 @@
    ]
   },
   {
+   "name": "under_61",
+   "direction": "under",
+   "tier": 61,
+   "multiplier": 1.6,
+   "winChance": 61,
+   "target": 61,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 160,
+     "weight": 61
+    },
+    {
+     "payoutCents": 0,
+     "weight": 39
+    }
+   ]
+  },
+  {
+   "name": "under_62",
+   "direction": "under",
+   "tier": 62,
+   "multiplier": 1.58,
+   "winChance": 62,
+   "target": 62,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 158,
+     "weight": 31
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  {
+   "name": "under_63",
+   "direction": "under",
+   "tier": 63,
+   "multiplier": 1.55,
+   "winChance": 63,
+   "target": 63,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 155,
+     "weight": 63
+    },
+    {
+     "payoutCents": 0,
+     "weight": 37
+    }
+   ]
+  },
+  {
    "name": "under_64",
    "direction": "under",
    "tier": 64,
-   "multiplier": 1.5,
+   "multiplier": 1.53,
    "winChance": 64,
    "target": 64,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 150,
+     "payoutCents": 153,
      "weight": 16
     },
     {
@@ -643,17 +1263,97 @@
    ]
   },
   {
+   "name": "under_65",
+   "direction": "under",
+   "tier": 65,
+   "multiplier": 1.5,
+   "winChance": 65,
+   "target": 65,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 150,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "under_66",
+   "direction": "under",
+   "tier": 66,
+   "multiplier": 1.48,
+   "winChance": 66,
+   "target": 66,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 148,
+     "weight": 33
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  {
+   "name": "under_67",
+   "direction": "under",
+   "tier": 67,
+   "multiplier": 1.46,
+   "winChance": 67,
+   "target": 67,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 146,
+     "weight": 67
+    },
+    {
+     "payoutCents": 0,
+     "weight": 33
+    }
+   ]
+  },
+  {
+   "name": "under_68",
+   "direction": "under",
+   "tier": 68,
+   "multiplier": 1.44,
+   "winChance": 68,
+   "target": 68,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 144,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8
+    }
+   ]
+  },
+  {
    "name": "under_69",
    "direction": "under",
    "tier": 69,
-   "multiplier": 1.4,
+   "multiplier": 1.42,
    "winChance": 69,
    "target": 69,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 140,
+     "payoutCents": 142,
      "weight": 69
     },
     {
@@ -663,17 +1363,97 @@
    ]
   },
   {
+   "name": "under_70",
+   "direction": "under",
+   "tier": 70,
+   "multiplier": 1.4,
+   "winChance": 70,
+   "target": 70,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 140,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "under_71",
+   "direction": "under",
+   "tier": 71,
+   "multiplier": 1.38,
+   "winChance": 71,
+   "target": 71,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 138,
+     "weight": 71
+    },
+    {
+     "payoutCents": 0,
+     "weight": 29
+    }
+   ]
+  },
+  {
+   "name": "under_72",
+   "direction": "under",
+   "tier": 72,
+   "multiplier": 1.36,
+   "winChance": 72,
+   "target": 72,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 136,
+     "weight": 18
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "under_73",
+   "direction": "under",
+   "tier": 73,
+   "multiplier": 1.34,
+   "winChance": 73,
+   "target": 73,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 134,
+     "weight": 73
+    },
+    {
+     "payoutCents": 0,
+     "weight": 27
+    }
+   ]
+  },
+  {
    "name": "under_74",
    "direction": "under",
    "tier": 74,
-   "multiplier": 1.3,
+   "multiplier": 1.32,
    "winChance": 74,
    "target": 74,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 130,
+     "payoutCents": 132,
      "weight": 37
     },
     {
@@ -683,17 +1463,117 @@
    ]
   },
   {
+   "name": "under_75",
+   "direction": "under",
+   "tier": 75,
+   "multiplier": 1.3,
+   "winChance": 75,
+   "target": 75,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 130,
+     "weight": 3
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "under_76",
+   "direction": "under",
+   "tier": 76,
+   "multiplier": 1.28,
+   "winChance": 76,
+   "target": 76,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 128,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 6
+    }
+   ]
+  },
+  {
+   "name": "under_77",
+   "direction": "under",
+   "tier": 77,
+   "multiplier": 1.27,
+   "winChance": 77,
+   "target": 77,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 127,
+     "weight": 77
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  {
+   "name": "under_78",
+   "direction": "under",
+   "tier": 78,
+   "multiplier": 1.25,
+   "winChance": 78,
+   "target": 78,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 125,
+     "weight": 39
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "under_79",
+   "direction": "under",
+   "tier": 79,
+   "multiplier": 1.24,
+   "winChance": 79,
+   "target": 79,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 124,
+     "weight": 79
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  {
    "name": "under_80",
    "direction": "under",
    "tier": 80,
-   "multiplier": 1.2,
+   "multiplier": 1.22,
    "winChance": 80,
    "target": 80,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 120,
+     "payoutCents": 122,
      "weight": 4
     },
     {
@@ -703,22 +1583,542 @@
    ]
   },
   {
+   "name": "under_81",
+   "direction": "under",
+   "tier": 81,
+   "multiplier": 1.2,
+   "winChance": 81,
+   "target": 81,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 120,
+     "weight": 81
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  {
+   "name": "under_82",
+   "direction": "under",
+   "tier": 82,
+   "multiplier": 1.19,
+   "winChance": 82,
+   "target": 82,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 119,
+     "weight": 41
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "under_83",
+   "direction": "under",
+   "tier": 83,
+   "multiplier": 1.18,
+   "winChance": 83,
+   "target": 83,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 118,
+     "weight": 83
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  {
+   "name": "under_84",
+   "direction": "under",
+   "tier": 84,
+   "multiplier": 1.16,
+   "winChance": 84,
+   "target": 84,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 116,
+     "weight": 21
+    },
+    {
+     "payoutCents": 0,
+     "weight": 4
+    }
+   ]
+  },
+  {
+   "name": "under_85",
+   "direction": "under",
+   "tier": 85,
+   "multiplier": 1.15,
+   "winChance": 85,
+   "target": 85,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 115,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "under_86",
+   "direction": "under",
+   "tier": 86,
+   "multiplier": 1.13,
+   "winChance": 86,
+   "target": 86,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 113,
+     "weight": 43
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
    "name": "under_87",
    "direction": "under",
    "tier": 87,
-   "multiplier": 1.1,
+   "multiplier": 1.12,
    "winChance": 87,
    "target": 87,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 110,
+     "payoutCents": 112,
      "weight": 87
     },
     {
      "payoutCents": 0,
      "weight": 13
+    }
+   ]
+  },
+  {
+   "name": "under_88",
+   "direction": "under",
+   "tier": 88,
+   "multiplier": 1.11,
+   "winChance": 88,
+   "target": 88,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 111,
+     "weight": 22
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "under_89",
+   "direction": "under",
+   "tier": 89,
+   "multiplier": 1.1,
+   "winChance": 89,
+   "target": 89,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 110,
+     "weight": 89
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "under_90",
+   "direction": "under",
+   "tier": 90,
+   "multiplier": 1.08,
+   "winChance": 90,
+   "target": 90,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 108,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "under_91",
+   "direction": "under",
+   "tier": 91,
+   "multiplier": 1.07,
+   "winChance": 91,
+   "target": 91,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 107,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "under_92",
+   "direction": "under",
+   "tier": 92,
+   "multiplier": 1.06,
+   "winChance": 92,
+   "target": 92,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 106,
+     "weight": 23
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "name": "under_93",
+   "direction": "under",
+   "tier": 93,
+   "multiplier": 1.05,
+   "winChance": 93,
+   "target": 93,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 105,
+     "weight": 93
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "under_94",
+   "direction": "under",
+   "tier": 94,
+   "multiplier": 1.04,
+   "winChance": 94,
+   "target": 94,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 104,
+     "weight": 47
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "under_95",
+   "direction": "under",
+   "tier": 95,
+   "multiplier": 1.03,
+   "winChance": 95,
+   "target": 95,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 103,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "under_96",
+   "direction": "under",
+   "tier": 96,
+   "multiplier": 1.02,
+   "winChance": 96,
+   "target": 96,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 102,
+     "weight": 24
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "under_97",
+   "direction": "under",
+   "tier": 97,
+   "multiplier": 1.01,
+   "winChance": 97,
+   "target": 97,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 101,
+     "weight": 97
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "over_03",
+   "direction": "over",
+   "tier": 3,
+   "multiplier": 1.01,
+   "winChance": 97,
+   "target": 3,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 101,
+     "weight": 97
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "over_04",
+   "direction": "over",
+   "tier": 4,
+   "multiplier": 1.02,
+   "winChance": 96,
+   "target": 4,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 102,
+     "weight": 24
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "over_05",
+   "direction": "over",
+   "tier": 5,
+   "multiplier": 1.03,
+   "winChance": 95,
+   "target": 5,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 103,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "over_06",
+   "direction": "over",
+   "tier": 6,
+   "multiplier": 1.04,
+   "winChance": 94,
+   "target": 6,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 104,
+     "weight": 47
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "over_07",
+   "direction": "over",
+   "tier": 7,
+   "multiplier": 1.05,
+   "winChance": 93,
+   "target": 7,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 105,
+     "weight": 93
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "over_08",
+   "direction": "over",
+   "tier": 8,
+   "multiplier": 1.06,
+   "winChance": 92,
+   "target": 8,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 106,
+     "weight": 23
+    },
+    {
+     "payoutCents": 0,
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "name": "over_09",
+   "direction": "over",
+   "tier": 9,
+   "multiplier": 1.07,
+   "winChance": 91,
+   "target": 9,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 107,
+     "weight": 91
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "over_10",
+   "direction": "over",
+   "tier": 10,
+   "multiplier": 1.08,
+   "winChance": 90,
+   "target": 10,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 108,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "over_11",
+   "direction": "over",
+   "tier": 11,
+   "multiplier": 1.1,
+   "winChance": 89,
+   "target": 11,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 110,
+     "weight": 89
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "over_12",
+   "direction": "over",
+   "tier": 12,
+   "multiplier": 1.11,
+   "winChance": 88,
+   "target": 12,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 111,
+     "weight": 22
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
     }
    ]
   },
@@ -726,14 +2126,14 @@
    "name": "over_13",
    "direction": "over",
    "tier": 13,
-   "multiplier": 1.1,
+   "multiplier": 1.12,
    "winChance": 87,
    "target": 13,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 110,
+     "payoutCents": 112,
      "weight": 87
     },
     {
@@ -743,18 +2143,238 @@
    ]
   },
   {
-   "name": "over_20",
+   "name": "over_14",
    "direction": "over",
-   "tier": 20,
-   "multiplier": 1.2,
-   "winChance": 80,
-   "target": 20,
+   "tier": 14,
+   "multiplier": 1.13,
+   "winChance": 86,
+   "target": 14,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 113,
+     "weight": 43
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "over_15",
+   "direction": "over",
+   "tier": 15,
+   "multiplier": 1.15,
+   "winChance": 85,
+   "target": 15,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 115,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "over_16",
+   "direction": "over",
+   "tier": 16,
+   "multiplier": 1.16,
+   "winChance": 84,
+   "target": 16,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 116,
+     "weight": 21
+    },
+    {
+     "payoutCents": 0,
+     "weight": 4
+    }
+   ]
+  },
+  {
+   "name": "over_17",
+   "direction": "over",
+   "tier": 17,
+   "multiplier": 1.18,
+   "winChance": 83,
+   "target": 17,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 118,
+     "weight": 83
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  {
+   "name": "over_18",
+   "direction": "over",
+   "tier": 18,
+   "multiplier": 1.19,
+   "winChance": 82,
+   "target": 18,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 119,
+     "weight": 41
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "over_19",
+   "direction": "over",
+   "tier": 19,
+   "multiplier": 1.2,
+   "winChance": 81,
+   "target": 19,
+   "cost": 1.0,
+   "maxWin": 49.0,
    "outcomes": [
     {
      "payoutCents": 120,
+     "weight": 81
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  {
+   "name": "over_20",
+   "direction": "over",
+   "tier": 20,
+   "multiplier": 1.22,
+   "winChance": 80,
+   "target": 20,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 122,
      "weight": 4
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "over_21",
+   "direction": "over",
+   "tier": 21,
+   "multiplier": 1.24,
+   "winChance": 79,
+   "target": 21,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 124,
+     "weight": 79
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  {
+   "name": "over_22",
+   "direction": "over",
+   "tier": 22,
+   "multiplier": 1.25,
+   "winChance": 78,
+   "target": 22,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 125,
+     "weight": 39
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "over_23",
+   "direction": "over",
+   "tier": 23,
+   "multiplier": 1.27,
+   "winChance": 77,
+   "target": 23,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 127,
+     "weight": 77
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  {
+   "name": "over_24",
+   "direction": "over",
+   "tier": 24,
+   "multiplier": 1.28,
+   "winChance": 76,
+   "target": 24,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 128,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 6
+    }
+   ]
+  },
+  {
+   "name": "over_25",
+   "direction": "over",
+   "tier": 25,
+   "multiplier": 1.3,
+   "winChance": 75,
+   "target": 25,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 130,
+     "weight": 3
     },
     {
      "payoutCents": 0,
@@ -766,14 +2386,14 @@
    "name": "over_26",
    "direction": "over",
    "tier": 26,
-   "multiplier": 1.3,
+   "multiplier": 1.32,
    "winChance": 74,
    "target": 26,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 130,
+     "payoutCents": 132,
      "weight": 37
     },
     {
@@ -783,17 +2403,97 @@
    ]
   },
   {
-   "name": "over_31",
+   "name": "over_27",
    "direction": "over",
-   "tier": 31,
-   "multiplier": 1.4,
-   "winChance": 69,
-   "target": 31,
+   "tier": 27,
+   "multiplier": 1.34,
+   "winChance": 73,
+   "target": 27,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 134,
+     "weight": 73
+    },
+    {
+     "payoutCents": 0,
+     "weight": 27
+    }
+   ]
+  },
+  {
+   "name": "over_28",
+   "direction": "over",
+   "tier": 28,
+   "multiplier": 1.36,
+   "winChance": 72,
+   "target": 28,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 136,
+     "weight": 18
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "over_29",
+   "direction": "over",
+   "tier": 29,
+   "multiplier": 1.38,
+   "winChance": 71,
+   "target": 29,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 138,
+     "weight": 71
+    },
+    {
+     "payoutCents": 0,
+     "weight": 29
+    }
+   ]
+  },
+  {
+   "name": "over_30",
+   "direction": "over",
+   "tier": 30,
+   "multiplier": 1.4,
+   "winChance": 70,
+   "target": 30,
+   "cost": 1.0,
+   "maxWin": 49.0,
    "outcomes": [
     {
      "payoutCents": 140,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
+   "name": "over_31",
+   "direction": "over",
+   "tier": 31,
+   "multiplier": 1.42,
+   "winChance": 69,
+   "target": 31,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 142,
      "weight": 69
     },
     {
@@ -803,17 +2503,97 @@
    ]
   },
   {
-   "name": "over_36",
+   "name": "over_32",
    "direction": "over",
-   "tier": 36,
-   "multiplier": 1.5,
-   "winChance": 64,
-   "target": 36,
+   "tier": 32,
+   "multiplier": 1.44,
+   "winChance": 68,
+   "target": 32,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 144,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 8
+    }
+   ]
+  },
+  {
+   "name": "over_33",
+   "direction": "over",
+   "tier": 33,
+   "multiplier": 1.46,
+   "winChance": 67,
+   "target": 33,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 146,
+     "weight": 67
+    },
+    {
+     "payoutCents": 0,
+     "weight": 33
+    }
+   ]
+  },
+  {
+   "name": "over_34",
+   "direction": "over",
+   "tier": 34,
+   "multiplier": 1.48,
+   "winChance": 66,
+   "target": 34,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 148,
+     "weight": 33
+    },
+    {
+     "payoutCents": 0,
+     "weight": 17
+    }
+   ]
+  },
+  {
+   "name": "over_35",
+   "direction": "over",
+   "tier": 35,
+   "multiplier": 1.5,
+   "winChance": 65,
+   "target": 35,
+   "cost": 1.0,
+   "maxWin": 49.0,
    "outcomes": [
     {
      "payoutCents": 150,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 7
+    }
+   ]
+  },
+  {
+   "name": "over_36",
+   "direction": "over",
+   "tier": 36,
+   "multiplier": 1.53,
+   "winChance": 64,
+   "target": 36,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 153,
      "weight": 16
     },
     {
@@ -823,17 +2603,77 @@
    ]
   },
   {
-   "name": "over_40",
+   "name": "over_37",
    "direction": "over",
-   "tier": 40,
-   "multiplier": 1.6,
-   "winChance": 60,
-   "target": 40,
+   "tier": 37,
+   "multiplier": 1.55,
+   "winChance": 63,
+   "target": 37,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 155,
+     "weight": 63
+    },
+    {
+     "payoutCents": 0,
+     "weight": 37
+    }
+   ]
+  },
+  {
+   "name": "over_38",
+   "direction": "over",
+   "tier": 38,
+   "multiplier": 1.58,
+   "winChance": 62,
+   "target": 38,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 158,
+     "weight": 31
+    },
+    {
+     "payoutCents": 0,
+     "weight": 19
+    }
+   ]
+  },
+  {
+   "name": "over_39",
+   "direction": "over",
+   "tier": 39,
+   "multiplier": 1.6,
+   "winChance": 61,
+   "target": 39,
+   "cost": 1.0,
+   "maxWin": 49.0,
    "outcomes": [
     {
      "payoutCents": 160,
+     "weight": 61
+    },
+    {
+     "payoutCents": 0,
+     "weight": 39
+    }
+   ]
+  },
+  {
+   "name": "over_40",
+   "direction": "over",
+   "tier": 40,
+   "multiplier": 1.63,
+   "winChance": 60,
+   "target": 40,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 163,
      "weight": 3
     },
     {
@@ -843,17 +2683,237 @@
    ]
   },
   {
-   "name": "over_52",
+   "name": "over_41",
    "direction": "over",
-   "tier": 52,
-   "multiplier": 2.0,
-   "winChance": 48,
-   "target": 52,
+   "tier": 41,
+   "multiplier": 1.66,
+   "winChance": 59,
+   "target": 41,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 166,
+     "weight": 59
+    },
+    {
+     "payoutCents": 0,
+     "weight": 41
+    }
+   ]
+  },
+  {
+   "name": "over_42",
+   "direction": "over",
+   "tier": 42,
+   "multiplier": 1.68,
+   "winChance": 58,
+   "target": 42,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 168,
+     "weight": 29
+    },
+    {
+     "payoutCents": 0,
+     "weight": 21
+    }
+   ]
+  },
+  {
+   "name": "over_43",
+   "direction": "over",
+   "tier": 43,
+   "multiplier": 1.71,
+   "winChance": 57,
+   "target": 43,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 171,
+     "weight": 57
+    },
+    {
+     "payoutCents": 0,
+     "weight": 43
+    }
+   ]
+  },
+  {
+   "name": "over_44",
+   "direction": "over",
+   "tier": 44,
+   "multiplier": 1.75,
+   "winChance": 56,
+   "target": 44,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 175,
+     "weight": 14
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "over_45",
+   "direction": "over",
+   "tier": 45,
+   "multiplier": 1.78,
+   "winChance": 55,
+   "target": 45,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 178,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 9
+    }
+   ]
+  },
+  {
+   "name": "over_46",
+   "direction": "over",
+   "tier": 46,
+   "multiplier": 1.81,
+   "winChance": 54,
+   "target": 46,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 181,
+     "weight": 27
+    },
+    {
+     "payoutCents": 0,
+     "weight": 23
+    }
+   ]
+  },
+  {
+   "name": "over_47",
+   "direction": "over",
+   "tier": 47,
+   "multiplier": 1.84,
+   "winChance": 53,
+   "target": 47,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 184,
+     "weight": 53
+    },
+    {
+     "payoutCents": 0,
+     "weight": 47
+    }
+   ]
+  },
+  {
+   "name": "over_48",
+   "direction": "over",
+   "tier": 48,
+   "multiplier": 1.88,
+   "winChance": 52,
+   "target": 48,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 188,
+     "weight": 13
+    },
+    {
+     "payoutCents": 0,
+     "weight": 12
+    }
+   ]
+  },
+  {
+   "name": "over_49",
+   "direction": "over",
+   "tier": 49,
+   "multiplier": 1.92,
+   "winChance": 51,
+   "target": 49,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 192,
+     "weight": 51
+    },
+    {
+     "payoutCents": 0,
+     "weight": 49
+    }
+   ]
+  },
+  {
+   "name": "over_50",
+   "direction": "over",
+   "tier": 50,
+   "multiplier": 1.96,
+   "winChance": 50,
+   "target": 50,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 196,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "name": "over_51",
+   "direction": "over",
+   "tier": 51,
+   "multiplier": 2.0,
+   "winChance": 49,
+   "target": 51,
+   "cost": 1.0,
+   "maxWin": 49.0,
    "outcomes": [
     {
      "payoutCents": 200,
+     "weight": 49
+    },
+    {
+     "payoutCents": 0,
+     "weight": 51
+    }
+   ]
+  },
+  {
+   "name": "over_52",
+   "direction": "over",
+   "tier": 52,
+   "multiplier": 2.04,
+   "winChance": 48,
+   "target": 52,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 204,
      "weight": 12
     },
     {
@@ -863,17 +2923,37 @@
    ]
   },
   {
+   "name": "over_53",
+   "direction": "over",
+   "tier": 53,
+   "multiplier": 2.08,
+   "winChance": 47,
+   "target": 53,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 208,
+     "weight": 47
+    },
+    {
+     "payoutCents": 0,
+     "weight": 53
+    }
+   ]
+  },
+  {
    "name": "over_54",
    "direction": "over",
    "tier": 54,
-   "multiplier": 2.1,
+   "multiplier": 2.13,
    "winChance": 46,
    "target": 54,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 210,
+     "payoutCents": 213,
      "weight": 23
     },
     {
@@ -883,17 +2963,77 @@
    ]
   },
   {
+   "name": "over_55",
+   "direction": "over",
+   "tier": 55,
+   "multiplier": 2.17,
+   "winChance": 45,
+   "target": 55,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 217,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 11
+    }
+   ]
+  },
+  {
+   "name": "over_56",
+   "direction": "over",
+   "tier": 56,
+   "multiplier": 2.22,
+   "winChance": 44,
+   "target": 56,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 222,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 14
+    }
+   ]
+  },
+  {
+   "name": "over_57",
+   "direction": "over",
+   "tier": 57,
+   "multiplier": 2.27,
+   "winChance": 43,
+   "target": 57,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 227,
+     "weight": 43
+    },
+    {
+     "payoutCents": 0,
+     "weight": 57
+    }
+   ]
+  },
+  {
    "name": "over_58",
    "direction": "over",
    "tier": 58,
-   "multiplier": 2.3,
+   "multiplier": 2.33,
    "winChance": 42,
    "target": 58,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 230,
+     "payoutCents": 233,
      "weight": 21
     },
     {
@@ -903,17 +3043,37 @@
    ]
   },
   {
+   "name": "over_59",
+   "direction": "over",
+   "tier": 59,
+   "multiplier": 2.39,
+   "winChance": 41,
+   "target": 59,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 239,
+     "weight": 41
+    },
+    {
+     "payoutCents": 0,
+     "weight": 59
+    }
+   ]
+  },
+  {
    "name": "over_60",
    "direction": "over",
    "tier": 60,
-   "multiplier": 2.4,
+   "multiplier": 2.45,
    "winChance": 40,
    "target": 60,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 240,
+     "payoutCents": 245,
      "weight": 2
     },
     {
@@ -923,17 +3083,57 @@
    ]
   },
   {
+   "name": "over_61",
+   "direction": "over",
+   "tier": 61,
+   "multiplier": 2.51,
+   "winChance": 39,
+   "target": 61,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 251,
+     "weight": 39
+    },
+    {
+     "payoutCents": 0,
+     "weight": 61
+    }
+   ]
+  },
+  {
+   "name": "over_62",
+   "direction": "over",
+   "tier": 62,
+   "multiplier": 2.57,
+   "winChance": 38,
+   "target": 62,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 257,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 31
+    }
+   ]
+  },
+  {
    "name": "over_63",
    "direction": "over",
    "tier": 63,
-   "multiplier": 2.6,
+   "multiplier": 2.64,
    "winChance": 37,
    "target": 63,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 260,
+     "payoutCents": 264,
      "weight": 37
     },
     {
@@ -943,17 +3143,77 @@
    ]
   },
   {
+   "name": "over_64",
+   "direction": "over",
+   "tier": 64,
+   "multiplier": 2.72,
+   "winChance": 36,
+   "target": 64,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 272,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 16
+    }
+   ]
+  },
+  {
+   "name": "over_65",
+   "direction": "over",
+   "tier": 65,
+   "multiplier": 2.8,
+   "winChance": 35,
+   "target": 65,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 280,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 13
+    }
+   ]
+  },
+  {
+   "name": "over_66",
+   "direction": "over",
+   "tier": 66,
+   "multiplier": 2.88,
+   "winChance": 34,
+   "target": 66,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 288,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 33
+    }
+   ]
+  },
+  {
    "name": "over_67",
    "direction": "over",
    "tier": 67,
-   "multiplier": 2.9,
+   "multiplier": 2.96,
    "winChance": 33,
    "target": 67,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 290,
+     "payoutCents": 296,
      "weight": 33
     },
     {
@@ -966,14 +3226,14 @@
    "name": "over_68",
    "direction": "over",
    "tier": 68,
-   "multiplier": 3.0,
+   "multiplier": 3.06,
    "winChance": 32,
    "target": 68,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 300,
+     "payoutCents": 306,
      "weight": 8
     },
     {
@@ -986,14 +3246,14 @@
    "name": "over_69",
    "direction": "over",
    "tier": 69,
-   "multiplier": 3.1,
+   "multiplier": 3.16,
    "winChance": 31,
    "target": 69,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 310,
+     "payoutCents": 316,
      "weight": 31
     },
     {
@@ -1006,14 +3266,14 @@
    "name": "over_70",
    "direction": "over",
    "tier": 70,
-   "multiplier": 3.2,
+   "multiplier": 3.26,
    "winChance": 30,
    "target": 70,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 320,
+     "payoutCents": 326,
      "weight": 3
     },
     {
@@ -1026,14 +3286,14 @@
    "name": "over_71",
    "direction": "over",
    "tier": 71,
-   "multiplier": 3.3,
+   "multiplier": 3.37,
    "winChance": 29,
    "target": 71,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 330,
+     "payoutCents": 337,
      "weight": 29
     },
     {
@@ -1043,17 +3303,57 @@
    ]
   },
   {
+   "name": "over_72",
+   "direction": "over",
+   "tier": 72,
+   "multiplier": 3.5,
+   "winChance": 28,
+   "target": 72,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 350,
+     "weight": 7
+    },
+    {
+     "payoutCents": 0,
+     "weight": 18
+    }
+   ]
+  },
+  {
+   "name": "over_73",
+   "direction": "over",
+   "tier": 73,
+   "multiplier": 3.62,
+   "winChance": 27,
+   "target": 73,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 362,
+     "weight": 27
+    },
+    {
+     "payoutCents": 0,
+     "weight": 73
+    }
+   ]
+  },
+  {
    "name": "over_74",
    "direction": "over",
    "tier": 74,
-   "multiplier": 3.7,
+   "multiplier": 3.76,
    "winChance": 26,
    "target": 74,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 370,
+     "payoutCents": 376,
      "weight": 13
     },
     {
@@ -1063,17 +3363,37 @@
    ]
   },
   {
+   "name": "over_75",
+   "direction": "over",
+   "tier": 75,
+   "multiplier": 3.92,
+   "winChance": 25,
+   "target": 75,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 392,
+     "weight": 1
+    },
+    {
+     "payoutCents": 0,
+     "weight": 3
+    }
+   ]
+  },
+  {
    "name": "over_76",
    "direction": "over",
    "tier": 76,
-   "multiplier": 4.0,
+   "multiplier": 4.08,
    "winChance": 24,
    "target": 76,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 400,
+     "payoutCents": 408,
      "weight": 6
     },
     {
@@ -1086,14 +3406,14 @@
    "name": "over_77",
    "direction": "over",
    "tier": 77,
-   "multiplier": 4.2,
+   "multiplier": 4.26,
    "winChance": 23,
    "target": 77,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 420,
+     "payoutCents": 426,
      "weight": 23
     },
     {
@@ -1103,17 +3423,37 @@
    ]
   },
   {
+   "name": "over_78",
+   "direction": "over",
+   "tier": 78,
+   "multiplier": 4.45,
+   "winChance": 22,
+   "target": 78,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 445,
+     "weight": 11
+    },
+    {
+     "payoutCents": 0,
+     "weight": 39
+    }
+   ]
+  },
+  {
    "name": "over_79",
    "direction": "over",
    "tier": 79,
-   "multiplier": 4.6,
+   "multiplier": 4.66,
    "winChance": 21,
    "target": 79,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 460,
+     "payoutCents": 466,
      "weight": 21
     },
     {
@@ -1126,14 +3466,14 @@
    "name": "over_80",
    "direction": "over",
    "tier": 80,
-   "multiplier": 4.8,
+   "multiplier": 4.9,
    "winChance": 20,
    "target": 80,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 480,
+     "payoutCents": 490,
      "weight": 1
     },
     {
@@ -1143,17 +3483,77 @@
    ]
   },
   {
+   "name": "over_81",
+   "direction": "over",
+   "tier": 81,
+   "multiplier": 5.15,
+   "winChance": 19,
+   "target": 81,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 515,
+     "weight": 19
+    },
+    {
+     "payoutCents": 0,
+     "weight": 81
+    }
+   ]
+  },
+  {
+   "name": "over_82",
+   "direction": "over",
+   "tier": 82,
+   "multiplier": 5.44,
+   "winChance": 18,
+   "target": 82,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 544,
+     "weight": 9
+    },
+    {
+     "payoutCents": 0,
+     "weight": 41
+    }
+   ]
+  },
+  {
+   "name": "over_83",
+   "direction": "over",
+   "tier": 83,
+   "multiplier": 5.76,
+   "winChance": 17,
+   "target": 83,
+   "cost": 1.0,
+   "maxWin": 49.0,
+   "outcomes": [
+    {
+     "payoutCents": 576,
+     "weight": 17
+    },
+    {
+     "payoutCents": 0,
+     "weight": 83
+    }
+   ]
+  },
+  {
    "name": "over_84",
    "direction": "over",
    "tier": 84,
-   "multiplier": 6.0,
+   "multiplier": 6.12,
    "winChance": 16,
    "target": 84,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 600,
+     "payoutCents": 612,
      "weight": 4
     },
     {
@@ -1166,14 +3566,14 @@
    "name": "over_85",
    "direction": "over",
    "tier": 85,
-   "multiplier": 6.4,
+   "multiplier": 6.53,
    "winChance": 15,
    "target": 85,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 640,
+     "payoutCents": 653,
      "weight": 3
     },
     {
@@ -1186,14 +3586,14 @@
    "name": "over_86",
    "direction": "over",
    "tier": 86,
-   "multiplier": 6.9,
+   "multiplier": 7.0,
    "winChance": 14,
    "target": 86,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 690,
+     "payoutCents": 700,
      "weight": 7
     },
     {
@@ -1206,14 +3606,14 @@
    "name": "over_87",
    "direction": "over",
    "tier": 87,
-   "multiplier": 7.4,
+   "multiplier": 7.53,
    "winChance": 13,
    "target": 87,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 740,
+     "payoutCents": 753,
      "weight": 13
     },
     {
@@ -1226,14 +3626,14 @@
    "name": "over_88",
    "direction": "over",
    "tier": 88,
-   "multiplier": 8.0,
+   "multiplier": 8.16,
    "winChance": 12,
    "target": 88,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 800,
+     "payoutCents": 816,
      "weight": 3
     },
     {
@@ -1246,14 +3646,14 @@
    "name": "over_89",
    "direction": "over",
    "tier": 89,
-   "multiplier": 8.7,
+   "multiplier": 8.9,
    "winChance": 11,
    "target": 89,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 870,
+     "payoutCents": 890,
      "weight": 11
     },
     {
@@ -1266,14 +3666,14 @@
    "name": "over_90",
    "direction": "over",
    "tier": 90,
-   "multiplier": 9.6,
+   "multiplier": 9.8,
    "winChance": 10,
    "target": 90,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 960,
+     "payoutCents": 980,
      "weight": 1
     },
     {
@@ -1286,14 +3686,14 @@
    "name": "over_91",
    "direction": "over",
    "tier": 91,
-   "multiplier": 10.7,
+   "multiplier": 10.88,
    "winChance": 9,
    "target": 91,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1070,
+     "payoutCents": 1088,
      "weight": 9
     },
     {
@@ -1306,14 +3706,14 @@
    "name": "over_92",
    "direction": "over",
    "tier": 92,
-   "multiplier": 12.0,
+   "multiplier": 12.25,
    "winChance": 8,
    "target": 92,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1200,
+     "payoutCents": 1225,
      "weight": 2
     },
     {
@@ -1326,14 +3726,14 @@
    "name": "over_93",
    "direction": "over",
    "tier": 93,
-   "multiplier": 13.8,
+   "multiplier": 14.0,
    "winChance": 7,
    "target": 93,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1380,
+     "payoutCents": 1400,
      "weight": 7
     },
     {
@@ -1346,14 +3746,14 @@
    "name": "over_94",
    "direction": "over",
    "tier": 94,
-   "multiplier": 16.1,
+   "multiplier": 16.33,
    "winChance": 6,
    "target": 94,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1610,
+     "payoutCents": 1633,
      "weight": 3
     },
     {
@@ -1366,14 +3766,14 @@
    "name": "over_95",
    "direction": "over",
    "tier": 95,
-   "multiplier": 19.3,
+   "multiplier": 19.6,
    "winChance": 5,
    "target": 95,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 1930,
+     "payoutCents": 1960,
      "weight": 1
     },
     {
@@ -1386,14 +3786,14 @@
    "name": "over_96",
    "direction": "over",
    "tier": 96,
-   "multiplier": 24.1,
+   "multiplier": 24.5,
    "winChance": 4,
    "target": 96,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 2410,
+     "payoutCents": 2450,
      "weight": 1
     },
     {
@@ -1406,14 +3806,14 @@
    "name": "over_97",
    "direction": "over",
    "tier": 97,
-   "multiplier": 32.2,
+   "multiplier": 32.66,
    "winChance": 3,
    "target": 97,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 3220,
+     "payoutCents": 3266,
      "weight": 3
     },
     {
@@ -1426,14 +3826,14 @@
    "name": "over_98",
    "direction": "over",
    "tier": 98,
-   "multiplier": 48.3,
+   "multiplier": 49.0,
    "winChance": 2,
    "target": 98,
    "cost": 1.0,
-   "maxWin": 48.3,
+   "maxWin": 49.0,
    "outcomes": [
     {
-     "payoutCents": 4830,
+     "payoutCents": 4900,
      "weight": 1
     },
     {

@@ -26,9 +26,11 @@ import csv
 import json
 import os
 
-# Stake's ACP RTP band (per-mode). Modes are floor-snapped so realised RTP lands
-# inside this; the demo just checks each mode stays within it.
-RTP_FLOOR, RTP_CEIL = 0.90, 0.967
+# Per-mode RTP band. Modes are floor-snapped so realised RTP lands inside this;
+# the demo just checks each mode stays within it. NOTE: the 0.98 ceiling is this
+# game's NON-STAKE build target — it exceeds Stake's 96.70% ACP cap (see
+# game_config.py RTP_CEIL); keep this in sync with that constant.
+RTP_FLOOR, RTP_CEIL = 0.90, 0.98
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIBRARY = os.path.join(HERE, "..", "library")
@@ -127,7 +129,7 @@ def main():
     mults = sorted({m["multiplier"] for m in modes})
     print(f"Wrote {OUT_FILE}")
     print(f"  modes={len(modes)}  targets={len(tiers)}  multipliers {mults[0]}x..{mults[-1]}x")
-    print(f"  RTP range: {min(rtps)}..{max(rtps)} (Stake band 0.90-0.967)")
+    print(f"  RTP range: {min(rtps)}..{max(rtps)} (NON-STAKE band {RTP_FLOOR}-{RTP_CEIL}; exceeds Stake's 0.967 cap)")
 
 
 if __name__ == "__main__":

@@ -20,39 +20,50 @@ NN, in each direction.
     under_NN  wins if roll < NN   ->  winChance = NN%
     over_NN   wins if roll > NN   ->  winChance = (100 - NN)%
 
-The ACP enforces three math rules server-side (all learned from upload rejections):
+*** NON-STAKE BUILD — DOES NOT PASS STAKE ACP (two rule violations) ***
+This variant is tuned to a 98% RTP ceiling with CENT-RESOLUTION (0.01x) payouts.
+Stake's ACP dashboard re-checks both server-side and rejects on either:
+  (a) RTP: it recomputes RTP from the LUT and HARD-REJECTS anything above 96.70%
+      ("Return to Player must be between 90% and 96.70%"); this build is ~98%.
+  (b) Grid: it requires every payout to be a multiple of 0.1x; this build pays
+      whole cents (e.g. 1.01x = 101 cents), which is off that grid.
+So this build CANNOT be published to Stake Engine — non-Stake / internal use only.
+To revert to a Stake-legal build: RTP_CEIL=0.967, RTP_FLOOR=0.957, MIN_MULT=1.1,
+snap to the 0.1x grid, and lut_grid_exempt=False in game_config.py, then rebuild.
 
-  1. 0.1x LUT grid: every non-zero payout is an integer number of cents that is a
-     multiple of 10 (a whole multiple of 0.1x).
-  2. RTP band (per-mode): "Return to Player must be between 90% and 96.70%".
-  3. RTP consistency (cross-mode): "RTP across all modes must be within +/-0.5% of
-     each other", i.e. variance (max-min) <= 1.00%.
-  There is NO volatility/hit-rate rule (compliant modes span 14-69% hit).
+Why cent resolution: on the coarse 0.1x grid the smallest payout above the 1x stake
+is 1.1x, so a mode only has upside when winChance% * 1.1 <= ceiling — which caps
+roll-under at winChance 89% (under_89); 90%+ can only snap to 1.0x (no profit) and
+drop. Cent (0.01x) resolution lets high win chances pay a real small profit
+(winChance 97% -> 1.01x), so BOTH directions reach target 97 (under_97 / over_03).
 
-The true dice multiplier 0.97 / winChance sits at 97% RTP -- just over the 96.70%
-cap -- and rarely lands on the grid. So we FLOOR-snap each multiplier onto the
-0.1x grid to the largest value with RTP <= 96.70%:
+Two rules shape the ladder:
 
-    multiplier  = largest 0.1x-grid value with (winChance% * mult) <= 96.70%
-    payoutCents = multiplier * 100                  (a multiple of 10)
+  1. 0.01x (whole-cent) grid: every non-zero payout is an integer number of cents
+     (multiplier * 100), the SDK's native resolution. lut_grid_exempt = True
+     disables the SDK's 0.1x-grid guard so these off-grid cents pass verification.
+  2. RTP band (per-mode): every mode's realised RTP lands in [97.0%, 98.00%]. The
+     tight window keeps the cross-mode spread <= 1.00% — a self-imposed balance
+     choice here (NOT an ACP requirement in this non-Stake build).
+  There is NO volatility/hit-rate rule (modes span a wide hit range).
 
-The SDK grid check (utils/rgs_verification.py::verify_lookup_format) stays ON as a
-regression guard -- lut_grid_exempt = False.
+We FLOOR-snap each multiplier onto the 0.01x grid to the largest value with
+RTP <= 98.00%:
 
-Compliance filter (72 modes)
-----------------------------
+    multiplier  = largest 0.01x-grid value with (winChance% * mult) <= 98.00%
+    payoutCents = multiplier * 100                  (a whole number of cents)
+
+Compliance filter (192 modes)
+-----------------------------
 A mode is kept only when, after floor-snapping:
 
-    payout > 1.00x                 (drop no-upside modes)
-    RTP    in [95.7%, 96.70%]      (>= 90%, <= 96.70%, AND a 0.90% spread so the
-                                    cross-mode variance stays under the 1.00% cap)
+    payout > 1.00x                 (drop no-upside modes; smallest kept is 1.01x)
+    RTP    in [97.0%, 98.0%]       (realised 97.18-98.00%, 0.82% spread)
 
-The realised max RTP is 96.60%, so the floor is pinned at 95.70% to hold the whole
-set inside a 0.90% spread. This yields 72 modes (36 win chances x over/under,
-winChance 2-48%) spanning 1.1x .. 48.3x. wincap = 48.3x, carried by the 2%-chance
-modes under_02 / over_98. Realised RTP ranges 95.7-96.6%, every mode on-grid and
-inside all three rules. The tight RTP window (rule 3), not volatility, is what
-bounds the mode count.
+Cent resolution snaps every mode just under 98.00%. This yields 192 modes (96 win
+chances x over/under, winChance 2-97%) spanning 1.01x .. 49.0x. wincap = 49.0x,
+carried by the 2%-chance modes under_02 / over_98. Realised RTP ranges 97.18-98.00%.
+Only winChance 98%+ drop (a 1.00x snap = no upside).
 
 Exact integer book counts
 -------------------------
@@ -90,7 +101,7 @@ mode's book counts (win chance) and multiplier, which are UNCHANGED by adding it
 
 NOTE: adding `roll` is an event-structure change, so the books (and their hashes)
 change -- a production rebuild + republish is required for it to go live. Odds are
-untouched (same 72 modes, win chances, multipliers, LUT weights); only the
+untouched (same 192 modes, win chances, multipliers, LUT weights); only the
 diceResult payload grows. Regenerate fairness.json after the prod rebuild.
 
 Build
@@ -98,6 +109,7 @@ Build
 Dev (readable books):
     env/bin/python games/2_4_kong_climb/run.py
 Production: set compression=True and run_conditions["run_format_checks"]=True in
-run.py, then upload library/publish_files/{index.json, books_<mode>.jsonl.zst,
-lookUpTable_<mode>_0.csv} via the ACP dashboard. Bet levels and gameID are set in
-ACP, not here. provider_number is a placeholder (2) pending the ACP-assigned value.
+run.py, then publish library/publish_files/{index.json, books_<mode>.jsonl.zst,
+lookUpTable_<mode>_0.csv} to your (non-Stake) target. NOTE: this 98% build is NOT
+Stake-publishable — the ACP dashboard rejects RTP > 96.70%. provider_number is a
+placeholder (2). Bet levels and gameID are set by the operator, not here.
