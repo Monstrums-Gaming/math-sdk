@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the frontend-demo data bundle for Crypto Pulse (2_9) from the REAL generated
+Build the frontend-demo data bundle for Prediction Market (2_9) from the REAL generated
 math output, so the browser demo replays the published lookup table instead of
 faking outcomes client-side.
 
@@ -11,11 +11,11 @@ Reads the game's published library:
 
 The single `base` mode is one win/lose call (two payouts: the offered multiplier or
 0). Emits ONE file the demo fetches:
-    frontend_demo/crypto_pulse_rgs.json  { game_id, rtp, multiplier, winChance,
+    frontend_demo/prediction_market_rgs.json  { game_id, rtp, multiplier, winChance,
       modes:{ "base": { multiplier, winChance, rtp, outcomes:[{payoutCents,weight}x2] }}}
 
 Re-run after any math rebuild:
-    PYTHONPATH="$(pwd)" env/bin/python games/2_9_crypto_pulse/frontend_demo/build_demo_data.py
+    PYTHONPATH="$(pwd)" env/bin/python games/2_7_prediction_market/frontend_demo/build_demo_data.py
 """
 
 import csv
@@ -29,7 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LIBRARY = os.path.join(HERE, "..", "library")
 PUBLISH = os.path.join(LIBRARY, "publish_files")
 CONFIGS = os.path.join(LIBRARY, "configs")
-OUT_FILE = os.path.join(HERE, "crypto_pulse_rgs.json")
+OUT_FILE = os.path.join(HERE, "prediction_market_rgs.json")
 
 
 def _read_lut(path):
@@ -50,7 +50,7 @@ def _read_lut(path):
 def main():
     index = json.load(open(os.path.join(PUBLISH, "index.json"), encoding="UTF-8"))
     cfg = json.load(open(os.path.join(CONFIGS, "config.json"), encoding="UTF-8"))
-    game_id = cfg.get("gameID", "2_9_crypto_pulse")
+    game_id = cfg.get("gameID", "2_7_prediction_market")
 
     modes = {}
     for entry in index["modes"]:

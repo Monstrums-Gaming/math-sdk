@@ -1,4 +1,4 @@
-Crypto Pulse (2_9) — Stake-style HIGH/LOW binary game
+Prediction Market (2_9) — Stake-style HIGH/LOW binary game
 ====================================================
 
 Mechanic
@@ -72,10 +72,10 @@ Per-round events
 Build
 -----
 Dev (readable books):
-    PYTHONPATH="$(pwd)" ./env/bin/python games/2_9_crypto_pulse/run.py
+    PYTHONPATH="$(pwd)" ./env/bin/python games/2_7_prediction_market/run.py
 Production (compressed + format-checked):
     PYTHONPATH="$(pwd)" COMPRESSION=1 RUN_FORMAT_CHECKS=1 \
-        ./env/bin/python games/2_9_crypto_pulse/run.py
+        ./env/bin/python games/2_7_prediction_market/run.py
 Then upload library/publish_files/{index.json, books_<mode>.jsonl.zst,
 lookUpTable_<mode>_0.csv} via the ACP dashboard. Bet levels (the bet-chip amounts)
 and gameID are set in ACP, not here. provider_number is a placeholder (2) pending

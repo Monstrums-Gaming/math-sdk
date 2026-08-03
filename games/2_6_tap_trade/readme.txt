@@ -24,7 +24,7 @@ hit or miss the tapped cell. Prices are pure RNG theatre — outcomes are pre-ge
 books (the RGS is a certified replay system; odds cannot change at runtime).
 
 From the math's point of view each chip is an independent win/lose bet at a fixed
-multiplier M — exactly the games/2_9_crypto_pulse / games/2_10_crypto_pulse_grid
+multiplier M — exactly the games/2_7_prediction_market / games/2_10_crypto_pulse_grid
 model. This is a direct-probability game (like games/2_4_dice_kong_climb,
 games/2_5_limbo_frankenstein): odds authored in game_config.py, Rust optimiser
 disabled, published odds equal the per-criteria book counts.

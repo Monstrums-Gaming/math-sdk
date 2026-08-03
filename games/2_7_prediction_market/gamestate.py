@@ -1,5 +1,5 @@
 """
-Crypto Pulse (2_9) — one HIGH/LOW call resolves to a win or a loss.
+Prediction Market (2_9) — one HIGH/LOW call resolves to a win or a loss.
 
 Per-round event order:
     priceCall -> finalWin
@@ -25,5 +25,5 @@ class GameState(GameStateOverride):
         self.imprint_wins()
 
     def run_freespin(self) -> None:
-        # Crypto Pulse has no free-spin phase; required only to satisfy the base.
-        raise NotImplementedError("Crypto Pulse has no free-spin round.")
+        # Prediction Market has no free-spin phase; required only to satisfy the base.
+        raise NotImplementedError("Prediction Market has no free-spin round.")

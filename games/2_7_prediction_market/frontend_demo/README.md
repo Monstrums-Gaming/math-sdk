@@ -1,4 +1,4 @@
-# Crypto Pulse (2_9) — frontend demo
+# Prediction Market (2_9) — frontend demo
 
 A self-contained browser mockup of the HIGH/LOW mechanic that **replays the published
 math**. Pick HIGH or LOW; a BTC/USD chart animates ~5–8s and finishes above/below the
@@ -20,10 +20,10 @@ pipeline. The chart is a generated random-walk (not real BTC prices); the countd
 `build_demo_data.py` reads the game's published library
 (`library/publish_files/index.json` + `lookUpTable_base_0.csv` +
 `library/configs/event_config_base.json`), asserts the LUT is uniform-weight with
-exactly two payouts `{0, win}`, and emits **`crypto_pulse_rgs.json`**:
+exactly two payouts `{0, win}`, and emits **`prediction_market_rgs.json`**:
 
 ```json
-{ "game_id":"2_9_crypto_pulse", "rtp":0.9667, "multiplier":1.9, "winChance":0.508772,
+{ "game_id":"2_7_prediction_market", "rtp":0.9667, "multiplier":1.9, "winChance":0.508772,
   "modes": { "base": { "multiplier":1.9, "winChance":0.508772,
     "outcomes":[{"payoutCents":190,"weight":29},{"payoutCents":0,"weight":28}] }}}
 ```
@@ -35,7 +35,7 @@ mode — the chart direction is derived client-side: `endsHigh = (pickedHigh ===
 **Rebuild the bundle after any math rebuild:**
 
 ```sh
-PYTHONPATH="$(pwd)" ./env/bin/python games/2_9_crypto_pulse/frontend_demo/build_demo_data.py
+PYTHONPATH="$(pwd)" ./env/bin/python games/2_7_prediction_market/frontend_demo/build_demo_data.py
 ```
 
 ## LOCAL vs LIVE

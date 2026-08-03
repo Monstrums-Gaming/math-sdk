@@ -10,7 +10,7 @@ cell to place a chip; if the price line reaches that cell the chip pays
 `bet x cellMultiplier`, otherwise it loses. WHERE the cell sits is pure client-side
 presentation — the line is steered to hit or miss the tapped cell.
 
-From the book's point of view this is exactly the `2_9_crypto_pulse` model: each
+From the book's point of view this is exactly the `2_7_prediction_market` model: each
 chip is an independent **win/lose bet at a fixed multiplier M** (the tapped cell is
 outcome-neutral). Like the dice (`2_4`), limbo (`2_5`) and crypto-pulse (`2_9`)
 games this is a **direct-probability** game: no reels, no free spins, Rust

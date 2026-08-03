@@ -9,7 +9,7 @@ description: >-
   multi-outcome (one-Distribution-per-payout) game, or fixing ACP math rejections
   like "Return to Player must be between 90% and 96.70%", "RTP across all modes must
   be within ±0.5% of each other", or off-0.1x-grid payout errors. Reference games:
-  games/2_5_limbo_frankenstein (win/lose), games/2_9_crypto_pulse (win/lose, HIGH/LOW
+  games/2_5_limbo_frankenstein (win/lose), games/2_7_prediction_market (win/lose, HIGH/LOW
   with a small difficulty ladder = one mode per multiplier), games/2_6_plinko +
   games/2_7_chicken_crossing (multi-outcome), games/2_8_chicken_run (win/lose),
   games/2_8_chicken_war (win/lose, 4-tier difficulty ladder with per-difficulty lane
@@ -31,7 +31,7 @@ the rest of the family:
 | Game | Ref folder | Shape | Modes |
 |---|---|---|---|
 | Limbo | `games/2_5_limbo_frankenstein` | win `T×` or lose (2-outcome) | one per target `T` |
-| Crypto Pulse | `games/2_9_crypto_pulse` | win `mult×` or lose (2-outcome), HIGH/LOW | one per multiplier in `_MULTIPLIERS` (`call_<cents>`), a 4-tier difficulty ladder |
+| Crypto Pulse | `games/2_7_prediction_market` | win `mult×` or lose (2-outcome), HIGH/LOW | one per multiplier in `_MULTIPLIERS` (`call_<cents>`), a 4-tier difficulty ladder |
 | Chicken Run | `games/2_8_chicken_run` | win lane-mult or lose (2-outcome) | 72 = 3 diff × 24 lanes |
 | Chicken War | `games/2_8_chicken_war` | win lane-mult or lose (2-outcome), **RTP-exempt** (see below) | 81 = easy 24 + medium 22 + hard 20 + daredevil 15 |
 | Plinko | `games/2_6_plinko` | **multi-outcome** (one payout per bin) | rows × difficulty |
@@ -41,7 +41,7 @@ the rest of the family:
 
 Copy the **closest existing family game** (NOT `games/template/`, which is
 slot-oriented and wrong for this model): a 2-outcome game → copy `2_5_limbo_frankenstein`,
-`2_9_crypto_pulse` (a clean small multi-multiplier / difficulty-ladder example), or
+`2_7_prediction_market` (a clean small multi-multiplier / difficulty-ladder example), or
 `2_8_chicken_run`; a multi-outcome game → copy `2_6_plinko` or `2_7_chicken_crossing`.
 Read the copied `game_config.py` module docstring + `readme.txt` first — nearly
 everything below is already implemented there. Then set `game_id`

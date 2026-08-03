@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Serve the Crypto Pulse frontend demo locally over HTTP.
-# The demo fetch()es crypto_pulse_rgs.json, so it must be served over http:// (file:// won't work).
+# Serve the Prediction Market frontend demo locally over HTTP.
+# The demo fetch()es prediction_market_rgs.json, so it must be served over http:// (file:// won't work).
 # Usage:
 #   ./run.sh            # serve on http://localhost:7919
 #   ./run.sh 3000       # serve on a custom port
@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 PORT="${1:-7919}"
 PAGE="index.html"
 URL="http://localhost:${PORT}/${PAGE}"
-echo "Crypto Pulse demo → ${URL}"
+echo "Prediction Market demo → ${URL}"
 echo "Rebuild the odds bundle after any math change:"
 echo "  PYTHONPATH=<repo> <repo>/env/bin/python ../frontend_demo/build_demo_data.py"
 echo "Press Ctrl+C to stop."

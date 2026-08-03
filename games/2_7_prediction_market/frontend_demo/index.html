@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Crypto Pulse Pro — demo</title>
+<title>Prediction Market Pro — demo</title>
 <style>
   :root{
     --bg:#0a0e14; --panel:#0f141c; --panel2:#131a24; --line:#1e2833;
@@ -122,7 +122,7 @@
 </head>
 <body>
 <header>
-  <div class="brand"><span class="ic">▨</span> CRYPTO PULSE <span class="pro">PRO</span>
+  <div class="brand"><span class="ic">▨</span> PREDICTION MARKET <span class="pro">PRO</span>
     <span class="badge" id="modeBadge">LOCAL</span></div>
   <div class="bal"><span class="cur">$</span><span id="bal">780.00</span></div>
 </header>
@@ -241,14 +241,14 @@
   const round2 = x => Math.round(x*100)/100;
 
   // ---- odds bundle ---------------------------------------------------------
-  fetch("crypto_pulse_rgs.json").then(r=>r.json()).then(b=>{
+  fetch("prediction_market_rgs.json").then(r=>r.json()).then(b=>{
     BUNDLE=b; MODE=b.modes.base; MULT=b.multiplier;
     $("mxH").textContent = $("mxL").textContent = MULT.toFixed(2)+"×";
     refreshProfit();
     if (IS_LIVE){ const bd=$("modeBadge"); bd.textContent="LIVE"; bd.classList.add("live"); }
     // jurisdiction kill-switch: some markets disallow autoplay -> hide the Auto tab, force Manual
     if (b.disabledAutoplay){ $("tabAuto").style.display="none"; setMode("manual"); }
-  }).catch(()=>flashFoot("Failed to load crypto_pulse_rgs.json"));
+  }).catch(()=>flashFoot("Failed to load prediction_market_rgs.json"));
 
   // ---- bet amount (Stake-standard field) -----------------------------------
   function setBet(v, silent){

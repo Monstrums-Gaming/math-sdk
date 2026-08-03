@@ -1,5 +1,5 @@
 """
-Crypto Pulse (2_9) — game configuration.
+Prediction Market (2_9) — game configuration.
 
 A Stake-style **HIGH/LOW** binary game. The player picks HIGH or LOW and a bet; a
 BTC/USD chart animates for a few seconds and finishes above or below the start
@@ -75,7 +75,7 @@ def _simplest_fraction_in(lo: Fraction, hi: Fraction) -> Fraction:
 
 
 class GameConfig(Config):
-    """Crypto Pulse configuration — a single ~50/50 win/lose mode (RTP 96.00–96.70%)."""
+    """Prediction Market configuration — a single ~50/50 win/lose mode (RTP 96.00–96.70%)."""
 
     _instance = None
 
@@ -86,11 +86,11 @@ class GameConfig(Config):
 
     def __init__(self):
         super().__init__()
-        self.game_id = "2_9_crypto_pulse"
+        self.game_id = "2_7_prediction_market"
         self.provider_number = 2  # placeholder — confirm ACP-assigned value before prod upload
         self.provider_name = "monstrum"
-        self.game_name = "Crypto Pulse"
-        self.working_name = "Crypto Pulse Pro"
+        self.game_name = "Prediction Market"
+        self.working_name = "Prediction Market Pro"
         self.win_type = "scatter"
         self.lut_grid_exempt = False
         self.construct_paths()

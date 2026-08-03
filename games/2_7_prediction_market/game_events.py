@@ -1,4 +1,4 @@
-"""Event emitters for Crypto Pulse (2_9).
+"""Event emitters for Prediction Market (2_9).
 
 Per-round book = ONE HIGH/LOW call. Event order: `priceCall` -> `finalWin`.
 

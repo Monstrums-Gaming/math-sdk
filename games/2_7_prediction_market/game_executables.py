@@ -1,4 +1,4 @@
-"""Orchestrating routines for Crypto Pulse (2_9)."""
+"""Orchestrating routines for Prediction Market (2_9)."""
 
 from game_calculations import GameCalculations
 from game_events import price_call_event

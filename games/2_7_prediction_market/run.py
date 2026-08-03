@@ -1,6 +1,6 @@
-"""Driver script for Crypto Pulse (2_9).
+"""Driver script for Prediction Market (2_9).
 
-Crypto Pulse is a Stake-style HIGH/LOW binary game, not a reel game. The player
+Prediction Market is a Stake-style HIGH/LOW binary game, not a reel game. The player
 picks HIGH or LOW; the round either wins (payout = the offered multiplier) or loses
 (0). Because the odds are authored directly in game_config.py, the Rust optimiser is
 not used: the lookup-table weights stay uniform (1 per book) and the win frequency

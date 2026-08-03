@@ -38,7 +38,7 @@ only the identity changed, never the ladder/odds/contract.)
 
 The book is **position-neutral**: WHERE the tapped cell sits is pure client-side
 presentation. Each chip is an independent win/lose bet at a fixed multiplier M —
-exactly the `2_9_crypto_pulse` model. One published bet mode per distinct ladder
+exactly the `2_7_prediction_market` model. One published bet mode per distinct ladder
 multiplier, named `call_<cents>` (dot-free: the ACP publisher parses `<mode>` out of
 `books_<mode>.jsonl.zst`). The RGS draws a pre-frozen book; the frontend then
 **steers the line** to hit or miss the tapped cell to match `isWin`. Prices are RNG
