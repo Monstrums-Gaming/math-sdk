@@ -9,36 +9,43 @@ chicken (`2_7`/`2_8`) games this is a **direct-probability** game: no board, no
 reels, no free spins, Rust optimiser disabled. The odds come straight from the
 distribution quotas.
 
-## Mode: a single base mode (cost 1.0), one ~50/50 win/lose split
+## Modes: a four-tier difficulty ladder (cost 1.0), each one win/lose split
 
 HIGH and LOW are **symmetric** (identical odds), so from the book's point of view
 the direction is cosmetic — the book encodes only win/lose and the offered
 multiplier. The frontend derives which way the chart finishes from the player's
-chosen side + `isWin` (`endsHigh = pickedHigh == isWin`). One published `base` mode
+chosen side + `isWin` (`endsHigh = pickedHigh == isWin`). Each published mode
 therefore covers both buttons; the bet chips ($10/$50/$100/MAX in the UI) are ACP
 **bet levels**, not published modes.
 
-## The multiplier (grid + RTP)
+## The multipliers (grid + RTP)
 
-The reference mockup shows **1.87x**, which is OFF the ACP 0.1x grid (187 cents is
-not a multiple of 10) and cannot be published literally. **1.90x** (190 cents) is
-the nearest grid-legal value, so it is both the LUT payout and the honest displayed
-multiplier. The win probability is the smallest-denominator rational `a/b` whose
-realised RTP `(a/b)*1.90` lands in [96.00%, 96.70%] (`_simplest_fraction_in`, the
-limbo/chicken Stern-Brocot descent):
+Every tier's payout is a multiple of 0.10 so it lands on the ACP 0.1x LUT grid. For
+each multiplier M the win probability is the smallest-denominator rational `a/b`
+whose realised RTP `(a/b)*M` lands in [96.00%, 96.70%] (`_simplest_fraction_in`, the
+limbo/chicken Stern-Brocot descent); `num_sims = b` then yields exactly `a` winning
+books, so the published odds equal the book counts (optimiser off):
 
-    p = 29/57 (~50.88%)  ->  RTP = 29/57 * 1.90 = 96.67%
+    Easy    1.40x  ->  p = 11/16 (~68.75%)  ->  RTP = 96.25%   (std 0.649)
+    Medium  2.00x  ->  p = 12/25 (~48.00%)  ->  RTP = 96.00%   (std 0.999)
+    Hard    5.00x  ->  p =  5/26 (~19.23%)  ->  RTP = 96.15%   (std 1.971)
+    Expert 10.00x  ->  p =  5/52 (~ 9.62%)  ->  RTP = 96.15%   (std 2.948)
 
-`num_sims = 57` yields exactly 29 winning and 28 losing books, so the published odds
-equal the book counts (optimiser off). `wincap = 1.90` (the single payout is the win
-cap). Risk validators are clean: two-outcome payout std ~0.95 (>= the 0.60
-volatility floor) and 1.90x is far under the ~100x all-or-nothing ETL/CVaR ceiling.
+`wincap = 10.00` (the top tier's payout is the win cap), far under the ~100x
+all-or-nothing ETL/CVaR ceiling.
+
+**Why the ladder floors at 1.40x:** the ACP two-outcome payout-std floor is ~0.60,
+and on the 0.1x grid 1.40x (std 0.649) is the LOWEST multiplier that clears it —
+1.30x lands at 0.571 and 1.20x at 0.480, both below. Every tier here clears the
+floor with margin, so do not drop the Easy rung below 1.40x without re-checking the
+volatility validators.
 
 ## ACP rules satisfied
 
-  1. 0.1x LUT grid — payout 1.90x = 190 cents; `lut_grid_exempt = False` keeps the check on.
-  2. Per-mode RTP in [90%, 96.70%] (realised 96.67%).
-  3. Cross-mode spread <= 1.00% — trivially satisfied (single mode).
+  1. 0.1x LUT grid — every payout is a whole multiple of 10 cents; `lut_grid_exempt = False`
+     keeps the check on.
+  2. Per-mode RTP in [90%, 96.70%] (realised 96.00–96.25%).
+  3. Cross-mode spread <= 1.00% — realised spread 0.25%.
 """
 
 import os
@@ -56,10 +63,11 @@ _EPS = 1e-9
 # Published payout multiplier(s) — one per difficulty tier. Each becomes its own
 # dot-free mode "call_<cents>" with an independently-derived win probability that pins
 # realised RTP into [96.00%, 96.70%]. One symmetric multiplier covers HIGH and LOW.
-# Difficulty ladder: Easy 1.40x / Medium 1.90x / Hard 3.00x / Expert 5.00x. Every value
-# is a multiple of 0.10 (0.1x LUT grid); the lowest (1.40x, std 0.649) clears the ACP
-# volatility floor and the highest (5.00x) stays well under the all-or-nothing tail cap.
-_MULTIPLIERS = [1.40, 1.90, 3.00, 5.00]
+# Difficulty ladder: Easy 1.40x / Medium 2.00x / Hard 5.00x / Expert 10.00x. Every value
+# is a multiple of 0.10 (0.1x LUT grid) and the highest (10.00x) stays well under the
+# all-or-nothing tail cap. The 1.40x floor is load-bearing: it is the lowest grid value
+# whose payout std (0.649) clears the ~0.60 ACP volatility floor — see the docstring.
+_MULTIPLIERS = [1.40, 2.00, 5.00, 10.00]
 
 
 def _simplest_fraction_in(lo: Fraction, hi: Fraction) -> Fraction:

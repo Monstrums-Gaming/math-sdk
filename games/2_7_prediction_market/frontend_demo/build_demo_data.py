@@ -76,9 +76,11 @@ def main():
         }
 
     # Top-level scalars mirror a single representative (default) mode for back-compat with
-    # consumers that read the flat fields. Prefer the Medium tier (call_190), then a legacy
-    # single "base" mode, else the first published mode.
-    default_name = next((n for n in ("call_190", "base") if n in modes), next(iter(modes)))
+    # consumers that read the flat fields. Prefer the Medium tier (call_200, formerly
+    # call_190), then a legacy single "base" mode, else the first published mode. Keep this
+    # in step with _MULTIPLIERS: if the Medium payout changes again and no listed key
+    # matches, the default silently becomes the CHEAPEST tier rather than the middle one.
+    default_name = next((n for n in ("call_200", "call_190", "base") if n in modes), next(iter(modes)))
     default = modes[default_name]
     bundle = {
         "game_id": game_id,

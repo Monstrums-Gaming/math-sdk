@@ -1,9 +1,9 @@
 {
  "game_id": "2_7_prediction_market",
- "rtp": 0.9667,
- "multiplier": 1.9,
- "winChance": 0.508772,
- "defaultMode": "call_190",
+ "rtp": 0.96,
+ "multiplier": 2.0,
+ "winChance": 0.48,
+ "defaultMode": "call_200",
  "disabledAutoplay": false,
  "modes": {
   "call_140": {
@@ -22,35 +22,19 @@
     }
    ]
   },
-  "call_190": {
-   "multiplier": 1.9,
-   "winChance": 0.508772,
-   "rtp": 0.966667,
-   "totalWeight": 57,
-   "outcomes": [
-    {
-     "payoutCents": 190,
-     "weight": 29
-    },
-    {
-     "payoutCents": 0,
-     "weight": 28
-    }
-   ]
-  },
-  "call_300": {
-   "multiplier": 3.0,
-   "winChance": 0.32,
+  "call_200": {
+   "multiplier": 2.0,
+   "winChance": 0.48,
    "rtp": 0.96,
    "totalWeight": 25,
    "outcomes": [
     {
-     "payoutCents": 300,
-     "weight": 8
+     "payoutCents": 200,
+     "weight": 12
     },
     {
      "payoutCents": 0,
-     "weight": 17
+     "weight": 13
     }
    ]
   },
@@ -67,6 +51,22 @@
     {
      "payoutCents": 0,
      "weight": 21
+    }
+   ]
+  },
+  "call_1000": {
+   "multiplier": 10.0,
+   "winChance": 0.096154,
+   "rtp": 0.961538,
+   "totalWeight": 52,
+   "outcomes": [
+    {
+     "payoutCents": 1000,
+     "weight": 5
+    },
+    {
+     "payoutCents": 0,
+     "weight": 47
     }
    ]
   }
