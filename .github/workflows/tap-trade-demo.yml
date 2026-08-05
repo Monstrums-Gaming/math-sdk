@@ -4,6 +4,12 @@ name: tap-trade-demo
 # unit tests over the pure modules (bet grid, money formatting, RGS helpers)
 # plus a production Vite build, so a broken demo build can't land unnoticed.
 
+# The job only checks out the repo and builds; it needs no write scopes. Declaring
+# this explicitly stops GITHUB_TOKEN defaulting to the repository-wide permissions
+# (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main, staging]

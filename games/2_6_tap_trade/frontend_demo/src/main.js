@@ -174,9 +174,17 @@ function updateStrip() {
   document.getElementById('riskValue').textContent = live.length
     ? fmtAmt(risk) + ' in play · ' + live.length + (live.length === 1 ? ' chip' : ' chips')
     : 'nothing in play';
-  document.getElementById('tickerPips').innerHTML = results.map(function (r) {
-    return '<span class="pip ' + (r.w ? 'w' : 'l') + '">' + (r.w ? '+' : '−') + fmtAmt(r.amt) + '</span>';
-  }).join('');
+  // Built via DOM nodes rather than innerHTML: r.amt originates in a bet amount
+  // (a stake in LOCAL, an RGS response value in LIVE), so interpolating it into
+  // markup is a live XSS sink. textContent renders the same pips and cannot.
+  var pips = document.getElementById('tickerPips');
+  pips.textContent = '';
+  results.forEach(function (r) {
+    var pip = document.createElement('span');
+    pip.className = 'pip ' + (r.w ? 'w' : 'l');
+    pip.textContent = (r.w ? '+' : '−') + fmtAmt(r.amt);
+    pips.appendChild(pip);
+  });
 }
 
 function recordResult(won, amt) {
