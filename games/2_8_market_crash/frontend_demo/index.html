@@ -366,9 +366,17 @@ function seedIdle(base) {
 }
 
 /* --- the auto-range. Ported from Scene.svelte:143-153 with the SELL-line soft pull. --- */
-function targetRange() {
+// Range scope: during a round (and its settle fade) span the WHOLE tape so the round's own
+// peak stays framed through the rug; once settled, span only the trailing points. A big peak
+// lives on the tape for ~20s, and fitting it the whole time zooms the axis out so far that
+// the next round's 2x SELL line visually hugs the baseline. Scoped to recent action, the
+// chart re-tightens within a few seconds; the old peak just runs off the top of the view.
+const IDLE_RANGE_POINTS = 48;
+function targetRange(now) {
+  const settling = round !== null || (now - settle.at) < SETTLE_MS;
+  const scope = settling ? series : series.slice(-IDLE_RANGE_POINTS);
   let lo = startPrice, hi = startPrice;   // seeded with the baseline so it is always in view
-  for (const v of series) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  for (const v of scope) { if (v < lo) lo = v; if (v > hi) hi = v; }
   // During a round also admit the SELL line, but ONLY once it is within reach. A 100x target
   // is 100x above the head; forcing it into frame from the start would squash the climb into
   // the bottom sliver — the very defect this chart model fixes. Off-range it gets a pinned
@@ -792,7 +800,7 @@ function loop(now) {
   }
 
   // ease the range and the displayed price
-  const [tl, th] = targetRange();
+  const [tl, th] = targetRange(now);
   const ky = 1 - Math.exp(-dt / RANGE_TAU);
   if (!primed) { viewLo = tl; viewHi = th; primed = true; }
   else { viewLo = lerp(viewLo, tl, ky); viewHi = lerp(viewHi, th, ky); }
