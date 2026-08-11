@@ -41,26 +41,26 @@ realised RTP (a/b)*M lands in [96.00%, 96.70%] (game_config.py::_simplest_fracti
 the limbo/chicken Stern-Brocot descent); num_sims = b yields exactly a winning books,
 so published odds equal the book counts.
 
-    Difficulty  Multiplier  Mode name   ~Win chance   RTP
-    Easy        1.40x       call_140     ~69%         ~96.x%
-    Medium      1.90x       call_190     ~51% (29/57)  96.67%
-    Hard        3.00x       call_300     ~32%         ~96.x%
-    Expert      5.00x       call_500     ~19%         ~96.x%
+    Difficulty  Multiplier  Mode name    ~Win chance    RTP
+    Easy        1.40x       call_140     68.75% (11/16) 96.25%
+    Medium      2.00x       call_200     48.00% (12/25) 96.00%
+    Hard        5.00x       call_500     19.23% (5/26)  96.15%
+    Expert      10.00x      call_1000    9.62%  (5/52)  96.15%
 
-(Exact a/b and RTP are derived at build time and printed by run.py.) wincap = 5.00
+(Exact a/b and RTP are derived at build time and printed by run.py.) wincap = 10.00
 (the top payout). The tiers live in _MULTIPLIERS in game_config.py — add/remove entries
 there and everything (modes, num_sims, wincap, configs) regenerates.
 
 ACP math rules (enforced server-side)
 -------------------------------------
-  1. 0.1x LUT grid: every payout (140/190/300/500 cents) is a multiple of 10.
+  1. 0.1x LUT grid: every payout (140/200/500/1000 cents) is a multiple of 10.
      lut_grid_exempt = False keeps the SDK grid check ON as a regression guard.
   2. RTP band (per-mode): each mode's RTP is pinned into [96.00%, 96.70%].
   3. RTP consistency (cross-mode): all modes share the same pin, so the spread is
      <= 1.00% (game_config.py::_validate asserts it).
   4. Risk / star-rating (Max Payout, Tail Probability, ETL, CVaR, Std Dev): the game is
      rated off its tamest mode — the lowest tier 1.40x has payout std ~0.649 (>= the
-     0.60 volatility floor), and the highest tier 5.00x is far under the ~100x
+     0.60 volatility floor), and the highest tier 10.00x is far under the ~100x
      all-or-nothing ceiling that capped limbo.
 
 Per-round events
