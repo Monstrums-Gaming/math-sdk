@@ -27,3 +27,9 @@ __pycache__
 *.toml
 
 **/site/*
+
+**/node_modules/
+**/frontend_demo/dist/
+
+# Standalone git repo (the shipped PixiJS client) — has its own history, not a submodule.
+games/2_0_porkageddon/frontend_demo/
