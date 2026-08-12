@@ -4,11 +4,14 @@ description: >-
   Build, fix, or ACP-compliance-check a Stake-style DICE game (roll over/under) in
   the math-sdk. Use when adding or editing a dice game, choosing dice payouts/RTP,
   or fixing Stake ACP dashboard math rejections on a dice build — e.g. "Return to
-  Player must be between 90% and 96.70%", "RTP across all modes must be within
-  ±0.5% of each other", or off-grid payout errors. Covers the over_NN/under_NN
-  model, floor-snapping payouts onto the 0.1x LUT grid, the per-mode + cross-mode
-  RTP rules, and the build/verify loop. Reference game: games/2_4_dice_kong_climb
-  (Kong Climb). Complements the publish-stake-game skill, which owns the ACP upload steps.
+  Player must be between 90% and 96.70%", "Cross-Mode RTP Consistency ... Limit:
+  <= 0.50%", or "Base Mode STD ... Limit: = 0.60x". Covers the over_NN/under_NN
+  model, floor-snapping payouts onto the LUT grid (whole-cent 0.01x is RGS-legal
+  since 2026-08), the per-mode + strict cross-mode RTP rules, the per-mode STD
+  floor, and the build/verify loop. Reference games: games/2_4_dice_hard (current
+  ACP-compliant cent-grid ladder) and games/2_4_dice_kong_climb (Kong Climb,
+  legacy 0.1x-grid ladder — its 0.90% spread predates the strict 0.50% validator).
+  Complements the publish-stake-game skill, which owns the ACP upload steps.
 ---
 
 # Build an ACP-compliant Stake dice game (math-sdk)
@@ -25,9 +28,11 @@ under_NN   wins if roll < NN    ->  winChance = NN%
 over_NN    wins if roll > NN    ->  winChance = (100 - NN)%
 ```
 
-**Reference implementation:** `games/2_4_dice_kong_climb/` (Kong Climb). It is the only
-dice game and the source of truth — read its `game_config.py` module docstring and
-`readme.txt` first. Almost everything below is already implemented there. (The folder was
+**Reference implementations:** `games/2_4_dice_hard/` is the current ACP-compliant build
+(cent-grid ladder tuned to the 2026-08 validators — read its `game_config.py` module
+docstring first). `games/2_4_dice_kong_climb/` (Kong Climb) is the legacy 0.1×-grid
+ladder; note its 95.7–96.6% band (0.90% spread) predates the strict 0.50% cross-mode
+validator and would be rejected if re-uploaded today. (Kong Climb's folder was
 renamed from `2_4_kong_climb`, but its internal `game_id` is still `"2_4_kong_climb"` — so
 build/verify commands that take a `game_id`, like `python -m utils.rgs_verification -g
 2_4_kong_climb`, use the old string while the path uses the new one.)
@@ -46,63 +51,75 @@ Copy **`games/2_4_dice_kong_climb/`** (NOT `games/template/`, which is slot-orie
   stub (dice has no optimiser); `run.py` drives `create_books → generate_configs →
   execute_all_tests`.
 
-## The three ACP math rules a dice game MUST satisfy
+## The four ACP math rules a dice game MUST satisfy
 
 The Stake ACP dashboard enforces these **server-side** — the SDK does not fully check them,
-so a build can pass locally and still be rejected. All three were learned from real
-rejections; each maps to a dashboard error.
+so a build can pass locally and still be rejected. All were learned from real rejections
+(most recently the 2026-08-12 rejection of `2_4_dice_hard`'s 98%-RTP build); each maps to a
+dashboard error.
 
-1. **0.1x LUT grid.** Every non-zero payout, as integer "cents" (`multiplier × 100`), must
-   be `≥ 10` **and a multiple of 10** (i.e. a whole multiple of `0.1x`). The true dice
-   multiplier `0.97 / winChance` almost never lands on this grid (50% → 1.94x, 3% → 32.33x),
-   so you must snap it. Keep `self.lut_grid_exempt = False` (`game_config.py`) so the SDK's
-   `utils/rgs_verification.py::verify_lookup_format` re-enforces the grid as a guard.
-   *Do not* set `lut_grid_exempt = True` to "pass" locally — the ACP re-runs the check and
-   has no exemption.
+1. **Payout grid: integer cents; whole-cent (0.01×) is RGS-legal since 2026-08.** Every
+   payout is an integer of "cents" (`multiplier × 100`). The old rule — `≥ 10` and a
+   multiple of 10 (the 0.1× grid) — is **gone**: the 2026-08-12 ACP rejection of a
+   192-mode whole-cent ladder contained ZERO grid errors. A cent-grid game must set
+   `self.lut_grid_exempt = True` (the SDK's default guard still enforces the legacy 0.1×
+   grid for slot games). Cent resolution is what makes the strict cross-mode spread (rule
+   3) satisfiable across a large ladder — 0.1×-grid snapping loses up to a whole RTP point
+   per mode.
 
 2. **Per-mode RTP band: 90% ≤ RTP ≤ 96.70%.** Dashboard error:
    *"Return to Player must be between 90% and 96.70%"*. RTP is **derived**, not declared:
    the ACP recomputes it from the published LUT as `EV / cost`
    (`utils/analysis/distribution_functions.py::calculate_rtp`, = `Σ(payout×weight)/Σweight/cost`).
-   The `rtp=` you pass to `BetMode` is only metadata. So:
-   - **97% is impossible.** The hard ceiling is **96.70%**. There is no config knob, bonus
-     mode, or cost trick to exceed it (base cost must be `1.0`; `cost>1` only *lowers* RTP).
-   - With **integer** win chances the realised max is **96.60%** (the grid can't hit 96.70%
-     exactly for any integer `c`). Reaching exactly 96.70% requires a **non-integer** win
-     chance ladder: pick a grid multiplier `M`, set `w = 0.967 / M` (e.g. `M=2.0 →
-     w=48.35%`), which needs a larger `num_sims` (see below).
+   The `rtp=` you pass to `BetMode` is only metadata. **97% is impossible** — no config
+   knob, bonus mode, or cost trick exceeds 96.70% (base cost must be `1.0`; `cost>1` only
+   *lowers* RTP). On the cent grid the floor-snap `floor_cent(0.967/w)` pins every mode
+   within `0.01·w` of the cap (under_02 lands on 96.70% exactly).
 
-3. **Cross-mode RTP consistency: variance ≤ 1.00%.** Dashboard error: *"RTP across all
-   modes must be within ±0.5% of each other"* → `max(RTP) − min(RTP) ≤ 1.00%`. This is the
-   binding constraint on how many modes you can ship: they must all fit inside a 1%-wide RTP
-   window. (The SDK only *warns* at a looser 5% spread — that warning is **not** the ACP
-   limit.)
+3. **Cross-mode RTP consistency: max − min ≤ 0.50% (STRICT).** Dashboard error:
+   *"Cross-Mode RTP Consistency … Value: 0.82% Limit: ≤ 0.50%"*. This is the strict
+   reading of the old "±0.5% of each other" phrasing — a ≤1.00% window **no longer
+   passes** (Kong Climb's approved 0.90% spread predates this and would be rejected
+   today). All modes must fit inside a half-point RTP window; `2_8_market_crash` /
+   `2_9_trading_roulette` use [96.15%, 96.65%] and `2_4_dice_hard` uses [96.25%, 96.70%]
+   (realised spread 0.45%).
 
-**NOT a rule:** volatility / hit-rate. Compliant modes span 14–69% win chance; do not trim
-modes for being "too rare" or "too frequent". Only RTP + grid gate a dice mode.
+4. **Base Mode STD floor: per-mode payout std ≥ 0.60×.** Dashboard error: *"Base Mode STD
+   … Value: 0.17x Limit: = 0.60x"* (the reported value is the worst mode). For a win/lose
+   mode paying `M` at win chance `w`, `std = M·sqrt(w·(1−w))`; with RTP ≈ 0.965 the floor
+   binds at **winChance ≈ 71%** (`std = RTP·sqrt((1−w)/w)`). High-win-chance/low-multiplier
+   rungs are structurally impossible: a 97%-chance 1.01× mode has std 0.17×. Design with
+   margin (`2_4_dice_hard` requires ≥ 0.62×, ending its ladder at winChance 70% / 1.38×).
+   This is the same ~0.60 floor that sets `2_6_tap_trade`'s 1.4× minimum rung.
 
-## The compliant design pattern (already in Kong Climb)
+Hit-rate itself is still not gated (modes span 2–70% win chance) — but the STD floor means
+"too frequent to be volatile" modes are out.
 
-Floor-snap each multiplier to the largest `0.1x`-grid value whose RTP does **not** exceed
-the cap, then keep only payable modes inside a ≤1%-wide RTP window. Constants at the top of
-`game_config.py`:
+## The compliant design pattern (implemented in `2_4_dice_hard`)
+
+Floor-snap each multiplier to the largest **cent-grid** value whose RTP does **not** exceed
+the cap, then keep only payable, volatile-enough modes inside a ≤0.5%-wide RTP window.
+Constants at the top of `game_config.py`:
 
 ```python
-RTP_CEIL  = 0.967   # 96.70% hard cap (grid keeps realised max at 96.60%)
-RTP_FLOOR = 0.957   # pin so max-min stays < 1.00% cross-mode variance
-MIN_MULT  = 1.1     # payout must beat the stake (drop no-upside 1.0x modes)
+RTP_CEIL  = 0.967    # 96.70% ACP hard cap (cent grid pins every mode within 0.01·w of it)
+RTP_FLOOR = 0.9625   # realised spread 0.45% < the STRICT 0.50% cross-mode limit
+MIN_MULT  = 1.01     # payout must beat the stake (the STD floor dominates in practice)
+STD_FLOOR = 0.62     # margin over the 0.60x ACP Base-STD floor (binds at winChance ~71%)
 
-def _grid_mult_below_ceiling(win_chance: int, ceil: float) -> float:
-    """Largest 0.1x-grid multiplier with (win_chance% * mult) <= ceil (FLOOR-snap)."""
-    max_cents = int((ceil / (win_chance / 100.0)) * 100 + 1e-9)
-    return ((max_cents // 10) * 10) / 100.0
+def _cent_mult_below_ceiling(win_chance: int, ceil: float) -> float:
+    """Largest 0.01x-grid (whole-cent) multiplier with (win_chance% * mult) <= ceil."""
+    return int((ceil / (win_chance / 100.0)) * 100 + 1e-9) / 100.0
 ```
 
-Keep a mode when, after snapping: `payout > 1.00x` **and** `RTP_FLOOR ≤ RTP ≤ RTP_CEIL`.
-`wincap` and the advertised `self.rtp` are **derived** from the surviving modes (max
-multiplier / max mode RTP) — never hard-code them. Kong Climb's current result: **72 modes**
-(36 win chances × over/under, winChance 2–48%), RTP **95.7–96.6%** (variance 0.90%), wincap
-**48.3x**, all `cost = 1.0`.
+Keep a mode when, after snapping: `payout > 1.00x`, `RTP_FLOOR ≤ RTP ≤ RTP_CEIL`, **and**
+`M·sqrt(w(1−w)) ≥ STD_FLOOR`. `wincap` and the advertised `self.rtp` are **derived** from
+the surviving modes (max multiplier / max mode RTP) — never hard-code them. `2_4_dice_hard`'s
+result: **130 modes** (65 win chances × over/under, winChance 2–70%; 52/59/62/65 snap below
+the RTP floor → ladder gaps, so slider UIs must snap to the nearest published target), RTP
+**96.25–96.70%** (spread 0.45%), min std **0.632×**, wincap **48.35×**, all `cost = 1.0`.
+(Kong Climb's legacy 0.1×-grid pattern — RTP_FLOOR 0.957, 72 modes, 0.90% spread — predates
+the strict spread validator; don't copy its band.)
 
 **Exact odds via `num_sims`.** For `winChance = c%`, reduce `c/100 = W/N` in lowest terms
 (`g = gcd(c, 100)`, `W = c/g`, `N = 100/g`); set the mode's `num_sims = N` so it produces
@@ -112,9 +129,9 @@ lands exactly. Integer win chances give `N ≤ 100`; a **non-integer** ladder (t
 96.70%) needs a larger `N` (e.g. `w = 967/2000` → `num_sims = 2000`) — `num_sims` is
 uncapped, so this is fine.
 
-To change the RTP target or how many modes ship, adjust `RTP_FLOOR` (raise it → tighter
-variance, fewer modes; the realised max is fixed near 96.60% by the grid). Do **not** raise
-`RTP_CEIL` above `0.967`.
+To change how many modes ship, adjust `RTP_FLOOR` (raise it → tighter spread, fewer modes)
+— but keep `RTP_CEIL − RTP_FLOOR ≤ 0.005` for the strict cross-mode validator. Do **not**
+raise `RTP_CEIL` above `0.967`, and don't lower `STD_FLOOR` below `0.60`.
 
 ## Build & verify
 

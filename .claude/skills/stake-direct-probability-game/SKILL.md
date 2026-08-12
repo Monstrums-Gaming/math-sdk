@@ -90,7 +90,11 @@ Same three as dice — a build can pass locally and still be rejected at upload:
    published LUT as `EV/cost` (`utils/analysis/distribution_functions.py::calculate_rtp`);
    the `rtp=` passed to `BetMode` is only metadata. **97% is impossible — 96.70% is
    the hard ceiling.** A "≈97%" design intent (limbo, chicken) must be capped here.
-3. **Cross-mode RTP consistency: spread ≤ 1.00%.** `max(RTP) − min(RTP) ≤ 0.01`.
+3. **Cross-mode RTP consistency: spread ≤ 0.50% (STRICT — tightened).** The
+   2026-08-12 ACP rejection of `2_4_dice_hard` showed the validator as
+   *"Cross-Mode RTP Consistency … Limit: ≤ 0.50%"* on `max(RTP) − min(RTP)` —
+   the old "±0.5% ⇒ ≤1.00% window" reading no longer passes. Use a ≤0.5%-wide
+   pin: `2_8`/`2_9` use `[96.15%, 96.65%]`, `2_4_dice_hard` `[96.25%, 96.70%]`.
    (The SDK only *warns* at a looser 5% spread — that is **not** the ACP limit.)
 
 There is also a **fourth** gate — risk / star-rating (ETL / CVaR / volatility) —
@@ -101,13 +105,15 @@ that bounds how high a single payout can go and is the wall that capped limbo at
 
 ### RTP pin window `[96.00%, 96.70%]`
 
-Every non-dice family game pins realised RTP into a shared narrow window so the
-cross-mode spread lands well under the 1.00% cap (~0.70% in practice). Constants at
-the top of `game_config.py`:
+Every non-dice family game pins realised RTP into a shared narrow window. CAUTION:
+the historical `[96.00, 96.70]` pin (spread ~0.70%) predates the strict ≤0.50%
+cross-mode validator (see rule 3) — new multi-mode games should use a ≤0.5%-wide
+window like `2_8`/`2_9`'s `[96.15%, 96.65%]`. Constants at the top of
+`game_config.py`:
 
 ```python
 RTP_CEIL  = 0.967   # 96.70% hard ceiling (inclusive)
-RTP_FLOOR = 0.960   # floor → cross-mode spread ≤ 0.70%
+RTP_FLOOR = 0.960   # legacy floor (spread ≤ 0.70% — too wide for the strict 0.50% validator)
 # multi-outcome games also aim at a shared target inside the band:
 RTP_TARGET = 0.9635 # plinko  (0.965 for chicken_crossing — 0.967 can round a hair
                     #          over the ceiling after integer book rounding)
@@ -266,7 +272,7 @@ PYTHONPATH="$(pwd)" COMPRESSION=1 RUN_FORMAT_CHECKS=1 ./env/bin/python games/<ga
 
 `execute_all_tests` must **exit 0 with no warnings**. A `Mode RTP difference exceedes
 allowed difference for approvals` warning means spread > 5% (SDK guard) — the real
-ACP limit is 1.00%, so keep the `[96.00, 96.70]` pin. Independent re-derivation of
+ACP limit is the strict 0.50%, so use a ≤0.5%-wide pin. Independent re-derivation of
 the numbers the ACP will compute (adapt the dice skill's `publish_files` snippet:
 `RTP = Σ(payout×weight)/Σweight/100` per mode, assert grid + `cost==1.0` + spread).
 

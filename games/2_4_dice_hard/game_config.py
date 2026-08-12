@@ -15,38 +15,35 @@ target `NN`, in each direction.
     under_NN  wins if the roll < NN   ->  winChance = NN%
     over_NN   wins if the roll > NN   ->  winChance = (100 - NN)%
 
-!!! NON-STAKE BUILD: this variant targets a 98% RTP ceiling with CENT-RESOLUTION
-(0.01×) payouts. It violates TWO Stake ACP rules: (a) RTP exceeds the 96.70% cap,
-and (b) payouts are off the 0.1× LUT grid. Stake's ACP dashboard re-checks both
-server-side and rejects on either, so this build **cannot be published to Stake
-Engine** — it is for a non-Stake operator/platform or an internal/test build only.
-See the RTP_CEIL / RTP_FLOOR / MIN_MULT constants below (and `self.lut_grid_exempt`)
-for how to revert to a Stake-legal 96.70%, 0.1×-grid build.
+STAKE ACP BUILD with CENT-RESOLUTION (0.01×) payouts. The RGS accepts payouts down
+to 0.01× since 2026-08 — the ACP rejection of the earlier 98%-RTP build (2026-08-12)
+listed *zero* grid errors across 192 whole-cent modes, confirming the cent grid is
+accepted server-side. What that rejection DID enforce (and this ladder is tuned to):
 
-Why cent resolution: on the coarse 0.1× grid the smallest payout above the 1× stake
-is 1.1×, so a mode only has upside when `winChance% × 1.1 ≤ ceiling` — capping
-roll-under at winChance 89% (`under_89`). Cent (0.01×) resolution lets high win
-chances pay a real small profit (winChance 97% → 1.01×), so both directions reach
-target 97 (`under_97` / `over_03`).
+1. **Per-mode RTP band 90.0%–96.70%** — realised RTP is recomputed from the LUT.
+2. **Cross-mode spread ≤ 0.50%** (STRICT max−min, not the older ±0.5% ⇒ ≤1.00%
+   reading — Kong Climb's approved 0.90% spread would fail this validator today).
+3. **Base Mode STD ≥ 0.60×** — per-mode payout standard deviation
+   `M·sqrt(w·(1−w))`. This kills the high-win-chance tail: a 97%-chance 1.01×
+   mode has std 0.17×. With RTP ≈ 0.965 the floor binds at winChance ≈ 71%, so
+   the ladder stops at 70% (`under_70` pays 1.38×, std 0.632).
 
-Two rules shape the ladder:
-
-1. **0.01× (whole-cent) grid** — every non-zero payout is an integer number of
-   "cents" (`multiplier × 100`), the SDK's native resolution. `self.lut_grid_exempt
-   = True` disables the SDK's 0.1×-grid guard so these off-grid cents are accepted.
-2. **RTP band** — every mode's realised RTP lands in [RTP_FLOOR, RTP_CEIL] =
-   [97.0%, 98.00%]. Cent resolution snaps every mode just under 98.00%, so the
-   realised span is 97.18–98.00% (a self-imposed ≤1.00% spread, not an ACP rule).
+Why cent resolution: on the coarse 0.1× grid the ceiling forces multiplier steps
+that leave whole-point RTP gaps (Kong Climb spans 95.7–96.6%); whole-cent snapping
+pins every mode within half a point of the cap, which is what makes the strict
+0.50% spread limit satisfiable across 130 modes.
 
 We **floor-snap** each multiplier onto the 0.01× grid to the largest value with
-RTP ≤ 98.00% (`_cent_mult_below_ceiling`) and keep the mode only if payable and in
-band:
+RTP ≤ 96.70% (`_cent_mult_below_ceiling`) and keep the mode only if payable,
+in band, and volatile enough:
 
-    payout > 1.00×                 (no no-upside modes; smallest is 1.01×)
-    RTP    in [97.0%, 98.00%]       (realised 97.18–98.00%, 0.82% spread)
+    payout > 1.00×                  (no no-upside modes)
+    RTP    in [96.25%, 96.70%]      (spread ≤ 0.45% < the 0.50% ACP limit)
+    std    ≥ 0.62×                  (margin over the 0.60× ACP floor)
 
-Result: **192 modes** (96 win chances × over/under, winChance 2–97%), spanning
-1.01×…49.0× (`wincap = 49.0×`), realised RTP 97.18–98.0%.
+Result: **130 modes** (65 win chances × over/under, winChance 2–70%; win chances
+52/59/62/65 drop below the RTP floor and are skipped), spanning 1.38×…48.35×
+(`wincap = 48.35×`), realised RTP 96.25–96.70%, min std 0.632×.
 
 ### Exact integer book counts
 
@@ -66,34 +63,31 @@ from src.config.config import Config
 from src.config.distributions import Distribution
 from src.config.betmode import BetMode
 
-# !!! NON-STAKE BUILD — DELIBERATELY EXCEEDS STAKE'S ACP RTP CAP *AND* ITS 0.1x GRID !!!
-# This game is tuned to a 98% RTP ceiling with CENT-RESOLUTION (0.01x) payouts. Stake's ACP
-# dashboard (a) recomputes RTP and HARD-REJECTS anything above 96.70% ("Return to Player must
-# be between 90% and 96.70%"), and (b) re-runs the 0.1x LUT-grid check and rejects any payout
-# that is not a multiple of 0.1x. THIS BUILD VIOLATES BOTH, so it CANNOT BE PUBLISHED TO STAKE
-# ENGINE — it is valid only for a non-Stake operator/platform, or an internal/test build.
-# To make it Stake-publishable again: RTP_CEIL=0.967, RTP_FLOOR=0.957, MIN_MULT=1.1, snap to
-# the 0.1x grid in _cent_mult_below_ceiling, and set self.lut_grid_exempt=False.
-RTP_CEIL = 0.98  # 98.0% — hard maximum (inclusive; cent grid hits realised max exactly 98.00%)
-# We still keep the whole mode set inside a ≤1.00% RTP spread — no longer an ACP requirement
-# (this build isn't ACP-bound) but retained so the game stays internally balanced. Cent
-# resolution snaps every mode just under 98.00%, so realised RTP spans 97.18–98.00% (0.82%
-# spread); floor at 97.0% keeps the full contiguous ladder (min realised RTP is 97.18%).
-RTP_FLOOR = 0.97
-MIN_MULT = 1.01  # payout must beat the 1.00x stake; smallest whole-cent win above it
+# Stake ACP constants — all three learned from the real 2026-08-12 rejection of the earlier
+# 98%-RTP build (which drew RTP-band + spread + STD errors but ZERO grid errors, proving the
+# RGS now accepts whole-cent 0.01x payouts).
+RTP_CEIL = 0.967  # ACP hard cap ("Return to Player must be between 90% and 96.70%")
+# The ACP cross-mode validator is the STRICT reading: max(RTP) - min(RTP) <= 0.50%
+# ("Cross-Mode RTP Consistency ... Limit: <= 0.50%"). Floor at 96.25% keeps the realised
+# spread at 0.45%.
+RTP_FLOOR = 0.9625
+MIN_MULT = 1.01  # payout must beat the 1.00x stake (the STD floor below dominates in practice)
+# ACP "Base Mode STD" floor is 0.60x per mode (std = M*sqrt(w*(1-w))); require 0.62x for
+# margin. Binds at winChance ~71%, ending the ladder at under_70/over_30 (1.38x, std 0.632).
+STD_FLOOR = 0.62
 _EPS = 1e-9  # absorb float noise at the band edges (e.g. 0.75*1.2 == 0.8999999…)
 
 
 def _cent_mult_below_ceiling(win_chance: int, ceil: float) -> float:
     """Largest 0.01x-grid (whole-cent) multiplier whose realised RTP (win_chance% * mult)
     does NOT exceed `ceil`. Floor-snapping (not nearest) guarantees RTP <= ceil for every
-    mode. Cent resolution (not the coarse 0.1x ACP grid) lets high win chances still pay a
-    real profit above the stake — e.g. winChance 97% snaps to 1.01x instead of dropping."""
+    mode. Cent resolution (accepted by the RGS since 2026-08) pins every mode within half
+    a point of the cap, which is what satisfies the strict 0.50% cross-mode spread."""
     return int((ceil / (win_chance / 100.0)) * 100 + _EPS) / 100.0  # floor onto the 0.01x grid
 
 
 class GameConfig(Config):
-    """Dice Hard configuration — cent-snapped dice modes (RTP 97.18–98.0%; NON-STAKE build off the 0.1× grid, see docstring), one forced win/lose each."""
+    """Dice Hard configuration — cent-snapped dice modes (RTP 96.25–96.70%, std ≥ 0.62×, ACP-compliant; see docstring), one forced win/lose each."""
 
     _instance = None
 
@@ -111,8 +105,9 @@ class GameConfig(Config):
         self.working_name = "Dice Hard"
         self.win_type = "scatter"
         # Payouts are floor-snapped onto the 0.01× (whole-cent) grid so realised RTP
-        # never exceeds 98.00% (NON-STAKE build). These are OFF the 0.1× ACP grid, so the
-        # SDK grid check must be disabled (execute_all_tests would otherwise reject them).
+        # never exceeds the 96.70% ACP cap. Whole-cent payouts sit off the legacy 0.1×
+        # slot grid, so the SDK's increments-of-10 guard is skipped — the RGS accepts
+        # 0.01× payouts since 2026-08 (the ACP raised no grid errors on this ladder).
         self.lut_grid_exempt = True
         self.construct_paths()
 
@@ -150,21 +145,24 @@ class GameConfig(Config):
 
     # ------------------------------------------------------------------ ladder
     def _build_tiers(self) -> list:
-        """Return the ordered list of dice modes (`over_NN`/`under_NN`). NON-STAKE:
-        cent-resolution payouts off the 0.1× ACP grid (see module docstring).
+        """Return the ordered list of dice modes (`over_NN`/`under_NN`) — ACP-compliant
+        cent-resolution ladder (see module docstring).
 
         One row per integer slider target `NN` in each direction:
 
-            under_NN -> winChance = NN%          (NN = 02..97)
-            over_NN  -> winChance = (100 - NN)%  (NN = 03..98)
+            under_NN -> winChance = NN%          (NN = 02..70, minus RTP-floor gaps)
+            over_NN  -> winChance = (100 - NN)%  (NN = 30..98, minus RTP-floor gaps)
 
         Each multiplier is FLOOR-snapped onto the 0.01× (whole-cent) grid to the largest
-        value with RTP <= 98.00% (NON-STAKE ceiling; Stake caps at 96.70%). A mode is kept
-        only if it stays payable and in band (payout > 1.00×, RTP in [97.0%, 98.00%]).
-        Volatility is unrestricted — cent resolution keeps every target from winChance 2%
-        up to 97% (under_97 pays 1.01×); only winChance 98%+ drop (1.00× snap = no upside).
-        Each kept row carries the snapped multiplier as integer cents, its realised RTP,
-        and the exact `(W winners / N sims)` split for that win chance.
+        value with RTP <= 96.70% (the ACP cap). A mode is kept only if it is payable, in
+        band, and volatile enough for the ACP Base-STD floor:
+
+            payout > 1.00×, RTP in [96.25%, 96.70%], std = M·sqrt(w(1−w)) >= 0.62×
+
+        The STD floor ends the ladder at winChance 70% (1.38×, std 0.632); win chances
+        52/59/62/65 snap below the RTP floor and are skipped (slider UIs must snap to the
+        nearest published target). Each kept row carries the snapped multiplier as integer
+        cents, its realised RTP, and the exact `(W winners / N sims)` split.
         """
         rows = []
         for direction in ("under", "over"):
@@ -176,11 +174,15 @@ class GameConfig(Config):
                 # Floor-snap onto the 0.01× (whole-cent) grid so realised RTP never exceeds the cap.
                 multiplier = _cent_mult_below_ceiling(win_chance, RTP_CEIL)
                 realised_rtp = (win_chance / 100.0) * multiplier
+                w = win_chance / 100.0
+                std = multiplier * (w * (1.0 - w)) ** 0.5
 
-                # Keep only payable modes whose RTP lands inside Stake's absolute band.
+                # Keep only payable modes inside the band that clear the ACP STD floor.
                 if multiplier < MIN_MULT:
                     continue
                 if not (RTP_FLOOR - _EPS <= realised_rtp <= RTP_CEIL + _EPS):
+                    continue
+                if std < STD_FLOOR - _EPS:
                     continue
 
                 payout_cents = round(multiplier * 100)  # on-grid: a multiple of 10
@@ -195,6 +197,7 @@ class GameConfig(Config):
                         "multiplier": multiplier,
                         "payout_cents": payout_cents,
                         "rtp": realised_rtp,
+                        "std": std,
                         "W": W,
                         "N": N,
                     }
@@ -287,11 +290,14 @@ class GameConfig(Config):
             assert isinstance(cents, int) and cents > 100, f"payout {m} must be an integer > 100 cents"
             assert round(m * 100) == cents, f"multiplier {m} disagrees with cents {cents}"
 
-            # Guaranteed at build time: whole-cent (0.01×) payout, and realised RTP inside
-            # the [97.0%, 98.00%] band. NON-STAKE — payouts are OFF the 0.1× ACP grid (that
-            # server-side check would reject them; lut_grid_exempt=True skips the SDK guard).
+            # Guaranteed at build time: whole-cent (0.01×) payout, realised RTP inside the
+            # ACP band, and per-mode STD above the ACP Base-Volatility floor (with margin).
             assert RTP_FLOOR - _EPS <= (W / N) * m <= RTP_CEIL + _EPS, (
                 f"mode {row['direction']}_{row['target']:02d} RTP {(W / N) * m:.4f} outside [{RTP_FLOOR}, {RTP_CEIL}]"
+            )
+            wf = wc / 100.0
+            assert m * (wf * (1.0 - wf)) ** 0.5 >= STD_FLOOR - _EPS, (
+                f"mode {row['direction']}_{row['target']:02d} std below the {STD_FLOOR} floor"
             )
 
             # Deterministic, float-safe split (no get_sim_splits leftover).
@@ -300,3 +306,9 @@ class GameConfig(Config):
             assert int(N * win_quota) == W, f"win split off for m={m}"
             assert int(N * lose_quota) == N - W, f"lose split off for m={m}"
             assert int(N * win_quota) + int(N * lose_quota) == N, f"split does not sum to N for m={m}"
+
+        # ACP Cross-Mode RTP Consistency: STRICT max−min spread <= 0.50%.
+        rtps = [t["rtp"] for t in self.tiers]
+        assert max(rtps) - min(rtps) <= 0.005 + _EPS, (
+            f"cross-mode RTP spread {(max(rtps) - min(rtps)) * 100:.2f}% exceeds the 0.50% ACP limit"
+        )

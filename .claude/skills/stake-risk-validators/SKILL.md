@@ -18,7 +18,9 @@ description: >-
 
 The ACP gates a game on **two** independent classes of check. The
 `stake-direct-probability-game` and `stake-dice-game` skills cover the **first**:
-the 0.1× LUT grid, per-mode RTP `[90%, 96.70%]`, and cross-mode spread ≤ 1.00%. This
+the LUT payout grid (whole-cent 0.01× is RGS-legal since 2026-08; the SDK's default
+guard still enforces the legacy 0.1× slot grid), per-mode RTP `[90%, 96.70%]`, and
+cross-mode spread ≤ 0.50% (strict, tightened 2026-08). This
 skill covers the **second** — the **risk / star-rating** validators, which read the
 **raw published payouts absolutely** and bound the *shape* of the win distribution.
 A build can pass every RTP/grid rule and still be rejected (or rated fewer stars)
