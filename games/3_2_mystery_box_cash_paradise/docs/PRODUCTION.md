@@ -90,7 +90,7 @@ Compression is enabled, skipping formatting.
 ```
 
 The per-thread RTP printouts (~0.83–0.86) are per-batch sample noise; the true
-authored RTP is **84.90%**. Any `AssertionError` means the build failed — do not
+authored RTP is **84.96%**. Any `AssertionError` means the build failed — do not
 publish.
 
 ## 4. Verify the build
@@ -114,7 +114,7 @@ shasum -a 256 publish_files/lookUpTable_base_0.csv   # == config tables[0].sha25
 
 # e) Odds spot-check — payout(cents) → count must match the authored table
 awk -F, '{print $3}' publish_files/lookUpTable_base_0.csv | sort -n | uniq -c
-#   30200 0 | 28000 10 | 25000 100 | 5000 200 | 5000 500 | 5000 1000 | 1000 5000 | 600 10000 | 200 100000
+#   30200 1 | 28000 10 | 25000 100 | 5000 200 | 5000 500 | 5000 1000 | 1000 5000 | 600 10000 | 200 100000
 ```
 
 Optional independent re-run of the format checks:
@@ -152,8 +152,8 @@ S3 route needs setup first:
    ```
 
 Heads-up: `upload_to_aws` runs an **interactive** RTP check that compares the LUT
-RTP (~0.849) against `config.json` `rtp` (0.85) and prompts `Upload anyway? (y/n)`.
-This is expected — the true RTP is 84.90% while `self.rtp` is set to 0.85. It also
+RTP (~0.8496) against `config.json` `rtp` (0.85) and prompts `Upload anyway? (y/n)`.
+This is expected — the true RTP is 84.96% while `self.rtp` is set to 0.85. It also
 re-verifies file SHA-256/length against `config.json` before pushing.
 
 ## 7. What "production" changes vs a smoke test

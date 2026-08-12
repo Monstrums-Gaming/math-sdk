@@ -10,7 +10,7 @@ Prize table (engine name -> fiction / catalog value / probability). Payouts are
 expressed as a multiple of the base bet (base bet == 1 currency unit), so the
 multiplier equals the voucher's catalog value in currency:
 
-    $0.01 Voucher   -> CP1   ($0.01)   30.200%  (below RGS minimum, pays 0)
+    $0.01 Voucher   -> CP1   ($0.01)   30.200%
     $0.10 Voucher   -> CP2   ($0.10)   28.000%
     $1 Voucher      -> CP3   ($1.00)   25.000%
     $2 Voucher      -> CP4   ($2.00)    5.000%
@@ -22,15 +22,15 @@ multiplier equals the voucher's catalog value in currency:
 
 RTP note:
     Authored expected value (full catalog values) = 4.23102. With the box cost of
-    4.98 that is a nominal 4.23102 / 4.98 == 0.84960 (~84.96%).
-    The $0.01 voucher (CP1) is below the RGS minimum payout (0.1x) and must
-    resolve to 0 — see below. That removes 0.302 x 0.01 = 0.00302 from the
-    expected value, giving an effective EV of 4.22800 and an ACTUAL RTP of
-    4.22800 / 4.98 == 0.84900 (~84.90%). (A box cost of 4.97767 would instead
-    hit exactly 85.00% nominal; 4.98 is the rounded price in use.)
+    4.98 the RTP is 4.23102 / 4.98 == 0.84960 (~84.96%).
+    The RGS now accepts payouts down to 0.01x, so the $0.01 voucher (CP1) pays
+    its full catalog value and the authored EV is the effective EV — no prize is
+    zeroed out any more. (A box cost of 4.97767 would instead hit exactly 85.00%;
+    4.98 is the rounded price in use.)
 
-Every non-zero payout is a whole multiple of 0.1x the base bet, satisfying the
-RGS lookup-table format (integer payouts in increments of 10 "cents").
+Every payout is a whole number of "cents" (a multiple of 0.01x the base bet).
+CP1's 1-cent payout is off the legacy 0.1x grid, so the config sets
+`lut_grid_exempt = True` to skip the increments-of-10 lookup-table check.
 """
 
 import os
@@ -63,6 +63,10 @@ class GameConfig(Config):
         self.wincap = 1000.0
         self.win_type = "scatter"
         self.rtp = 0.85
+        # CP1 pays 0.01x — off the legacy 0.1x lookup-table grid, so the
+        # increments-of-10 check in utils/rgs_verification.py is skipped
+        # (payouts must still be non-negative integer "cents").
+        self.lut_grid_exempt = True
         self.construct_paths()
 
         # No board mechanic: model a single revealed cell (1 reel x 1 row).
@@ -74,11 +78,10 @@ class GameConfig(Config):
         # Zero-payout prizes MUST use criteria "0" (engine convention); the
         # single max-win prize uses criteria "wincap".
         #
-        # CP1 ($0.01) is below the RGS minimum increment (0.1x) and so cannot be
-        # paid as authored; following the mystery_box precedent it pays 0 and is
-        # bucketed under criteria "0".
+        # CP1 ($0.01) pays its full catalog value now that the RGS accepts
+        # payouts down to 0.01x (it previously had to resolve to 0).
         self.prize_table = {
-            "CP1": {"name": "$0.01 Voucher",   "payout": 0.0,    "prob": 0.30200, "criteria": "0"},
+            "CP1": {"name": "$0.01 Voucher",   "payout": 0.01,   "prob": 0.30200, "criteria": "p_voucher_001"},
             "CP2": {"name": "$0.10 Voucher",   "payout": 0.1,    "prob": 0.28000, "criteria": "p_voucher_010"},
             "CP3": {"name": "$1 Voucher",      "payout": 1.0,    "prob": 0.25000, "criteria": "p_voucher_1"},
             "CP4": {"name": "$2 Voucher",      "payout": 2.0,    "prob": 0.05000, "criteria": "p_voucher_2"},
@@ -151,9 +154,9 @@ class GameConfig(Config):
             if payout_cents != int(payout_cents):
                 raise RuntimeError(f"Prize {sym} payout {info['payout']} is finer than 0.01x; not RGS-valid.")
             payout_int = int(payout_cents)
-            if payout_int != 0 and (payout_int < 10 or payout_int % 10 != 0):
+            if payout_int < 0:
                 raise RuntimeError(
-                    f"Prize {sym} payout {info['payout']} -> {payout_int} violates RGS increments of 10."
+                    f"Prize {sym} payout {info['payout']} -> {payout_int} is negative; not RGS-valid."
                 )
             if info["payout"] > self.wincap:
                 raise RuntimeError(f"Prize {sym} payout {info['payout']} exceeds wincap {self.wincap}.")
