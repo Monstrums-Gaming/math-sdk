@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Market Crash — frontend demo (2_8)</title>
+<style>
+  /* Palette mirrors apps/2-7-prediction-market src/game/themes.ts "rose" (its default), so
+     this demo reads as the same product family. */
+  :root {
+    --bg: #170a10; --panel: #0d0509; --border: #3a1c2a;
+    --txt: #f3e9ee; --dim: #8d7a84;
+    --accent: #e8dd4e; --accentText: #4a4310;
+    --gain: #7fe0a8; --loss: #ff8ba0; --win: #ffe94a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt);
+    font: 14px/1.4 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; flex: none; }
+  .brand { font-weight: 800; letter-spacing: .14em; font-size: 13px; }
+  .brand b { color: var(--accent); }
+  .badge { font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 3px 7px;
+    border-radius: 999px; border: 1px solid var(--border); color: var(--dim); }
+  .badge.live { color: var(--gain); border-color: #2f6b4c; }
+  .spacer { flex: 1; }
+  .meta { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  main { flex: 1; position: relative; min-height: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* The live multiplier — the number that decides the money, so it gets the top billing the
+     price does not. (2-7 has no equivalent; this sits in the band its reveal dial used.) */
+  .readout { position: absolute; top: 16px; left: 20px; pointer-events: none; }
+  .readout .m { font-size: clamp(30px, 5.4vw, 56px); font-weight: 800; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; line-height: 1; color: var(--txt); }
+  .readout .s { margin-top: 5px; font-size: 11px; letter-spacing: .16em; font-weight: 700;
+    color: var(--dim); min-height: 14px; }
+  .readout.sold .m { color: var(--gain); }
+  .readout.rugged .m { color: var(--loss); }
+  .readout.idle .m { color: var(--dim); opacity: .5; }
+
+  .strip { position: absolute; right: 14px; top: 18px; display: flex; gap: 5px; }
+  .pip { font: 700 10px/1 ui-monospace, monospace; padding: 4px 6px; border-radius: 5px;
+    border: 1px solid var(--border); background: rgba(13,5,9,.7); color: var(--dim);
+    font-variant-numeric: tabular-nums; }
+  .pip.win { color: var(--gain); border-color: #2f6b4c; }
+  .pip.lose { color: var(--loss); border-color: #6b2f3c; }
+
+  footer { flex: none; margin: 0 12px 12px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--panel); padding: 10px 12px; display: flex; gap: 10px; align-items: stretch;
+    flex-wrap: wrap; }
+  .slab { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+  .lbl { font-size: 9px; letter-spacing: .14em; color: var(--dim); font-weight: 700;
+    text-transform: uppercase; margin-bottom: 5px; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  input[type=number] { background: rgba(0,0,0,.35); border: 1px solid var(--border);
+    color: var(--txt); border-radius: 7px; padding: 7px 8px; width: 92px;
+    font: 700 15px/1 ui-monospace, monospace; font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  #target { color: var(--accent); }
+  button { background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--txt);
+    border-radius: 7px; padding: 7px 9px; font: 700 12px/1 inherit; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: #5d2f42; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .chip { padding: 5px 8px; font-size: 11px; }
+  .chip.on { border-color: var(--accent); color: var(--accent); }
+  .arrows { display: flex; flex-direction: column; gap: 3px; }
+  .arrows button { padding: 2px 7px; font-size: 10px; line-height: 1.1; }
+  .stat { font-variant-numeric: tabular-nums; font-weight: 700; }
+  #bet { flex: 1; min-width: 190px; background: var(--accent); color: var(--accentText);
+    border: none; border-radius: 10px; font: 800 15px/1 inherit; letter-spacing: .08em; }
+  #bet:disabled { background: #2a2418; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">MARKET <b>CRASH</b></div>
+  <span class="badge" id="modeBadge">LOCAL</span>
+  <div class="spacer"></div>
+  <div class="meta" id="meta">—</div>
+</header>
+
+<main>
+  <canvas id="cv"></canvas>
+  <div class="readout idle" id="readout">
+    <div class="m" id="rm">1.00×</div>
+    <div class="s" id="rs">SET YOUR SELL · BEAT THE RUG</div>
+  </div>
+  <div class="strip" id="strip"></div>
+</main>
+
+<footer>
+  <div class="slab">
+    <div class="lbl">Sell at · <span id="wc">—</span></div>
+    <div class="row">
+      <input id="target" type="number" step="0.1" min="1.4" max="100" value="2" />
+      <div class="arrows">
+        <button id="tUp" title="next rung">▲</button>
+        <button id="tDn" title="previous rung">▼</button>
+      </div>
+      <div id="chips" class="row"></div>
+    </div>
+  </div>
+
+  <div class="slab">
+    <div class="lbl">Bet amount</div>
+    <div class="row">
+      <input id="amount" type="number" step="0.1" min="0.1" value="1" />
+      <button class="chip" id="half">½</button>
+      <button class="chip" id="dbl">2×</button>
+    </div>
+  </div>
+
+  <div class="slab">
+    <div class="lbl">Profit on win</div>
+    <div class="row"><span class="stat" id="profit">—</span></div>
+  </div>
+
+  <div class="slab">
+    <div class="lbl">Balance</div>
+    <div class="row"><span class="stat" id="bal">—</span></div>
+  </div>
+
+  <button id="bet">SELL AT 2.00×</button>
+</footer>
+
+<script>
+/* ---------------------------------------------------------------------------
+   Market Crash — standalone frontend demo for math-sdk games/2_8_market_crash.
+
+   TWO MODES
+     LOCAL (default) — replays the PUBLISHED odds from market_crash_rgs.json: picks an
+       outcome from the lookup-table weights, then picks a REAL certified crashPoint from
+       that mode's sampled book values. Neither the outcome nor the rug is invented here.
+     LIVE  — ?rgs_url=…&sessionID=… places real RGS bets at the crash_<cents> mode.
+
+   THE CHART is ported from apps/2-7-prediction-market/src/components/Scene.svelte, because
+   this is the same product family and that chart's whole point is that it looks alive.
+   The two pieces of it that matter:
+
+     1. AUTO-RANGED Y AXIS (Scene.svelte:143-153). lo/hi come from the visible series each
+        frame, seeded with the baseline price, and the half-range is inflated x1.4. Data
+        therefore occupies ~71% of the band height, centred — the line ALWAYS fills the plot
+        and never touches an edge. An earlier revision of this demo anchored the axis at
+        1.00x with a fixed top, which pinned the idle wander to the bottom 3% of the plot
+        and looked dead. Do not re-anchor it.
+     2. SUB-CELL SCROLL (Scene.svelte:541-568). `glide` is a FRACTIONAL point index
+        subtracted from every x, so the tape slides continuously and consumes a point when
+        it crosses 1. The head barely moves; the grid and the tape do.
+
+   The chart is a market index PRICE. The multiplier is the price relative to the bet-time
+   price, which is drawn as the dashed baseline (= 1.00x) exactly like 2-7's. So:
+
+     idle -> the index wanders (mean-reverting walk), auto-ranged, filling the plot
+     bet  -> baseline pinned; the climb is startPrice * crashPoint^u
+     sell -> on a win, the crossing of startPrice * target fires a green punctuation
+     rug  -> at u=1 the price is EXACTLY startPrice * crashPoint (the certified value),
+             then the market collapses back to the baseline and the walk resumes
+--------------------------------------------------------------------------- */
+'use strict';
+
+const qs = new URLSearchParams(location.search);
+const RGS_URL = qs.get('rgs_url');
+const SESSION_ID = qs.get('sessionID');
+const IS_LIVE = !!(RGS_URL && SESSION_ID);
+const CURRENCY = qs.get('currency') || 'USD';
+const MONEY = 1_000_000;         // the RGS integer money scale
+const CAP_DISPLAY_X = 10000;     // the math's absolute crashPoint cap, in multiplier units
+
+const $ = (id) => document.getElementById(id);
+const fmt$ = (v) => '$' + v.toFixed(2);
+const fmt2 = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtX = (m) => (m < 10 ? m.toFixed(2) : m < 1000 ? m.toFixed(1) : String(Math.round(m))) + '×';
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ------------------------------------------------- canvas colours (rose, from themes.ts) */
+const COLOR = {
+  bg: '#170a10',
+  gridLine: 'rgba(214,116,152,0.13)',
+  gridLineMajor: 'rgba(214,116,152,0.22)',
+  axisText: 'rgba(233,190,206,0.75)',
+  line: '#f6b9cf',
+  lineGlow: 'rgba(246,148,183,0.9)',
+  dot: '#ffffff',
+  priceTagBg: '#c2447e',
+  priceTagText: '#ffffff',
+  nowLine: 'rgba(246,185,207,0.35)',
+  sellLine: 'rgba(232,221,78,0.9)',
+  ring: '#fff6c0',
+  winFloat: '#f5ee7a',
+  lossFloat: '#ff6b81',
+};
+
+/* --------------------------------------------------------------- app state */
+let BUNDLE = null;
+let RUNGS = [];        // [{key, target, winChance, rtp, outcomes, crashPoints, total}] ascending
+let rung = null;
+let balance = 1000;
+let busy = false;
+let history = [];      // [{isWin, cp, target}] most recent last
+
+/* --------------------------------------------------------------- the ladder */
+// The mode key carries the target in integer cents so it stays dot-free (the ACP publisher
+// parses <mode> out of books_<mode>.jsonl.zst). Parse it back out rather than trusting a
+// separate field, and cross-check against the bundle at load time.
+const targetFromKey = (key) => {
+  const m = /^crash_(\d+)$/.exec(String(key));
+  return m ? Number(m[1]) / 100 : null;
+};
+
+// The ladder is SPARSE, so an arbitrary typed value has no published mode: every write
+// snaps. Ties resolve DOWN — a typed 2.25 on a {2.00, 2.50} ladder must not silently double
+// the player's risk.
+const snapRung = (v) => {
+  if (!RUNGS.length) return null;
+  if (!Number.isFinite(v)) return RUNGS[0];
+  let best = RUNGS[0];
+  for (const r of RUNGS) {
+    if (Math.abs(r.target - v) < Math.abs(best.target - v) - 1e-9) best = r;
+  }
+  return best;
+};
+const stepRung = (dir) => {
+  const i = RUNGS.indexOf(rung);
+  return RUNGS[Math.max(0, Math.min(RUNGS.length - 1, i + dir))];
+};
+
+function setRung(next) {
+  if (!next) return;
+  rung = next;
+  $('target').value = rung.target.toFixed(2);
+  $('wc').textContent = (rung.winChance * 100).toFixed(2) + '%';
+  $('bet').textContent = 'SELL AT ' + fmtX(rung.target);
+  for (const el of $('chips').children) el.classList.toggle('on', el.dataset.key === rung.key);
+  refresh();
+}
+
+/* -------------------------------------------------------------- outcome draw */
+// LOCAL: weighted pick over the published LUT outcomes — the exact certified odds.
+function localOutcome() {
+  const total = rung.outcomes.reduce((s, o) => s + o.weight, 0);
+  let r = Math.random() * total;
+  for (const o of rung.outcomes) { r -= o.weight; if (r <= 0) return o; }
+  return rung.outcomes[rung.outcomes.length - 1];
+}
+// …then a REAL crashPoint from that mode's sampled book values, so the chart animates a rug
+// the RGS could genuinely have served.
+function localCrashPoint(isWin) {
+  const pool = isWin ? rung.crashPoints.win : rung.crashPoints.lose;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function livePlay() {
+  const post = (path, body) => fetch(RGS_URL.replace(/\/$/, '') + path, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+
+  const play = await post('/wallet/play', {
+    sessionID: SESSION_ID, currency: CURRENCY,
+    amount: Math.round(Number($('amount').value) * MONEY), mode: rung.key,
+  });
+  if (play.error || !play.round) throw new Error(play.message || play.error || 'play failed');
+
+  // The nested state[] events use the book's integer-hundredths scale; round.payoutMultiplier
+  // is a PLAIN multiplier. Read the crash point from the event, the money from the round.
+  const ev = (play.round.state || []).find((e) => e.type === 'crashRound') || {};
+  const isWin = (play.round.payoutMultiplier || 0) > 0;
+  // A win must be settled; a loss is already settled inside the play response.
+  if (isWin) await post('/wallet/end-round', { sessionID: SESSION_ID });
+  if (play.balance) balance = play.balance.amount / MONEY;
+  return {
+    isWin,
+    crashPoint: ev.crashPoint ?? Math.round(rung.target * 100),
+    payout: isWin ? Number($('amount').value) * rung.target : 0,
+  };
+}
+
+/* ============================================== the chart (ported from 2-7 Scene.svelte) */
+const cv = $('cv');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0;
+
+// --- tape geometry, Scene.svelte:33-39 / :291-293
+const WINDOW = 120;        // points visible across the chart
+const IDLE_MS = 170;       // ms between idle ticks (higher = calmer scroll)
+const FOCUS_PEAK = 1.4;    // peak reveal speed vs idle
+const FOCUS_MS = IDLE_MS / FOCUS_PEAK;
+const AVG_MS = (IDLE_MS + FOCUS_MS) / 2;
+const FAST_MS = 26;        // turbo, fixed ms/point
+const REST_HEAD_X = 0.9;   // settleGeometry.restHeadX
+const LABEL_RESERVE = 96;  // reserved right-hand axis column
+const PLOT_TOP_PAD = 48, PLOT_BOTTOM_GAP = 10;
+
+// --- range, Scene.svelte:143-153 / :571-580
+const RANGE_HEADROOM = 1.4;   // data fills 1/1.4 = ~71% of the band. THE reason it looks alive.
+const FLAT_FLOOR = 0.0012;    // min half-range as a share of price, so flat data can't degenerate
+const RANGE_TAU = 240;        // ms time constant for the range ease
+const PRICE_TAU = 120;        // ms time constant for the displayed price
+
+// --- crash specifics
+const SELL_PULL = 1.35;    // pull the SELL line into range only within 35% above the head
+const D_MIN = 1100, D_MAX = 3400, D_REF = 100, TAIL_MS = 620;
+const RUG_CELLS = 7;       // cells the post-rug collapse back to the baseline takes
+const SETTLE_MS = 900, RING_RADIUS = 26, WASH_ALPHA = 0.09;
+
+let series = [];           // prices, oldest first
+let startPrice = 0;        // the baseline: 1.00x reference, pinned at bet time
+let shown = 0;             // eased displayed price
+let viewLo = 0, viewHi = 1, primed = false;
+let tapeShifts = 0, betStartShifts = 0;
+let anim = { phase: 'idle', queue: [], glide: 0, cellMs: IDLE_MS, total: 0, fast: false };
+let round = null;          // {cp, target, sellPrice, isWin, sellIdx, consumed, sold, frozen}
+let settle = { at: -1e9, up: false, price: 0, badge: false };
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = Math.max(1, Math.round(W * dpr));
+  cv.height = Math.max(1, Math.round(H * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+new ResizeObserver(resize).observe(cv);
+
+const plotBand = () => {
+  const top = Math.min(PLOT_TOP_PAD, 0.12 * H);
+  const bottom = Math.max(top + 80, H - PLOT_BOTTOM_GAP);
+  return { top, bottom };
+};
+
+// Scene.svelte:110-116 — keep WINDOW+1 points so the tape exactly covers x = 0 .. restHeadX.
+function pushPoint(p) {
+  series.push(p);
+  if (series.length > WINDOW + 1) { series.shift(); tapeShifts++; }
+}
+
+// Scene.svelte:98-99 — mean-revert 3% of the gap to the baseline, plus +/-0.055% noise. Every
+// amplitude is RELATIVE to startPrice, so one engine works at any price scale.
+const idleTick = (prev) =>
+  prev + (startPrice - prev) * 0.03 + (Math.random() - 0.5) * startPrice * 0.0011;
+
+// Scene.svelte:196-213 — pre-roll a full window so frame one is already alive, then re-pin the
+// baseline to the last seeded point and un-prime so the range SNAPS instead of sliding in.
+function seedIdle(base) {
+  startPrice = base;
+  series = [];
+  let v = base;
+  for (let i = 0; i <= WINDOW; i++) { v = idleTick(v); series.push(v); }
+  startPrice = series[series.length - 1];
+  shown = startPrice;
+  tapeShifts = 0; betStartShifts = 0;
+  anim = { phase: 'idle', queue: [], glide: 0, cellMs: IDLE_MS, total: 0, fast: false };
+  round = null;
+  settle = { at: -1e9, up: false, price: 0, badge: false };
+  primed = false;
+  $('readout').className = 'readout idle';
+  $('rm').textContent = '1.00×';
+  $('rs').textContent = 'SET YOUR SELL · BEAT THE RUG';
+}
+
+/* --- the auto-range. Ported from Scene.svelte:143-153 with the SELL-line soft pull. --- */
+// Range scope: during a round (and its settle fade) span the WHOLE tape so the round's own
+// peak stays framed through the rug; once settled, span only the trailing points. A big peak
+// lives on the tape for ~20s, and fitting it the whole time zooms the axis out so far that
+// the next round's 2x SELL line visually hugs the baseline. Scoped to recent action, the
+// chart re-tightens within a few seconds; the old peak just runs off the top of the view.
+const IDLE_RANGE_POINTS = 48;
+function targetRange(now) {
+  const settling = round !== null || (now - settle.at) < SETTLE_MS;
+  const scope = settling ? series : series.slice(-IDLE_RANGE_POINTS);
+  let lo = startPrice, hi = startPrice;   // seeded with the baseline so it is always in view
+  for (const v of scope) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  // During a round also admit the SELL line, but ONLY once it is within reach. A 100x target
+  // is 100x above the head; forcing it into frame from the start would squash the climb into
+  // the bottom sliver — the very defect this chart model fixes. Off-range it gets a pinned
+  // marker at the top edge instead.
+  if (round && round.sellPrice <= hi * SELL_PULL) hi = Math.max(hi, round.sellPrice);
+  const mid = (lo + hi) / 2;
+  const half = Math.max((hi - lo) / 2, startPrice * FLAT_FLOOR) * RANGE_HEADROOM;
+  // Floor at zero: after a huge rug the visible span can exceed 2x the mid, and an
+  // unclamped window would print NEGATIVE prices on the axis.
+  return [Math.max(0, mid - half), mid + half];
+}
+
+/* --- the crash climb -------------------------------------------------------------------- */
+// In LOG space:  ln m(u) = u*ln(C) + A(u)*bell(u)*X(u).  The backbone u*ln(C) is the
+// exponential climb (convex on the linear auto-ranged axis); X is a SEEDED EXCURSION FIELD
+// that turns the near-straight line into a real pump-and-dump — pumps, pullbacks, sideways
+// consolidations, a volatility burst, fine jitter; a different pattern every round. m(0)=1
+// and m(1)=crashPoint exactly, because the envelope is zero at both ends.
+// Deterministic seed mixer: (seedA, seedB, k) -> [0,1). No Math.random() in the path itself,
+// so the whole climb is a pure function of its seeds (replay-identical, testable).
+const EXCURSION_ALPHA = 0.35;
+const EXCURSION_CAP_LOG = Math.log(8);
+function hash01(sa, sb, k) {
+  let h = (Math.imul((sa * 10007) | 0, 0x9E3779B1) ^ Math.imul((sb * 10009) | 0, 0x85EBCA77) ^
+    Math.imul(k + 1, 0xC2B2AE3D)) | 0;
+  h = Math.imul(h ^ (h >>> 15), 0x27D4EB2F);
+  h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+// Endpoint-zero envelope: EXACT zero at both ends, so the open is 1.00x and the close is the
+// certified rug, bit-exact.
+function bellAt(u) {
+  if (u <= 0 || u >= 1) return 0;
+  return Math.pow(Math.sin(Math.PI * u), 1.4);
+}
+// The market's personality for one round: momentum waves (pumps / pullbacks / sideways
+// consolidations), one volatility burst (a jumpy stretch, calm elsewhere), fine jitter.
+// Bounded (|X| <= ~1.3) and pure in (u, seeds).
+function excursionAt(u, sa, sb) {
+  let waves = 0, wsum = 0;
+  for (let k = 0; k < 3; k++) {
+    const f = (2 + 5 * hash01(sa, sb, k * 3)) * Math.PI;
+    const ph = hash01(sa, sb, k * 3 + 1) * 6.283;
+    const w = 0.4 + 0.6 * hash01(sa, sb, k * 3 + 2);
+    waves += w * Math.sin(u * f + ph);
+    wsum += w;
+  }
+  waves = (waves / wsum) * 0.75;
+  const envF = (1.2 + 1.6 * hash01(sa, sb, 9)) * Math.PI;
+  const env = Math.pow(Math.max(0, Math.sin(u * envF + hash01(sa, sb, 10) * 6.283)), 3);
+  const burst = env * 0.35 * Math.sin(u * (18 + 18 * hash01(sa, sb, 11)) * Math.PI + hash01(sa, sb, 12) * 6.283);
+  const j1 = 0.1 * Math.sin(u * (26 + 10 * hash01(sa, sb, 13)) * Math.PI + hash01(sa, sb, 14) * 6.283);
+  const j2 = 0.06 * Math.sin(u * (57 + 20 * hash01(sa, sb, 15)) * Math.PI + hash01(sa, sb, 16) * 6.283);
+  return waves + burst + j1 + j2;
+}
+// ln m(u) = u*ln(C) + A(u) * bell(u) * X(u), with the amplitude A keyed to the height climbed
+// SO FAR (anti-leak: the wobble can never encode where the round will end). Clamps: never
+// below the 1.00x open, never above the rug (the round's maximum), and on a loss strictly
+// below the SELL line — an excursion crossing it would read as a stolen win.
+function drawMultAt(u, cp, sa, sb, lossClamp) {
+  const L = Math.min(1, Math.max(0, u)) * Math.log(Math.max(1, cp));
+  const A = EXCURSION_ALPHA * Math.min(L, EXCURSION_CAP_LOG);
+  let m = Math.exp(L + A * bellAt(u) * excursionAt(u, sa, sb));
+  m = Math.max(1, m);
+  m = Math.min(m, cp);
+  if (lossClamp != null) m = Math.min(m, lossClamp - 0.0001);
+  return m;
+}
+function revealDurationMs(cp) {
+  const f = clamp01(Math.log(Math.max(1.01, cp)) / Math.log(D_REF));
+  return D_MIN + (D_MAX - D_MIN) * f;
+}
+// On a win the climb crosses the target at u = log T / log C.
+const sellHitU = (cp, target) => (cp <= 1 ? 1 : clamp01(Math.log(target) / Math.log(cp)));
+
+/* Build the point queue for one round: the climb, then the post-rug collapse.
+   Returns { pts, sellIdx, peakIdx } — sellIdx is the point whose consumption fires the green
+   SOLD punctuation, peakIdx the one that fires the rug. */
+function buildRound(cp, target, isWin, sellPrice, fast) {
+  const D = revealDurationMs(cp);
+  const uHit = isWin ? sellHitU(cp, target) : 1;
+  const tHit = D * uHit;
+  // On a win the post-sell tail is compressed into a fixed budget: a 143x tail after a 2x sell
+  // would otherwise run seconds of dead time.
+  const totalMs = isWin ? tHit + TAIL_MS : D;
+  const cellMs = fast ? FAST_MS : AVG_MS;
+  // floor 24: the excursion field's pullbacks need density to render on short rounds
+  const n = Math.max(24, Math.round(totalMs / cellMs));
+  const uAt = (t) => {
+    if (!isWin) return t / D;
+    if (t <= tHit) return tHit ? (t / tHit) * uHit : uHit;
+    return uHit + ((t - tHit) / TAIL_MS) * (1 - uHit);
+  };
+  const sa = Math.random() * 6.283, sb = Math.random() * 6.283;
+
+  const pts = [];
+  for (let i = 1; i <= n; i++) {
+    const u = clamp01(uAt((i / n) * totalMs));
+    pts.push(startPrice * drawMultAt(u, cp, sa, sb, isWin ? null : target));
+  }
+  // Land EXACTLY on the certified value.
+  const peakIdx = pts.length - 1;
+  pts[peakIdx] = startPrice * cp;
+
+  // SOLD = the FIRST touch of the sell price (the path is non-monotone now; a later dip back
+  // below the line is honest market behaviour, not a revoked win). A crossing always exists on
+  // a win: the path ends at the rug, and a winning rug >= the target.
+  let sellIdx = -1;
+  if (isWin) {
+    for (let i = 0; i < pts.length; i++) {
+      if (pts[i] >= sellPrice - 1e-9) { sellIdx = i; break; }
+    }
+  }
+
+  // The rug: a LIQUIDATION CASCADE back under the baseline — two near-vertical dump legs, a
+  // dead-cat bounce, then a fast bleed. Cosmetic (the result is already settled), randomized
+  // per round, and it re-anchors the index so rounds don't drift upward forever.
+  const climbed = Math.max(0, startPrice * cp - startPrice);
+  const floorP = startPrice * (1 - 0.004);
+  const dump1 = startPrice * cp - climbed * (0.35 + 0.15 * Math.random());
+  const dump2 = startPrice * cp - climbed * (0.62 + 0.2 * Math.random());
+  const bounce = dump2 + climbed * (0.05 + 0.09 * Math.random());
+  pts.push(dump1, dump2, bounce);
+  for (let i = 1; i <= RUG_CELLS - 3; i++) {
+    const t = i / (RUG_CELLS - 3);
+    pts.push(lerp(bounce, floorP, 1 - Math.pow(1 - t, 2)));
+  }
+  return { pts, sellIdx, peakIdx, cellMs };
+}
+
+/* --- the reveal cadence, Scene.svelte:157-164: sin^2 envelope, zero slope at both ends. --- */
+function revealCellMs() {
+  if (anim.total <= 0) return IDLE_MS;
+  if (anim.fast) return FAST_MS;
+  const done = anim.total - anim.queue.length;
+  const p = clamp01((done + anim.glide) / anim.total);
+  const env = Math.sin(Math.PI * p);
+  return lerp(IDLE_MS, FOCUS_MS, env * env);
+}
+
+/* --- punctuation ------------------------------------------------------------------------ */
+function fireSold(now) {
+  round.sold = true;
+  settle = { at: now, up: true, price: round.sellPrice, badge: true };
+  $('readout').className = 'readout sold';
+  $('rs').textContent = 'SOLD ' + fmtX(round.target);
+}
+function fireRug(now) {
+  const r = round;
+  r.frozen = true;
+  settle = { at: now, up: r.isWin, price: startPrice * r.cp, badge: true };
+  $('readout').className = 'readout ' + (r.isWin ? 'sold' : 'rugged');
+  $('rm').textContent = fmtX(r.cp);
+  $('rs').textContent = r.isWin
+    ? 'SOLD ' + fmtX(r.target) + ' · RUGGED ' + fmtX(r.cp)
+    : 'RUGGED ' + fmtX(r.cp) + ' · NEEDED ' + fmtX(r.target);
+  history.push({ isWin: r.isWin, cp: r.cp, target: r.target });
+  if (history.length > 8) history.shift();
+  paintStrip();
+  if (r.resolve) r.resolve();
+}
+
+function paintStrip() {
+  $('strip').innerHTML = '';
+  for (const h of history) {
+    const el = document.createElement('span');
+    el.className = 'pip ' + (h.isWin ? 'win' : 'lose');
+    el.textContent = fmtX(h.cp);
+    el.title = `SELL ${fmtX(h.target)} · RUG ${fmtX(h.cp)} · ${h.isWin ? 'WIN' : 'LOSS'}`;
+    $('strip').appendChild(el);
+  }
+}
+
+/* --- render, paint order from Scene.svelte:270-524 -------------------------------------- */
+function render(now) {
+  if (!W || !H) return;
+  const c = ctx;
+  const n = series.length;
+  c.fillStyle = COLOR.bg;
+  c.fillRect(0, 0, W, H);          // opaque ground, never clearRect
+  if (n < 2) return;
+
+  const { top: bandTop, bottom: bandBottom } = plotBand();
+  const span = viewHi - viewLo || 1;
+  const y = (v) => bandBottom - ((v - viewLo) / span) * (bandBottom - bandTop);
+  const rest = REST_HEAD_X * W;
+  const step = rest / WINDOW;
+  const x = (i) => rest - (n - 1 - i + anim.glide) * step;
+  const head = series[n - 1];
+  const hx = x(n - 1), hy = y(head);
+
+  const fade = Math.max(0, 1 - (now - settle.at) / SETTLE_MS);   // 1 -> 0
+  const col = settle.up ? COLOR.winFloat : COLOR.lossFloat;
+
+  // settle colour wash
+  if (fade > 0) {
+    c.save(); c.globalAlpha = WASH_ALPHA * fade; c.fillStyle = col;
+    c.fillRect(0, 0, W, H); c.restore();
+  }
+
+  // grid: 4 rows, then columns anchored to tape indices so they scroll with the data
+  c.lineWidth = 1;
+  c.strokeStyle = COLOR.gridLine;
+  for (let g = 1; g < 5; g++) {
+    const gy = Math.round((H * g) / 5) + 0.5;
+    c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+  }
+  let colIndex = 0;
+  for (let i = n - 1; i >= 0; i -= 20, colIndex++) {
+    const gx = Math.round(x(i)) + 0.5;
+    if (gx < 0) break;
+    c.strokeStyle = colIndex % 4 === 0 ? COLOR.gridLineMajor : COLOR.gridLine;
+    c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, H); c.stroke();
+  }
+  // Forward columns streaming in from the right. 2-7's equivalent loop is dead code (with a
+  // 24-point pitch at rest = 0.9W its first candidate x lands past the right edge); a 20-point
+  // pitch (0.15W) makes it actually draw.
+  for (let i = n - 1 + 20, ci = 1; ; i += 20, ci++) {
+    const gx = Math.round(x(i)) + 0.5;
+    if (gx > W) break;
+    c.strokeStyle = ci % 4 === 0 ? COLOR.gridLineMajor : COLOR.gridLine;
+    c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, H); c.stroke();
+  }
+
+  // right-edge axis prices
+  const badgeY = settle.badge
+    ? Math.max(bandTop + 10, Math.min(bandBottom, y(settle.price)))
+    : -1e9;
+  c.fillStyle = COLOR.axisText;
+  c.font = "11px ui-monospace, 'SF Mono', Menlo, monospace";
+  c.textAlign = 'right';
+  for (let g = 1; g < 5; g++) {
+    const gy = Math.round((H * g) / 5) + 0.5;
+    if (Math.abs(gy - badgeY) < 18) continue;
+    c.fillText(fmt2(viewLo + ((bandBottom - gy) / (bandBottom - bandTop)) * span), W - 8, gy - 5);
+  }
+
+  // the dashed baseline = 1.00x
+  c.strokeStyle = COLOR.nowLine;
+  c.setLineDash([4, 5]);
+  c.beginPath(); c.moveTo(0, y(startPrice)); c.lineTo(W, y(startPrice)); c.stroke();
+  c.setLineDash([]);
+  if (Math.abs(y(startPrice) - badgeY) >= 18) {
+    c.fillStyle = COLOR.axisText;
+    c.fillText(fmt2(startPrice), W - 8, y(startPrice) - 6);
+  }
+  c.textAlign = 'left';
+
+  // The SELL AT line. Drawn during a round against the pinned baseline, and while idle against
+  // the live price as a PROSPECTIVE level — so the player can see where the goal sits before
+  // committing, not only once the climb has started.
+  // In frame once the auto-range has pulled it in; otherwise pinned to the top edge with an
+  // arrow, which is the normal state early in a round (a 100x target is 100x above the head).
+  //
+  // SPAN: from the CURRENT round's start (the head, while idle) to the right edge — never the
+  // full width. The rolling tape keeps previous rounds on screen, and their peaks can tower
+  // over THIS round's line; a full-width line slicing through that history reads as "the
+  // price went beyond my target but I lost". The target only exists for this round, so it is
+  // only drawn over this round.
+  const sellT = round ? round.target : (rung ? rung.target : 0);
+  if (sellT > 0) {
+    const sellP = round ? round.sellPrice : head * sellT;
+    const sy = y(sellP);
+    const inFrame = sy >= bandTop - 2;
+    const startIdx = WINDOW - (tapeShifts - betStartShifts);
+    const fromX = Math.max(0, round && startIdx > 0 ? x(startIdx) : hx);
+    c.save();
+    c.strokeStyle = COLOR.sellLine;
+    c.lineWidth = 1.5;
+    c.fillStyle = COLOR.sellLine;
+    c.font = "700 10px ui-sans-serif, sans-serif";
+    // Labels are RIGHT-aligned against the axis column: the multiplier readout occupies the
+    // top-left, and a left-aligned label collides with it whenever the sell line is high —
+    // which for the pinned variant is always.
+    c.textAlign = 'right';
+    const lx = W - LABEL_RESERVE - 6;
+    if (!round) c.globalAlpha = 0.5;          // prospective, so quieter than a live target
+    if (inFrame) {
+      c.beginPath(); c.moveTo(fromX, sy); c.lineTo(W - LABEL_RESERVE, sy); c.stroke();
+      c.fillText('SELL ' + fmtX(sellT), lx, sy - 7);
+    } else {
+      // OFF-FRAME: no line — only a corner status chip. A pinned dashed line sits at a
+      // fixed SCREEN position, not at the sell PRICE, and a fast pump (the range ease
+      // lags the head) can climb straight through it — reading as "went beyond the sell
+      // area but lost". Any horizontal line gets read as a price level; a chip does not.
+      c.globalAlpha *= 0.9;
+      c.fillText('SELL ' + fmtX(sellT) + '  ↑', lx, bandTop + 13);
+    }
+    c.restore();
+    c.textAlign = 'left';
+  }
+
+  // the line: ONE thin glowing stroke, quadratic-midpoint spline (Scene.svelte:407-428).
+  // While a round is being judged, the HISTORY left of the round start draws MUTED (no glow,
+  // 30% alpha) and only the active round strokes at full strength — previous rounds' peaks
+  // stay on the tape for market feel, but nothing pre-round can be mistaken for this round's
+  // action against the SELL line.
+  const trace = (from, to) => {
+    c.moveTo(x(from), y(series[from]));
+    for (let i = from + 1; i < to; i++) {
+      const mx = (x(i) + x(i + 1)) / 2;
+      const my = (y(series[i]) + y(series[i + 1])) / 2;
+      c.quadraticCurveTo(x(i), y(series[i]), mx, my);
+    }
+    c.lineTo(x(to), y(series[to]));
+  };
+  const jStartIdx = WINDOW - (tapeShifts - betStartShifts);
+  const dimHistory = (round || fade > 0) && jStartIdx > 0 && jStartIdx < n - 1;
+  c.save();
+  c.strokeStyle = COLOR.line;
+  c.lineWidth = 1.6;
+  c.lineJoin = 'round';
+  c.shadowColor = COLOR.lineGlow;
+  if (dimHistory) {
+    c.globalAlpha = 0.3;
+    c.shadowBlur = 0;
+    c.beginPath(); trace(0, jStartIdx); c.stroke();
+    c.globalAlpha = 1;
+    c.shadowBlur = 8;
+    c.beginPath(); trace(Math.max(0, jStartIdx - 1), n - 1); c.stroke();
+  } else {
+    c.shadowBlur = 8;
+    c.beginPath(); trace(0, n - 1); c.stroke();
+  }
+  // head dot, same shadow at a larger blur
+  c.fillStyle = COLOR.dot;
+  c.shadowBlur = 12;
+  c.beginPath(); c.arc(hx, hy, 3.2, 0, Math.PI * 2); c.fill();
+  c.restore();
+
+  // settle punctuation: marker line, expanding ring, bright core, verdict glyph
+  if (fade > 0) {
+    const iy = y(settle.price);
+    c.save();
+    c.strokeStyle = col; c.globalAlpha = 0.7 * fade; c.lineWidth = 1;
+    c.setLineDash([2, 4]);
+    c.beginPath(); c.moveTo(0, iy); c.lineTo(W, iy); c.stroke();
+    c.setLineDash([]);
+
+    const ringR = 4 + (1 - fade) * (RING_RADIUS - 4);
+    c.strokeStyle = COLOR.ring; c.globalAlpha = 0.5 * fade; c.lineWidth = 2;
+    c.beginPath(); c.arc(hx, iy, ringR, 0, Math.PI * 2); c.stroke();
+
+    c.fillStyle = col; c.globalAlpha = 0.9 * fade;
+    c.beginPath(); c.arc(hx, iy, 3.5, 0, Math.PI * 2); c.fill();
+
+    const ty = settle.up ? -1 : 1;
+    c.globalAlpha = fade;
+    c.beginPath();
+    c.moveTo(hx + 10, iy + ty * 4);
+    c.lineTo(hx + 17, iy + ty * 4);
+    c.lineTo(hx + 13.5, iy - ty * 4);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+
+  // settled-price axis badge — persists dimmed until the next bet
+  if (settle.badge) {
+    const label = fmt2(settle.price);
+    c.save();
+    c.font = "bold 12px ui-monospace, 'SF Mono', Menlo, monospace";
+    const bW = c.measureText(label).width + 14;
+    c.globalAlpha = 0.75 + 0.25 * fade;
+    c.fillStyle = col;
+    c.beginPath(); c.roundRect(W - bW - 4, badgeY - 10, bW, 20, 5); c.fill();
+    c.fillStyle = COLOR.bg;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(label, W - bW / 2 - 4, badgeY);
+    c.restore();
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  }
+
+  // the live price pill riding the head (tracks the EASED price, so it approaches the dot
+  // rather than jittering with it)
+  const label = fmt2(shown);
+  c.save();
+  c.font = "bold 12px ui-monospace, 'SF Mono', Menlo, monospace";
+  const tagW = c.measureText(label).width + 16;
+  const tagCy = Math.max(13, Math.min(bandBottom, y(shown)));
+  // Side decision on the STABLE anchor, not hx: hx carries the sub-cell glide (slides ~one
+  // cell and snaps back every tick), so deciding on it makes the pill flip sides every
+  // ~170ms near the threshold — two red pills flickering next to the settled badge.
+  const tagX = rest + 10 + tagW > W - LABEL_RESERVE ? hx - 10 - tagW : hx + 10;
+  c.fillStyle = COLOR.priceTagBg;
+  c.beginPath(); c.roundRect(tagX, tagCy - 11, tagW, 22, 5); c.fill();
+  c.fillStyle = COLOR.priceTagText;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(label, tagX + tagW / 2, tagCy);
+  c.restore();
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+}
+
+/* --- the loop. Always running: the market never stops moving. --------------------------- */
+let _t = 0;
+function loop(now) {
+  const dt = Math.min(80, now - (_t || now));   // clamp so a tab stall can't jump the eases
+  _t = now;
+
+  // advance the tape by fractional cells
+  anim.cellMs = anim.phase === 'reveal' ? revealCellMs() : IDLE_MS;
+  anim.glide += dt / anim.cellMs;
+  while (anim.glide >= 1) {
+    anim.glide -= 1;
+    if (anim.phase === 'reveal') {
+      if (anim.queue.length) {
+        const idx = anim.total - anim.queue.length;
+        pushPoint(anim.queue.shift());
+        if (round && !round.sold && round.sellIdx >= 0 && idx === round.sellIdx) fireSold(now);
+        if (round && !round.frozen && idx === round.peakIdx) fireRug(now);
+      } else {
+        // Collapse fully drained: the chart is back to idle, so the next bet may start.
+        anim.phase = 'idle';
+        anim.total = 0;
+        round = null;
+        $('readout').classList.add('idle');
+        refresh();   // re-enable the bet button (refresh is not called per frame)
+      }
+    } else {
+      pushPoint(idleTick(series[series.length - 1]));
+    }
+  }
+
+  // ease the range and the displayed price
+  const [tl, th] = targetRange(now);
+  const ky = 1 - Math.exp(-dt / RANGE_TAU);
+  if (!primed) { viewLo = tl; viewHi = th; primed = true; }
+  else { viewLo = lerp(viewLo, tl, ky); viewHi = lerp(viewHi, th, ky); }
+  shown = lerp(shown, series[series.length - 1], 1 - Math.exp(-dt / PRICE_TAU));
+
+  // The live multiplier RATCHETS on the round's high-water mark until the rug freezes it at
+  // the certified value: the price dips and consolidates (that is the point of the excursion
+  // field), but the displayed multiplier never ticks down mid-round.
+  if (round && !round.frozen) {
+    round.peakMult = Math.max(round.peakMult || 1, series[series.length - 1] / startPrice);
+    $('rm').textContent = fmtX(Math.max(1, round.peakMult));
+  }
+
+  render(now);
+  requestAnimationFrame(loop);
+}
+
+/* --- start a round; resolves once the rug is on screen ---------------------------------- */
+function startRound({ isWin, crashPoint, target, fast }) {
+  const cp = Math.min(crashPoint / 100, CAP_DISPLAY_X);
+  // Pin the baseline to the current price: this is the round's 1.00x reference.
+  startPrice = series[series.length - 1];
+  betStartShifts = tapeShifts;
+  const sellPrice = startPrice * target;
+  const built = buildRound(cp, target, isWin, sellPrice, !!fast);
+
+  return new Promise((resolve) => {
+    round = {
+      cp, target, sellPrice, isWin,
+      sellIdx: built.sellIdx, peakIdx: built.peakIdx,
+      sold: false, frozen: false, resolve,
+    };
+    settle = { at: -1e9, up: false, price: 0, badge: false };
+    anim = {
+      phase: 'reveal', queue: built.pts.slice(), glide: 0,
+      cellMs: built.cellMs, total: built.pts.length, fast: !!fast,
+    };
+    $('readout').className = 'readout';
+    $('rs').textContent = 'CLIMBING · SELL ' + fmtX(target);
+
+    // Reduced motion: no animation, but the certified value must still be reached and stamped.
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      for (const p of built.pts) pushPoint(p);
+      anim = { phase: 'idle', queue: [], glide: 0, cellMs: IDLE_MS, total: 0, fast: false };
+      fireRug(performance.now());
+      round = null;
+      return;
+    }
+    // rAF halts in a backgrounded tab; guarantee the round still settles.
+    const guardMs = built.pts.length * built.cellMs + 1200;
+    setTimeout(() => {
+      if (!round || round.frozen) return;
+      for (const p of anim.queue) pushPoint(p);
+      anim = { phase: 'idle', queue: [], glide: 0, cellMs: IDLE_MS, total: 0, fast: false };
+      fireRug(performance.now());
+      round = null;
+    }, guardMs);
+  });
+}
+
+/* ---------------------------------------------------------------- interaction */
+function refresh() {
+  const amt = Number($('amount').value) || 0;
+  $('profit').textContent = rung ? '+' + fmt$(amt * (rung.target - 1)) : '—';
+  $('bal').textContent = fmt$(balance);
+  // `round` outlives `busy`: the promise resolves at the rug so the money settles promptly
+  // (matching the RGS, where a loss is settled inside /wallet/play), but the post-rug collapse
+  // keeps draining for another ~1s. Gate on BOTH, or a second bet starts mid-collapse and pins
+  // its 1.00x baseline to a price that is still falling.
+  $('bet').disabled = busy || !!round || !rung || amt <= 0 || (!IS_LIVE && amt > balance);
+  $('tUp').disabled = busy || !rung || rung === RUNGS[RUNGS.length - 1];
+  $('tDn').disabled = busy || !rung || rung === RUNGS[0];
+  $('target').disabled = busy;
+  $('amount').disabled = busy;
+  $('meta').textContent = rung
+    ? `${rung.key} · RTP ${(rung.rtp * 100).toFixed(2)}% · win ${(rung.winChance * 100).toFixed(2)}% · ${rung.total} books`
+    : '—';
+}
+
+async function placeBet() {
+  if (busy || round || !rung) return;   // `round` guard: see refresh() — no overlapping rounds
+  const amt = Number($('amount').value);
+  if (!(amt > 0)) return;
+  if (!IS_LIVE && amt > balance) return;
+  busy = true; refresh();
+  const target = rung.target, targetCents = Math.round(target * 100);
+  try {
+    let res;
+    if (IS_LIVE) {
+      res = await livePlay();
+    } else {
+      const o = localOutcome();
+      const isWin = o.payoutCents > 0;
+      balance -= amt;
+      res = { isWin, crashPoint: localCrashPoint(isWin), payout: (o.payoutCents / 100) * amt };
+    }
+    // Assert the book's own invariant before drawing it — a violation would render a chart
+    // that contradicts the payout.
+    if (res.isWin !== (res.crashPoint >= targetCents)) {
+      console.error('crashPoint contradicts the outcome', res, rung.key);
+    }
+    await startRound({ isWin: res.isWin, crashPoint: res.crashPoint, target });
+    if (!IS_LIVE) balance += res.payout;
+  } catch (err) {
+    $('rs').textContent = 'ERROR — ' + err.message;
+    console.error(err);
+    round = null;
+    anim = { phase: 'idle', queue: [], glide: 0, cellMs: IDLE_MS, total: 0, fast: false };
+  } finally {
+    busy = false; refresh();
+  }
+}
+
+/* ---------------------------------------------------------------------- boot */
+async function boot() {
+  BUNDLE = await fetch('market_crash_rgs.json', { cache: 'no-store' }).then((r) => r.json());
+
+  RUNGS = Object.entries(BUNDLE.modes).map(([key, m]) => {
+    const fromKey = targetFromKey(key);
+    if (fromKey == null) throw new Error(`mode "${key}" is not crash_<cents>`);
+    if (Math.abs(fromKey - m.multiplier) > 1e-9) {
+      throw new Error(`mode "${key}" pays ${m.multiplier}x — the key and the payout disagree`);
+    }
+    return {
+      key, target: fromKey, winChance: m.winChance, rtp: m.rtp,
+      outcomes: m.outcomes, crashPoints: m.crashPoints, total: m.totalWeight,
+    };
+  }).sort((a, b) => a.target - b.target);
+
+  $('modeBadge').textContent = IS_LIVE ? 'LIVE' : 'LOCAL';
+  $('modeBadge').classList.toggle('live', IS_LIVE);
+
+  // Quick picks snapped onto the published ladder.
+  for (const want of [2, 5, 10, 100]) {
+    const r = snapRung(want);
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = fmtX(r.target); b.dataset.key = r.key;
+    b.onclick = () => { if (!busy) setRung(r); };
+    $('chips').appendChild(b);
+  }
+
+  $('target').min = String(RUNGS[0].target);
+  $('target').max = String(RUNGS[RUNGS.length - 1].target);
+  // Commit on change/blur, never per keystroke — a partial "1" would snap to the floor rung.
+  $('target').onchange = () => { if (!busy) setRung(snapRung(Number($('target').value))); };
+  $('tUp').onclick = () => { if (!busy) setRung(stepRung(1)); };
+  $('tDn').onclick = () => { if (!busy) setRung(stepRung(-1)); };
+  $('amount').oninput = refresh;
+  $('half').onclick = () => { $('amount').value = Math.max(0.1, Number($('amount').value) / 2).toFixed(2); refresh(); };
+  $('dbl').onclick = () => { $('amount').value = (Number($('amount').value) * 2).toFixed(2); refresh(); };
+  $('bet').onclick = placeBet;
+  addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLInputElement) return;   // don't hijack typing in the fields
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); placeBet(); }
+  });
+
+  // ?mode=crash_250 opens directly on a published rung; anything unpublished falls back to the
+  // bundle default, so we never select a mode the RGS would reject.
+  const launch = qs.get('mode');
+  const fromLaunch = launch ? RUNGS.find((r) => r.key === launch) : null;
+  if (launch && !fromLaunch) console.warn(`?mode=${launch} is not published — using the default`);
+  const fallback = RUNGS.find((r) => r.key === BUNDLE.defaultMode) || snapRung(2);
+
+  resize();
+  seedIdle(184.62);          // the NGT index base, from 2-7's coins.ts
+  setRung(fromLaunch || fallback);
+  requestAnimationFrame(loop);
+}
+
+boot().catch((e) => { $('rs').textContent = 'FAILED TO LOAD — ' + e.message; console.error(e); });
+
+// Expose a little state for the verification pass (and for poking at it in the console).
+Object.defineProperty(window, '__mc', {
+  get: () => ({
+    series, startPrice, shown, viewLo, viewHi, round, settle, anim,
+    rung: rung && rung.key, balance, history,
+    band: plotBand(), W, H,
+  }),
+});
+</script>
+</body>
+</html>

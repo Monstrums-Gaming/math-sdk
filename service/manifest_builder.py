@@ -5,7 +5,7 @@ payout multiplier, draw probability). This module derives everything the manifes
 requires but an admin shouldn't have to hand-compute:
 
 - **criteria** — one bucket per distinct effective payout; the single highest paying prize
-  is ``"wincap"``; any prize whose payout snaps to 0 on the RGS 0.1x grid becomes ``"0"``.
+  is ``"wincap"``; any prize whose payout snaps to 0 on the RGS 0.01x grid becomes ``"0"``.
 - **wincap** — the max catalog payout.
 - **rtp** — expected payout / cost, from the grid-snapped effective payouts.
 - **num_sims** — fixed (settings.MANIFEST_NUM_SIMS); the odds must keep num_sims*prob
@@ -74,9 +74,9 @@ def _normalize_prob_counts(enriched: list, num_sims: int) -> None:
 
 
 def _snap_to_grid(multiplier: float) -> float:
-    """Snap a payout multiplier to the RGS 0.1x grid (nearest 10 cents); sub-0.1x -> 0.
+    """Snap a payout multiplier to the RGS 0.01x grid (nearest cent); sub-0.005x -> 0.
     Mirrors games/mystery_box_dynamic/game_config.py::_snap_to_grid exactly."""
-    cents = int(round(round(multiplier * 100) / 10.0)) * 10
+    cents = int(round(multiplier * 100))
     return cents / 100.0
 
 
@@ -127,7 +127,7 @@ def assemble_manifest(spec: dict) -> dict:
 
     paying = [e for e in enriched if e["eff"] > 0]
     if not paying:
-        raise BuildError("no prize pays out: every payout snaps to 0 on the 0.1x grid.")
+        raise BuildError("no prize pays out: every payout snaps to 0 on the 0.01x grid.")
 
     # criteria: one "wincap" (the single max effective payout), "0" for zero-payout prizes,
     # and a bucket keyed by effective cents for every other distinct paying value.

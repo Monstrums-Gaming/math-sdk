@@ -14,8 +14,9 @@ cost_model:
   - absent / "box_cost" (default): payouts are authored literally as RGS multipliers and
     the base bet mode cost == box_cost (reproduces the static games; fails the ACP
     "cost must be 1.0" validator unless the manifest is already authored for cost 1.0).
-  - "unit": the loader divides each payout by box_cost and snaps to the 0.1x grid, sets
-    base mode cost == 1.0 and derives wincap as the new max multiplier (ACP-valid).
+  - "unit": the loader divides each payout by box_cost and snaps to the 0.01x grid
+    (integer "cents" — the RGS minimum since 2026-08; it was 0.1x before), sets base
+    mode cost == 1.0 and derives wincap as the new max multiplier (ACP-valid).
 """
 
 import json
@@ -27,8 +28,8 @@ from src.config.betmode import BetMode
 
 
 def _snap_to_grid(multiplier: float) -> float:
-    """Snap a payout multiplier to the RGS 0.1x grid (nearest 10 cents); sub-0.1x -> 0."""
-    cents = int(round(round(multiplier * 100) / 10.0)) * 10
+    """Snap a payout multiplier to the RGS 0.01x grid (nearest cent); sub-0.005x -> 0."""
+    cents = int(round(multiplier * 100))
     return cents / 100.0
 
 
@@ -63,7 +64,7 @@ class GameConfig(Config):
         self.prize_table = {sku: dict(info) for sku, info in manifest["prizes"].items()}
 
         # --- optional ACP-valid transform (cost 1.0) ---
-        # NB: prizes that fall below the 0.1x grid become 0 but KEEP their authored
+        # NB: prizes that fall below the 0.01x grid become 0 but KEEP their authored
         # criteria. A zero-payout prize forces a 0 win identically whether its criteria
         # is "0" or a per-sku bucket, and keeping distinct criteria preserves the exact
         # per-criteria sim quotas (merging into one "0" bucket produces a float like
@@ -75,12 +76,17 @@ class GameConfig(Config):
         else:
             self.wincap = float(manifest["wincap"])
 
-        # criteria "0" is authoritative — it means "pays nothing" (e.g. a sub-0.1x
-        # catalog value like $0.01 that the RGS cannot pay). Force those payouts to 0
-        # so the authored display value need not itself be RGS-valid.
+        # criteria "0" is authoritative — it means "pays nothing" (e.g. a sub-0.01x
+        # unit value that the RGS cannot pay). Force those payouts to 0 so the
+        # authored display value need not itself be RGS-valid.
         for info in self.prize_table.values():
             if info["criteria"] == "0":
                 info["payout"] = 0.0
+
+        # Payouts are integer "cents" on the 0.01x grid (RGS minimum since 2026-08),
+        # which may sit off the legacy 0.1x slot grid — skip the increments-of-10
+        # lookup-table check in utils/rgs_verification.py.
+        self.lut_grid_exempt = True
 
         self.construct_paths()
 
@@ -184,11 +190,8 @@ class GameConfig(Config):
             payout_cents = round(info["payout"] * 100, 6)
             if payout_cents != int(payout_cents):
                 raise RuntimeError(f"Prize {sym} payout {info['payout']} is finer than 0.01x; not RGS-valid.")
-            payout_int = int(payout_cents)
-            if payout_int != 0 and (payout_int < 10 or payout_int % 10 != 0):
-                raise RuntimeError(
-                    f"Prize {sym} payout {info['payout']} -> {payout_int} violates RGS increments of 10."
-                )
+            if payout_cents < 0:
+                raise RuntimeError(f"Prize {sym} payout {info['payout']} is negative; not RGS-valid.")
             if info["payout"] > self.wincap:
                 raise RuntimeError(f"Prize {sym} payout {info['payout']} exceeds wincap {self.wincap}.")
 

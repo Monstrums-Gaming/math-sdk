@@ -90,8 +90,9 @@ def verify_lookup_format(filename: str, grid_exempt: bool = False) -> list:
 
     `grid_exempt` skips the 0.1× grid check (`payout % 10 == 0`) for
     direct-probability games whose true payouts cannot sit on that grid — e.g. a
-    dice game where `payout = RTP / winChance`. Payouts are still required to be
-    non-negative integer "cents". Defaults to False (strict) for slot games.
+    dice game where `payout = RTP / winChance`, or a prize below 0.1× now that
+    the RGS accepts payouts down to 0.01× (1 "cent"). Payouts are still required
+    to be non-negative integer "cents". Defaults to False (strict) for slot games.
     """
     integer_payouts = []
     running_weight_total = 0
@@ -104,10 +105,9 @@ def verify_lookup_format(filename: str, grid_exempt: bool = False) -> list:
             weight = float(weight)
             payout = float(payout)
 
-            # Payout checks
+            # Payout checks. The RGS accepts non-zero payouts down to 1 "cent"
+            # (0.01x), so integer >= 0 is the only universal payout constraint.
             assert payout.is_integer() and payout >= 0, "Payout mult be uint64 format:"
-            if payout > 0:
-                assert payout >= 10, "Minimum non-zero payout is 10 (RGS accepts 'cents' increments)."
             if not grid_exempt:
                 assert payout % 10 == 0, "Payout values must be in increments of 10."
             integer_payouts.append(int(payout))
@@ -267,7 +267,9 @@ def execute_all_tests(config, excluded_modes=[]):
         if max_rtp_diff > 0.05:
             warnings.warn(f"\n\nMode RTP difference exceedes allowed difference for approvals: {max_rtp_diff}\n")
 
-    fname = f"games/{config.game_id}/library/stats_summary.json"
+    # Use the config's absolute library path — a CWD-relative "games/<id>/..."
+    # breaks when run.py is invoked from outside the repo root (e.g. build.sh).
+    fname = os.path.join(config.library_path, "stats_summary.json")
     write_all_stats(mode_stats, fname)
 
 

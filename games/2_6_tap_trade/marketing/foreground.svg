@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420">
+  <!-- Tap Trade emblem: the game art without the title lettering.
+       Brand colors from the source logo: neon green marks + white hand. -->
+  <defs>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22ff9a"/>
+      <stop offset="100%" stop-color="#00b968"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(-560 -60)">
+    <!-- rising market line -->
+    <polyline points="760,285 860,205 940,238 1065,110"
+              fill="none" stroke="#22ff9a" stroke-width="16"
+              stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="1047,104 1084,90 1072,127" fill="#22ff9a"/>
+
+    <!-- candlesticks -->
+    <g stroke="#22ff9a" stroke-width="9" stroke-linecap="round" fill="url(#greenGrad)">
+      <line x1="800" y1="360" x2="800" y2="465"/>
+      <rect x="782" y="385" width="36" height="55" rx="5"/>
+      <line x1="875" y1="320" x2="875" y2="445"/>
+      <rect x="855" y="340" width="40" height="72" rx="5"/>
+      <line x1="950" y1="330" x2="950" y2="465"/>
+      <rect x="930" y="350" width="40" height="78" rx="5"/>
+      <line x1="1030" y1="250" x2="1030" y2="390"/>
+      <rect x="1007" y="280" width="46" height="82" rx="5"/>
+    </g>
+
+    <!-- tap target -->
+    <g transform="translate(645 260)">
+      <circle r="52" fill="none" stroke="#16f58b" stroke-width="14" opacity="0.45" filter="url(#glow)"/>
+      <circle r="29" fill="#07120d" stroke="#22ff9a" stroke-width="10"/>
+      <circle r="10" fill="#22ff9a"/>
+    </g>
+
+    <!-- hand cursor -->
+    <g transform="translate(650 280)" fill="#050708" stroke="#ffffff" stroke-width="14"
+       stroke-linejoin="round" stroke-linecap="round">
+      <path d="M0 40 L0 -8 C0 -30 34 -30 34 -8 L34 34 L48 16 C58 4 78 10 76 26 L74 42
+               L86 27 C96 15 116 22 112 38 L108 52 L120 42 C132 32 150 44 143 58
+               L112 123 C103 141 86 151 65 151 L44 151 C24 151 8 143 -5 128
+               L-42 82 C-56 66 -34 45 -17 58 Z"/>
+    </g>
+  </g>
+</svg>

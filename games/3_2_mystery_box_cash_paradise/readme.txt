@@ -14,7 +14,7 @@ A single bet mode, "base", cost = 4.98 (base-bet units), target RTP = 85%.
 
 Prize table (engine symbol -> fiction / catalog value / probability)
 --------------------------------------------------------------------
-  CP1  $0.01 Voucher    $0.01        30.200%  (below RGS minimum -> pays 0)
+  CP1  $0.01 Voucher    $0.01        30.200%
   CP2  $0.10 Voucher    $0.10        28.000%
   CP3  $1 Voucher       $1.00        25.000%
   CP4  $2 Voucher       $2.00         5.000%
@@ -26,22 +26,20 @@ Prize table (engine symbol -> fiction / catalog value / probability)
 
 Each prize pays its full catalog value as the RGS multiplier (base bet = 1
 currency unit), so the wallet total equals the catalog value with no top-up.
-The only exception is the $0.01 Voucher: its $0.01 value is below the RGS minimum
-payout (0.1x), so it resolves to 0. Probabilities sum to 1.0.
+The RGS now accepts payouts down to 0.01x, so the $0.01 Voucher pays its full
+value (it previously had to resolve to 0). Probabilities sum to 1.0.
 
 RTP
 ---
-The authored expected payout over the full catalog values is 4.23102, giving a
-nominal 4.23102 / 4.98 = 84.96%. Because the $0.01 voucher resolves to 0 (RGS
-minimum), the effective expected payout is 4.22800, so the ACTUAL RTP is
-4.22800 / 4.98 = 84.90%. (A box cost of 4.97767 would hit exactly 85.00% nominal;
+The expected payout over the full catalog values is 4.23102, so the RTP is
+4.23102 / 4.98 = 84.96%. (A box cost of 4.97767 would hit exactly 85.00%;
 4.98 is the rounded price in use, slightly below the 85% target.)
 
 How the math is produced
 -------------------------
 - Each prize is its own simulation "criteria" with quota equal to its
-  probability, so the published odds match the table (zero-payout outcomes use
-  criteria "0"; the single max-win prize uses criteria "wincap").
+  probability, so the published odds match the table (the single max-win prize
+  uses criteria "wincap"; every other prize gets a per-payout bucket).
 - run_spin draws one prize for the round's criteria, pays it, and emits a
   mysteryReveal event followed by the standard winInfoSpecial / setWin /
   setTotalWin / finalWin events.

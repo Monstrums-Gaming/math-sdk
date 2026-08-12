@@ -1,0 +1,514 @@
+{
+ "game_id": "2_7_chicken_crossing",
+ "difficulties": [
+  "easy",
+  "medium",
+  "hard",
+  "daredevil"
+ ],
+ "rtp": 0.9654,
+ "disabledAutoplay": false,
+ "predeterminedSettlement": true,
+ "modes": {
+  "easy": {
+   "name": "easy",
+   "difficulty": "easy",
+   "numSteps": 24,
+   "cost": 1.0,
+   "ladder": [
+    1.0,
+    1.0,
+    1.1,
+    1.1,
+    1.2,
+    1.2,
+    1.3,
+    1.4,
+    1.5,
+    1.6,
+    1.7,
+    1.8,
+    2.0,
+    2.2,
+    2.4,
+    2.6,
+    3.0,
+    3.4,
+    4.0,
+    4.8,
+    6.0,
+    8.0,
+    12.1,
+    24.2
+   ],
+   "maxWin": 24.2,
+   "rtp": 0.965011,
+   "totalWeight": 1000000,
+   "outcomes": [
+    {
+     "payoutCents": 0,
+     "weight": 490919
+    },
+    {
+     "payoutCents": 100,
+     "weight": 80417
+    },
+    {
+     "payoutCents": 110,
+     "weight": 73106
+    },
+    {
+     "payoutCents": 120,
+     "weight": 67014
+    },
+    {
+     "payoutCents": 130,
+     "weight": 30929
+    },
+    {
+     "payoutCents": 140,
+     "weight": 28720
+    },
+    {
+     "payoutCents": 150,
+     "weight": 26806
+    },
+    {
+     "payoutCents": 160,
+     "weight": 25130
+    },
+    {
+     "payoutCents": 170,
+     "weight": 23652
+    },
+    {
+     "payoutCents": 180,
+     "weight": 22338
+    },
+    {
+     "payoutCents": 200,
+     "weight": 20104
+    },
+    {
+     "payoutCents": 220,
+     "weight": 18277
+    },
+    {
+     "payoutCents": 240,
+     "weight": 16753
+    },
+    {
+     "payoutCents": 260,
+     "weight": 15465
+    },
+    {
+     "payoutCents": 300,
+     "weight": 13403
+    },
+    {
+     "payoutCents": 340,
+     "weight": 11826
+    },
+    {
+     "payoutCents": 400,
+     "weight": 10052
+    },
+    {
+     "payoutCents": 480,
+     "weight": 8377
+    },
+    {
+     "payoutCents": 600,
+     "weight": 6701
+    },
+    {
+     "payoutCents": 800,
+     "weight": 5026
+    },
+    {
+     "payoutCents": 1210,
+     "weight": 3323
+    },
+    {
+     "payoutCents": 2420,
+     "weight": 1662
+    }
+   ],
+   "popWeights": [
+    0.03644219,
+    0.0,
+    0.09137186,
+    0.0,
+    0.07614322,
+    0.0,
+    0.06442888,
+    0.05522475,
+    0.04786145,
+    0.04187877,
+    0.03695186,
+    0.03284609,
+    0.05583836,
+    0.04568593,
+    0.03807161,
+    0.03221444,
+    0.0515431,
+    0.03941531,
+    0.04434223,
+    0.04187877,
+    0.04187877,
+    0.04187877,
+    0.04257098,
+    0.04153266
+   ],
+   "maxWinRows": 1662
+  },
+  "medium": {
+   "name": "medium",
+   "difficulty": "medium",
+   "numSteps": 21,
+   "cost": 1.0,
+   "ladder": [
+    1.1,
+    1.2,
+    1.4,
+    1.6,
+    1.9,
+    2.3,
+    2.7,
+    3.2,
+    3.9,
+    4.9,
+    6.1,
+    7.8,
+    10.1,
+    13.5,
+    18.5,
+    26.5,
+    39.8,
+    63.7,
+    111.5,
+    223.1,
+    557.7
+   ],
+   "maxWin": 557.7,
+   "rtp": 0.964762,
+   "totalWeight": 1000000,
+   "outcomes": [
+    {
+     "payoutCents": 0,
+     "weight": 733512
+    },
+    {
+     "payoutCents": 110,
+     "weight": 41775
+    },
+    {
+     "payoutCents": 120,
+     "weight": 38294
+    },
+    {
+     "payoutCents": 140,
+     "weight": 32823
+    },
+    {
+     "payoutCents": 160,
+     "weight": 28720
+    },
+    {
+     "payoutCents": 190,
+     "weight": 24185
+    },
+    {
+     "payoutCents": 230,
+     "weight": 19979
+    },
+    {
+     "payoutCents": 270,
+     "weight": 17019
+    },
+    {
+     "payoutCents": 320,
+     "weight": 14360
+    },
+    {
+     "payoutCents": 390,
+     "weight": 11783
+    },
+    {
+     "payoutCents": 490,
+     "weight": 9378
+    },
+    {
+     "payoutCents": 610,
+     "weight": 7533
+    },
+    {
+     "payoutCents": 780,
+     "weight": 5891
+    },
+    {
+     "payoutCents": 1010,
+     "weight": 4550
+    },
+    {
+     "payoutCents": 1350,
+     "weight": 3404
+    },
+    {
+     "payoutCents": 1850,
+     "weight": 2484
+    },
+    {
+     "payoutCents": 2650,
+     "weight": 1734
+    },
+    {
+     "payoutCents": 3980,
+     "weight": 1155
+    },
+    {
+     "payoutCents": 6370,
+     "weight": 721
+    },
+    {
+     "payoutCents": 11150,
+     "weight": 412
+    },
+    {
+     "payoutCents": 22310,
+     "weight": 206
+    },
+    {
+     "payoutCents": 55770,
+     "weight": 82
+    }
+   ],
+   "popWeights": [
+    0.12315668,
+    0.07321468,
+    0.11505165,
+    0.08628873,
+    0.09537176,
+    0.08846076,
+    0.06225017,
+    0.05592788,
+    0.05420703,
+    0.05057215,
+    0.03879962,
+    0.03453,
+    0.02821526,
+    0.02409883,
+    0.01934802,
+    0.01577047,
+    0.01218694,
+    0.00911061,
+    0.00650408,
+    0.00433573,
+    0.00259895
+   ],
+   "maxWinRows": 82
+  },
+  "hard": {
+   "name": "hard",
+   "difficulty": "hard",
+   "numSteps": 17,
+   "cost": 1.0,
+   "ladder": [
+    1.2,
+    1.5,
+    1.9,
+    2.5,
+    3.3,
+    4.4,
+    6.0,
+    8.3,
+    11.7,
+    17.1,
+    25.7,
+    40.0,
+    65.0,
+    111.5,
+    204.5,
+    409.0,
+    920.2
+   ],
+   "maxWin": 920.2,
+   "rtp": 0.965441,
+   "totalWeight": 1000000,
+   "outcomes": [
+    {
+     "payoutCents": 0,
+     "weight": 802208
+    },
+    {
+     "payoutCents": 120,
+     "weight": 47304
+    },
+    {
+     "payoutCents": 150,
+     "weight": 37843
+    },
+    {
+     "payoutCents": 190,
+     "weight": 29876
+    },
+    {
+     "payoutCents": 250,
+     "weight": 22706
+    },
+    {
+     "payoutCents": 330,
+     "weight": 17201
+    },
+    {
+     "payoutCents": 440,
+     "weight": 12901
+    },
+    {
+     "payoutCents": 600,
+     "weight": 9461
+    },
+    {
+     "payoutCents": 830,
+     "weight": 6839
+    },
+    {
+     "payoutCents": 1170,
+     "weight": 4852
+    },
+    {
+     "payoutCents": 1710,
+     "weight": 3320
+    },
+    {
+     "payoutCents": 2570,
+     "weight": 2209
+    },
+    {
+     "payoutCents": 4000,
+     "weight": 1419
+    },
+    {
+     "payoutCents": 6500,
+     "weight": 873
+    },
+    {
+     "payoutCents": 11150,
+     "weight": 509
+    },
+    {
+     "payoutCents": 20450,
+     "weight": 278
+    },
+    {
+     "payoutCents": 40900,
+     "weight": 139
+    },
+    {
+     "payoutCents": 92020,
+     "weight": 62
+    }
+   ],
+   "popWeights": [
+    0.19567112,
+    0.16107583,
+    0.1356428,
+    0.12207852,
+    0.09371685,
+    0.07321629,
+    0.05857303,
+    0.04463547,
+    0.03383737,
+    0.02608515,
+    0.01891258,
+    0.01344388,
+    0.00929284,
+    0.00620078,
+    0.00394182,
+    0.00236297,
+    0.0013127
+   ],
+   "maxWinRows": 62
+  },
+  "daredevil": {
+   "name": "daredevil",
+   "difficulty": "daredevil",
+   "numSteps": 10,
+   "cost": 1.0,
+   "ladder": [
+    1.6,
+    2.7,
+    4.9,
+    8.9,
+    17.1,
+    34.3,
+    72.4,
+    163.0,
+    395.9,
+    1055.8
+   ],
+   "maxWin": 1055.8,
+   "rtp": 0.964667,
+   "totalWeight": 1000000,
+   "outcomes": [
+    {
+     "payoutCents": 0,
+     "weight": 862694
+    },
+    {
+     "payoutCents": 160,
+     "weight": 60312
+    },
+    {
+     "payoutCents": 270,
+     "weight": 35741
+    },
+    {
+     "payoutCents": 490,
+     "weight": 19694
+    },
+    {
+     "payoutCents": 890,
+     "weight": 10843
+    },
+    {
+     "payoutCents": 1710,
+     "weight": 5643
+    },
+    {
+     "payoutCents": 3430,
+     "weight": 2813
+    },
+    {
+     "payoutCents": 7240,
+     "weight": 1333
+    },
+    {
+     "payoutCents": 16300,
+     "weight": 592
+    },
+    {
+     "payoutCents": 39590,
+     "weight": 244
+    },
+    {
+     "payoutCents": 105580,
+     "weight": 91
+    }
+   ],
+   "popWeights": [
+    0.39744627,
+    0.24585744,
+    0.16055996,
+    0.08856218,
+    0.05202381,
+    0.02831474,
+    0.01481381,
+    0.0074127,
+    0.00348474,
+    0.00152435
+   ],
+   "maxWinRows": 91
+  }
+ }
+}

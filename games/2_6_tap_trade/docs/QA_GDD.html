@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tap Trade — QA Test Specification</title>
+<style>
+  /* QA edition: same print system as GDD.html, teal accent to distinguish. */
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  :root{
+    --ink:#1a2323; --dim:#6b7a7a; --faint:#aab8b8;
+    --acc:#0e7d74; --acc-soft:#d9efec; --gold:#8a7d1c; --gold-soft:#f4efc9;
+    --panel:#f5faf9; --border:#d8e5e3; --gain:#1d7a4d; --loss:#b03a50; --loss-soft:#f6dfe4;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font:10.5pt/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink)}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+  .cover{height:257mm; background:#07211f; color:#eaf4f2; border-radius:2mm;
+         display:flex; flex-direction:column; justify-content:space-between;
+         padding:22mm 18mm; page-break-after:always; position:relative; overflow:hidden}
+  .cover .rule{height:2px; background:linear-gradient(90deg,#35d0b8,#e8dd4e 60%,transparent); width:52mm}
+  .cover .kicker{font:600 9pt var(--mono); letter-spacing:.28em; text-transform:uppercase; color:#7fa39e; margin-top:8mm}
+  .cover h1{font-size:30pt; font-weight:800; letter-spacing:-.02em; margin:2mm 0 4mm}
+  .cover h1 em{font-style:normal; color:#35d0b8}
+  .cover .sub{font-size:11.5pt; color:#bdd3cf; max-width:126mm}
+  .cover table{margin-top:10mm; border-collapse:collapse; font-size:9pt}
+  .cover td{padding:1.2mm 6mm 1.2mm 0; color:#bdd3cf}
+  .cover td:first-child{font:600 8pt var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#7fa39e}
+  .cover .foot{font:8.5pt var(--mono); color:#7fa39e}
+
+  h2{font-size:14pt; font-weight:800; margin:8mm 0 3mm; padding-bottom:1.5mm;
+     border-bottom:2px solid var(--acc); page-break-after:avoid}
+  h2 .no{color:var(--acc); font-family:var(--mono); font-size:10.5pt; margin-right:2mm}
+  h3{font-size:11pt; font-weight:700; margin:5mm 0 1.5mm; page-break-after:avoid}
+  p{margin:0 0 2.6mm; max-width:172mm}
+  ul,ol{margin:0 0 2.8mm 5mm}
+  li{margin-bottom:1mm}
+  code{font-family:var(--mono); font-size:9pt; background:var(--panel);
+       border:1px solid var(--border); border-radius:2px; padding:0 1mm}
+  .callout{background:var(--gold-soft); border-left:3px solid var(--gold);
+           padding:2.6mm 4mm; margin:3mm 0; border-radius:0 2mm 2mm 0; page-break-inside:avoid}
+  .callout.bad{background:var(--loss-soft); border-left-color:var(--loss)}
+  .callout p{margin:0}
+  .pagebreak{page-break-before:always}
+
+  table.data{border-collapse:collapse; width:100%; margin:2.5mm 0 4mm; font-size:8.8pt}
+  table.data th{font:700 7.8pt var(--mono); letter-spacing:.07em; text-transform:uppercase;
+                color:var(--dim); text-align:left; padding:1.6mm 2.5mm; border-bottom:2px solid var(--acc)}
+  table.data td{padding:1.5mm 2.5mm; border-bottom:1px solid var(--border); vertical-align:top}
+  table.data tr:nth-child(even) td{background:var(--panel)}
+  table.data tr{page-break-inside:avoid}
+  td.id{font:700 8pt var(--mono); color:var(--acc); white-space:nowrap}
+  table.odds td{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .kv td:first-child{font:600 8.5pt var(--mono); color:var(--dim); white-space:nowrap}
+  pre{font:8.5pt/1.5 var(--mono); background:#1a2323; color:#e8f0ee; border-radius:2mm;
+      padding:3.5mm 4.5mm; margin:2.5mm 0 4mm; white-space:pre-wrap; page-break-inside:avoid}
+  .toc{margin:4mm 0}
+  .toc li{list-style:none; display:flex; align-items:baseline; margin-bottom:1.6mm}
+  .toc .t{font-weight:600}
+  .toc .no{font:700 9pt var(--mono); color:var(--acc); width:9mm}
+  .toc .dots{flex:1; border-bottom:1px dotted var(--faint); margin:0 2mm}
+  .toc .sub{font-weight:400; color:var(--dim)}
+</style>
+</head>
+<body>
+
+<!-- ================================================================ COVER -->
+<div class="cover">
+  <div>
+    <div class="rule"></div>
+    <div class="kicker">Monstrums Gaming · Quality Assurance</div>
+    <h1>TAP TRADE <em>· QA SPEC</em></h1>
+    <div class="sub">Test specification and acceptance criteria for Tap Trade — every rule,
+    exact expected value, toast string, and money movement, plus the list of intentional
+    behaviors that must not be filed as bugs. Companion to the internal GDD.</div>
+    <table>
+      <tr><td>Document</td><td>QA Test Specification — internal</td></tr>
+      <tr><td>Game ID</td><td class="num">2_6_tap_trade (math) · 2-6-tap-trade (web)</td></tr>
+      <tr><td>Version</td><td class="num">1.0 · 2026-07-22</td></tr>
+      <tr><td>Surfaces</td><td>Web app (primary) · math-sdk frontend_demo (reference)</td></tr>
+      <tr><td>Case prefix</td><td class="num">TT-* · 74 cases across 11 suites</td></tr>
+    </table>
+  </div>
+  <div class="foot">Companion: docs/Tap_Trade_GDD.pdf — design &amp; architecture rationale</div>
+</div>
+
+<!-- ================================================================ TOC -->
+<h2><span class="no">§</span>Contents</h2>
+<ol class="toc">
+  <li><span class="no">1</span><span class="t">Environments &amp; Launch Modes</span><span class="dots"></span><span class="sub">how to run each surface</span></li>
+  <li><span class="no">2</span><span class="t">Smoke Suite</span><span class="dots"></span><span class="sub">TT-SMK — 10 must-pass cases</span></li>
+  <li><span class="no">3</span><span class="t">Placement Rules</span><span class="dots"></span><span class="sub">TT-PLC — rejections &amp; toasts</span></li>
+  <li><span class="no">4</span><span class="t">Wallet &amp; Ledger</span><span class="dots"></span><span class="sub">TT-LED — exact money movements</span></li>
+  <li><span class="no">5</span><span class="t">Multi-Chip &amp; Steering</span><span class="dots"></span><span class="sub">TT-MCH — reveal integrity</span></li>
+  <li><span class="no">6</span><span class="t">Bet Picker &amp; Currency</span><span class="dots"></span><span class="sub">TT-BET — grid, MAX, locale</span></li>
+  <li><span class="no">7</span><span class="t">Settings &amp; Jurisdiction</span><span class="dots"></span><span class="sub">TT-SET — speed, sound, tap-confirm, flags</span></li>
+  <li><span class="no">8</span><span class="t">History &amp; Replay</span><span class="dots"></span><span class="sub">TT-HIS — shots, modal, replay</span></li>
+  <li><span class="no">9</span><span class="t">Splash, Errors &amp; Resume</span><span class="dots"></span><span class="sub">TT-SPL / TT-ERR / TT-RES</span></li>
+  <li><span class="no">10</span><span class="t">Mobile &amp; Accessibility</span><span class="dots"></span><span class="sub">TT-MOB — 700px layout, reduced motion</span></li>
+  <li><span class="no">11</span><span class="t">Math Spot-Checks &amp; Reference</span><span class="dots"></span><span class="sub">book shapes, odds table</span></li>
+  <li><span class="no">12</span><span class="t">Not-A-Bug List</span><span class="dots"></span><span class="sub">intentional behaviors</span></li>
+</ol>
+
+<!-- ================================================================ 1 -->
+<h2><span class="no">1</span>Environments &amp; Launch Modes</h2>
+<table class="data kv">
+  <tr><td>Web app · dev</td><td><code>pnpm run dev --filter=2-6-tap-trade</code> → <code>http://localhost:3026/</code> — offline mock RGS auto-installs (dev builds only). Start balance <span class="num">$2,000</span>.</td></tr>
+  <tr><td>Web app · prod build</td><td><code>pnpm run build --filter=2-6-tap-trade</code> then <code>pnpm run preview</code> — paramless launch must BLOCK (see TT-ERR-05); <code>?demo=1</code> unlocks play-money.</td></tr>
+  <tr><td>Web app · LIVE</td><td>Launch with <code>?rgs_url=&lt;host&gt;&amp;sessionID=&lt;id&gt;&amp;currency=USD&amp;lang=en</code>. Badge shows <strong>LIVE</strong>.</td></tr>
+  <tr><td>Locale testing</td><td>Append <code>&amp;currency=EUR&amp;lang=de</code> (or JPY, or a crypto code) — see TT-BET-05…07.</td></tr>
+  <tr><td>Reference demo</td><td><code>math-sdk/games/2_6_tap_trade/frontend_demo</code>: <code>npm run dev</code>. When behavior differs, <strong>the demo is the spec</strong> — file the web app.</td></tr>
+  <tr><td>Automated</td><td><code>pnpm run test --filter=2-6-tap-trade</code> (22 vitest) · <code>pnpm run storybook</code> → :6026 (CellCallBook win/lose/20×/100× stories) · <code>pnpm run lint / build</code>.</td></tr>
+  <tr><td>Debug handles</td><td>DEV BUILDS ONLY: <code>window.__tt</code> (<code>.simTime()</code>, <code>.cfg</code>, <code>.tapState.chips</code>) and <code>window.__ttHistory</code> (entries). Their <em>absence</em> in a production build is itself a test (TT-ERR-07).</td></tr>
+  <tr><td>Reset state</td><td><code>localStorage.clear()</code> removes <code>taptrade.*</code> keys (betSize, theme, muted, seenHint, speed, tapConfirm). Balance/history reset on reload (in-memory).</td></tr>
+</table>
+<div class="callout"><p><strong>Pointer profile matters:</strong> tap-to-confirm defaults ON
+for coarse pointers (touch) and OFF for mouse. When a single click doesn’t place a chip,
+check Settings → “Tap to confirm” before filing — the first tap only previews (TT-SET-05).</p></div>
+
+<!-- ================================================================ 2 -->
+<h2><span class="no">2</span>Smoke Suite (must pass on every build)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Steps</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-SMK-01</td><td>Load dev app, no params</td><td>Splash (loader → sting), then chart running, balance pill <span class="num">$2,000.00</span> + LOCAL badge, hint visible on first visit, zero console errors (favicon 404 excepted)</td></tr>
+  <tr><td class="id">TT-SMK-02</td><td>Tap a valid future cell (confirm twice if tap-confirm on)</td><td>Chip appears pulsing; balance drops by exactly the bet size, once</td></tr>
+  <tr><td class="id">TT-SMK-03</td><td>Wait for the chip’s column</td><td>Chip goes hot (countdown bar), line visibly hits (win) or misses (loss); win pays at the reveal moment, loss changes nothing</td></tr>
+  <tr><td class="id">TT-SMK-04</td><td>After resolution</td><td>Session strip (top-right pill) shows P/L, “nothing in play”, and a result pip; strip stays visible from now on</td></tr>
+  <tr><td class="id">TT-SMK-05</td><td>Open history (clock button)</td><td>One row with a JPEG thumbnail, amount, multiplier · stake, timestamp</td></tr>
+  <tr><td class="id">TT-SMK-06</td><td>Click the row</td><td>Modal: animated replay into the cell + landing shot + caption; Replay re-runs; Escape closes</td></tr>
+  <tr><td class="id">TT-SMK-07</td><td>Open settings (gear)</td><td>Three rows: Game speed 1×/1.5×/2× · Sound switch · Tap to confirm switch</td></tr>
+  <tr><td class="id">TT-SMK-08</td><td>Switch theme</td><td>Canvas AND all chrome re-skin instantly; toast “Theme: &lt;name&gt;”; persists across reload</td></tr>
+  <tr><td class="id">TT-SMK-09</td><td>Wheel-zoom out fully (0.5×)</td><td>Grid/cells shrink; every placed chip still shows a readable (single-line) stake label; odds labels hide before colliding</td></tr>
+  <tr><td class="id">TT-SMK-10</td><td><code>pnpm run test/lint/build</code></td><td>22 tests pass, lint clean, build green</td></tr>
+</table>
+
+<!-- ================================================================ 3 -->
+<h2><span class="no">3</span>Placement Rules (TT-PLC)</h2>
+<p>Every rejection shows a warn toast; cell-rule rejections also flash the cell red.
+Rejections must cost nothing (no balance change, no chip).</p>
+<table class="data">
+  <thead><tr><th>ID</th><th>Action</th><th>Expected toast</th><th>Red flash</th></tr></thead>
+  <tr><td class="id">TT-PLC-01</td><td>Tap a cell in the shaded dead zone (&lt; 2.5 s ahead)</td><td>“Too close to the line”</td><td>yes</td></tr>
+  <tr><td class="id">TT-PLC-02</td><td>Tap a cell that already has a live chip</td><td>“Chip already there”</td><td>yes</td></tr>
+  <tr><td class="id">TT-PLC-03</td><td>Tap a 3rd distinct cell in a column with 2 live chips</td><td>“Column full — max 2 chips”</td><td>yes</td></tr>
+  <tr><td class="id">TT-PLC-04</td><td>Set bet &gt; displayed balance, tap</td><td>“Insufficient balance”</td><td>no (toast only)</td></tr>
+  <tr><td class="id">TT-PLC-05</td><td>Two chips in one column on distinct cells</td><td>Both accepted; both resolve correctly in the same pass</td><td>—</td></tr>
+  <tr><td class="id">TT-PLC-06</td><td>Chips in different columns (3+)</td><td>All accepted — never rejected for count across columns; rounds settle serially (watch sequential <code>/wallet/play</code>)</td><td>—</td></tr>
+  <tr><td class="id">TT-PLC-07</td><td>Resolved (won/lost) chips in a column</td><td>Do NOT count toward the 2-chip cap</td><td>—</td></tr>
+  <tr><td class="id">TT-PLC-08</td><td>Queued chips + balance</td><td>Each queued chip reserves its stake — a 3rd chip that exceeds the remaining display balance is rejected (TT-PLC-04)</td><td>—</td></tr>
+</table>
+
+<!-- ================================================================ 4 -->
+<h2><span class="no">4</span>Wallet &amp; Ledger (TT-LED) — the critical suite</h2>
+<p>The displayed balance is an optimistic ledger. The <strong>only</strong> legal movements:</p>
+<pre>place chip      →  balance − stake        (immediately, exactly once)
+win REVEAL      →  balance + payout       (at the line-fill moment, not at settlement)
+loss reveal     →  no change              (the stake already left at placement)
+quiescence      →  balance := server RGS balance   (silent reconcile; normally a no-op)</pre>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-LED-01</td><td>Place one chip, let it LOSE</td><td>One deduction at placement; NO second deduction at the explode animation; “Missed” float is a marker, not a debit</td></tr>
+  <tr><td class="id">TT-LED-02</td><td>Place one chip, let it WIN</td><td>Credit lands exactly when the line fills the cell — throttle the network (LIVE/mock) to prove the gap between settlement and reveal shows no early credit</td></tr>
+  <tr><td class="id">TT-LED-03</td><td>3 chips across 2 columns, mixed outcomes</td><td>3 immediate deductions; credits only at each reveal; after the last reveal the pill EQUALS the server balance to the cent (LIVE: last <code>/wallet/*</code> response <code>balance.amount ÷ 1e6</code>)</td></tr>
+  <tr><td class="id">TT-LED-04</td><td>Out-of-order settlement (chips in far column settle while near column reveals)</td><td>The pill NEVER jumps to a stale per-round snapshot — regression for the “$1,010 vs $1,005” drift class</td></tr>
+  <tr><td class="id">TT-LED-05</td><td>Force <code>/wallet/play</code> failure (devtools block) after placing</td><td>Chip removed from the board, stake refunded on the pill, error modal/toast shown; LATER chips unaffected</td></tr>
+  <tr><td class="id">TT-LED-06</td><td>Session strip math</td><td>P/L = Σ(payouts) − Σ(stakes); “$X in play · N chips” counts only unresolved chips; pips cap at 8, newest first with a ring</td></tr>
+  <tr><td class="id">TT-LED-07</td><td>Mixed bet sizes queued (e.g. $3 then $7 chips)</td><td>Each <code>/wallet/play</code> body carries ITS chip’s amount (×1,000,000) and mode — verify in the network tab</td></tr>
+</table>
+<div class="callout bad"><p><strong>File as a launch blocker:</strong> any double deduction,
+any early win credit (before the line reaches the cell), or any post-session mismatch
+between the pill and the RGS balance.</p></div>
+
+<!-- ================================================================ 5 -->
+<h2><span class="no">5</span>Multi-Chip &amp; Steering (TT-MCH)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-MCH-01</td><td>Two winners in one column</td><td>Line converges on one, fills it, then sweeps to the other — BOTH visibly hit</td></tr>
+  <tr><td class="id">TT-MCH-02</td><td>Two losers in one column</td><td>Line holds a miss lane clear of BOTH cells; neither is touched during the reveal window</td></tr>
+  <tr><td class="id">TT-MCH-03</td><td>Winner + loser in one column</td><td>Line enters the winner, never grazes the loser (margin clamp)</td></tr>
+  <tr><td class="id">TT-MCH-04</td><td>Any resolution</td><td>The visual outcome ALWAYS matches the paid outcome — a paid win whose cell the line missed is a launch blocker</td></tr>
+  <tr><td class="id">TT-MCH-05</td><td>Chip resolves while its outcome arrives late</td><td>Fallback: it still resolves correctly by the end of the reveal window (1.6 s)</td></tr>
+  <tr><td class="id">TT-MCH-06</td><td>Background the tab 30 s mid-flight, return</td><td>No burst of invisible resolutions — the sim backlog is dropped; chips resolve on-screen after return</td></tr>
+  <tr><td class="id">TT-MCH-07</td><td>Camera</td><td>A resolving chip never slides off-screen; the view frames the line + nearest live column</td></tr>
+</table>
+
+<!-- ================================================================ 6 -->
+<h2 class="pagebreak"><span class="no">6</span>Bet Picker &amp; Currency (TT-BET)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-BET-01</td><td>Quick chips (offline)</td><td>$1 / $2 / $5 / $20 snapped onto the grid; active chip highlighted; selection persists across reload</td></tr>
+  <tr><td class="id">TT-BET-02</td><td>“+” menu</td><td>Full grid in a 3-column layout; top value renders <strong>MAX</strong> (tooltip = real amount); a non-quick pick fills the single custom slot, highlighted</td></tr>
+  <tr><td class="id">TT-BET-03</td><td>LIVE operator grid</td><td>Picker rebuilt entirely from <code>config.betLevels</code>; every playable amount is on-grid (no <code>ERR_VAL</code> possible via UI)</td></tr>
+  <tr><td class="id">TT-BET-04</td><td>Menus exclusivity</td><td>Only one of bet menu / theme menu / settings / history open at a time; outside click and Escape close them</td></tr>
+  <tr><td class="id">TT-BET-05</td><td><code>?currency=EUR&amp;lang=de</code></td><td>Pill “2.000,00 €”, chips “1 € … 20 €”, canvas chip labels, floats, strip, history — ALL in EUR/de format; no “$” anywhere</td></tr>
+  <tr><td class="id">TT-BET-06</td><td><code>?currency=JPY</code></td><td>Zero-decimal formatting (¥1,000)</td></tr>
+  <tr><td class="id">TT-BET-07</td><td>Crypto/unknown code</td><td>Code-prefix fallback (“XYZ 1.50”) — no crash, no NaN</td></tr>
+  <tr><td class="id">TT-BET-08</td><td>Cell hover / armed preview</td><td>Shows “&lt;mult&gt; · win &lt;amount&gt;” for the CURRENT bet size (+ “tap again to confirm” when armed); hovering a live chip shows “pays &lt;amount&gt;”</td></tr>
+</table>
+
+<!-- ================================================================ 7 -->
+<h2><span class="no">7</span>Settings &amp; Jurisdiction (TT-SET)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-SET-01</td><td>Speed 1× → 2×</td><td>Chart/pace visibly doubles (sim clock only); chip approach times halve; ODDS UNCHANGED; persists (<code>taptrade.speed</code>)</td></tr>
+  <tr><td class="id">TT-SET-02</td><td>Speed at 1×</td><td>Base pace is already 1.3× real time by design (see Not-A-Bug #6)</td></tr>
+  <tr><td class="id">TT-SET-03</td><td>Sound off</td><td>No place/win/loss cues; persists; win/loss visuals unaffected</td></tr>
+  <tr><td class="id">TT-SET-04</td><td>Sound character</td><td>Place = short tick · loss = low thud · win = 2/3/4-note arpeggio for normal/big(≥5×)/epic(≥20×)</td></tr>
+  <tr><td class="id">TT-SET-05</td><td>Tap-to-confirm ON</td><td>First tap/click previews (outlined cell + offer text), second tap on the SAME cell places; tapping elsewhere re-arms; works with a mouse too</td></tr>
+  <tr><td class="id">TT-SET-06</td><td>Tap-to-confirm OFF</td><td>Single tap places immediately</td></tr>
+  <tr><td class="id">TT-SET-07</td><td>Defaults</td><td>Touch device → confirm ON; mouse → OFF (fresh storage)</td></tr>
+  <tr><td class="id">TT-SET-08</td><td><code>jurisdiction.disabledTurbo</code> (mock: edit mockRgs JURISDICTION)</td><td>1.5×/2× hidden; a persisted fast speed resets to 1×</td></tr>
+  <tr><td class="id">TT-SET-09</td><td><code>jurisdiction.socialCasino</code></td><td>Bet row label reads “Play”</td></tr>
+</table>
+
+<!-- ================================================================ 8 -->
+<h2><span class="no">8</span>History &amp; Replay (TT-HIS)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-HIS-01</td><td>Resolve a chip, open the panel (clock button or strip pips)</td><td>Row: JPEG thumbnail (the reveal state visible — gold fill or red flash), ±amount colored, “&lt;mult&gt; · &lt;stake&gt; stake”, clock time</td></tr>
+  <tr><td class="id">TT-HIS-02</td><td>Landing shot content</td><td>Crop centered on the cell, captured ~0.5 s AFTER the reveal so the outcome state shows</td></tr>
+  <tr><td class="id">TT-HIS-03</td><td>Two chips in one column resolve in the same tick</td><td>TWO distinct history rows (unique keys — the <code>each_key_duplicate</code> regression)</td></tr>
+  <tr><td class="id">TT-HIS-04</td><td>Modal replay</td><td>Faithful mini-chart: real cell grid, game aspect ratio, line animates ~1.4 s and ends where the landing shot shows; cell fills with the outcome + “+amount”/“MISS”</td></tr>
+  <tr><td class="id">TT-HIS-05</td><td>Cap &amp; persistence</td><td>Max 24 entries (oldest drop); history clears on reload (in-memory by design)</td></tr>
+  <tr><td class="id">TT-HIS-06</td><td>25+ resolutions</td><td>No unbounded memory growth; panel scrolls with the slim themed scrollbar</td></tr>
+</table>
+
+<!-- ================================================================ 9 -->
+<h2><span class="no">9</span>Splash, Errors &amp; Resume (TT-SPL / TT-ERR / TT-RES)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-SPL-01</td><td>Fresh load</td><td>Loader webp loops once (~2.2 s) on the dark-teal ground → loader fades → ground eases to black → sting video fades in (sound if permitted, else muted, else skipped)</td></tr>
+  <tr><td class="id">TT-SPL-02</td><td>Skip paths</td><td>Escape always dismisses; tap dismisses once the sting is playing; video end/error dismisses; hard failsafe at 20 s — the player can NEVER be trapped</td></tr>
+  <tr><td class="id">TT-SPL-03</td><td>Under the splash</td><td>The game is already running (no dead time after dismissal)</td></tr>
+  <tr><td class="id">TT-ERR-01</td><td>Dismissible errors (e.g. <code>ERR_IPB</code>, <code>ERR_GEN</code>)</td><td>Themed modal, friendly text, “Dismiss” button; game continues</td></tr>
+  <tr><td class="id">TT-ERR-02</td><td>Fatal codes <code>ERR_IS</code> / <code>ERR_ATE</code></td><td>Modal is NOT dismissible — single accent “Reload” button; reload re-authenticates</td></tr>
+  <tr><td class="id">TT-ERR-03</td><td>Error copy</td><td>Codes map to friendly text (session expired / insufficient balance / invalid bet / limit / location / maintenance …) — never a raw code alone</td></tr>
+  <tr><td class="id">TT-ERR-05</td><td>Production build, paramless launch</td><td>Blocking overlay “This game must be launched from the casino.” — no play-money fallback, no bets possible</td></tr>
+  <tr><td class="id">TT-ERR-06</td><td>Production build + <code>?demo=1</code></td><td>Play-money works exactly like dev</td></tr>
+  <tr><td class="id">TT-ERR-07</td><td>Production build console</td><td><code>window.__tt</code> / <code>__ttHistory</code> are UNDEFINED</td></tr>
+  <tr><td class="id">TT-RES-01</td><td>LIVE: refresh mid-round (chip in flight), relaunch</td><td>Round settles silently on authenticate; toast “Last round settled: +&lt;amount&gt;” (win) or “Last round settled”; balance correct; next bets work (no “active round” lockout)</td></tr>
+  <tr><td class="id">TT-RES-02</td><td>After resume</td><td>No ghost chip is painted (the cell position was never persisted — by design)</td></tr>
+</table>
+
+<!-- ================================================================ 10 -->
+<h2 class="pagebreak"><span class="no">10</span>Mobile &amp; Accessibility (TT-MOB)</h2>
+<table class="data">
+  <thead><tr><th>ID</th><th>Scenario (≤ 700 px width)</th><th>Expected</th></tr></thead>
+  <tr><td class="id">TT-MOB-01</td><td>Bottom bar</td><td>Bet row spans full width, “Bet” label hidden, buttons ≥ 44 px, honors the safe-area inset</td></tr>
+  <tr><td class="id">TT-MOB-02</td><td>Zoom rail</td><td>Docked vertically at mid-left</td></tr>
+  <tr><td class="id">TT-MOB-03</td><td>Header</td><td>Compact brand (88 px) + pill at left:110; session strip wraps below, full width, rounded-14</td></tr>
+  <tr><td class="id">TT-MOB-04</td><td>Menus/panels</td><td>Stretch edge-to-edge (12 px margins), capped at 48 vh, above the bottom bar</td></tr>
+  <tr><td class="id">TT-MOB-05</td><td>Title badge</td><td>Hidden</td></tr>
+  <tr><td class="id">TT-MOB-06</td><td>Pinch zoom</td><td>Two-finger pinch zooms; releasing does NOT place a ghost chip (400 ms tap guard)</td></tr>
+  <tr><td class="id">TT-MOB-07</td><td>Toasts / hint</td><td>Toasts stretch and wrap; hint wraps at 82 vw</td></tr>
+  <tr><td class="id">TT-MOB-08</td><td><code>prefers-reduced-motion</code></td><td>No chip shake/pulse/vignette, no menu/switch/splash/hint transitions, replay renders its final frame instantly — chips still resolve correctly</td></tr>
+  <tr><td class="id">TT-MOB-09</td><td>Keyboard / ARIA</td><td>Menus are <code>role="menu"</code> with <code>menuitemradio</code> + <code>aria-checked</code>; switches are <code>role="switch"</code>; focus-visible outlines on all controls; balance pill is <code>aria-live="polite"</code></td></tr>
+</table>
+
+<!-- ================================================================ 11 -->
+<h2><span class="no">11</span>Math Spot-Checks &amp; Reference</h2>
+<h3>11.1 Network-level checks (mock or LIVE)</h3>
+<ul>
+  <li>Every <code>/wallet/play</code> body: <code>mode = "call_&lt;cents&gt;"</code> matching the tapped cell’s displayed multiplier ×100; <code>amount = stake × 1,000,000</code>.</li>
+  <li>Win round: <code>round.active:true</code> in the play response, then exactly one <code>/wallet/end-round</code>. Loss round: <code>round.active:false</code>, NO end-round call.</li>
+  <li>Book events in <code>round.state</code>: win = <code>cellCall → wincap → finalWin</code> (wincap on EVERY win — see Not-A-Bug #1); loss = <code>cellCall → finalWin(amount:0)</code>.</li>
+  <li>Scales: event amounts are bet-cents (450 = 4.5×); <code>round.payoutMultiplier</code> is PLAIN (4.5); API money ×1,000,000.</li>
+</ul>
+<h3>11.2 Displayed multipliers</h3>
+<p>Every multiplier shown on a cell must be one of the 28 ladder values below — nothing
+else may ever be offered. (Cell placement of a given value varies with the volatility
+model; the <em>values</em> may not.)</p>
+<table class="data odds">
+  <thead><tr><th>Mode</th><th>Multiplier</th><th>Win chance (a/b)</th><th>Win %</th><th>RTP</th><th>Books</th></tr></thead>
+  <tbody>
+<tr><td>call_140</td><td>1.4×</td><td>11/16</td><td>68.75%</td><td>96.25%</td><td>16</td></tr>
+<tr><td>call_150</td><td>1.5×</td><td>9/14</td><td>64.29%</td><td>96.43%</td><td>14</td></tr>
+<tr><td>call_160</td><td>1.6×</td><td>3/5</td><td>60.00%</td><td>96.00%</td><td>5</td></tr>
+<tr><td>call_180</td><td>1.8×</td><td>8/15</td><td>53.33%</td><td>96.00%</td><td>15</td></tr>
+<tr><td>call_200</td><td>2×</td><td>12/25</td><td>48.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_220</td><td>2.2×</td><td>7/16</td><td>43.75%</td><td>96.25%</td><td>16</td></tr>
+<tr><td>call_250</td><td>2.5×</td><td>5/13</td><td>38.46%</td><td>96.15%</td><td>13</td></tr>
+<tr><td>call_280</td><td>2.8×</td><td>10/29</td><td>34.48%</td><td>96.55%</td><td>29</td></tr>
+<tr><td>call_320</td><td>3.2×</td><td>3/10</td><td>30.00%</td><td>96.00%</td><td>10</td></tr>
+<tr><td>call_360</td><td>3.6×</td><td>4/15</td><td>26.67%</td><td>96.00%</td><td>15</td></tr>
+<tr><td>call_400</td><td>4×</td><td>6/25</td><td>24.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_450</td><td>4.5×</td><td>3/14</td><td>21.43%</td><td>96.43%</td><td>14</td></tr>
+<tr><td>call_500</td><td>5×</td><td>5/26</td><td>19.23%</td><td>96.15%</td><td>26</td></tr>
+<tr><td>call_600</td><td>6×</td><td>4/25</td><td>16.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_700</td><td>7×</td><td>4/29</td><td>13.79%</td><td>96.55%</td><td>29</td></tr>
+<tr><td>call_800</td><td>8×</td><td>3/25</td><td>12.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_900</td><td>9×</td><td>3/28</td><td>10.71%</td><td>96.43%</td><td>28</td></tr>
+<tr><td>call_1000</td><td>10×</td><td>5/52</td><td>9.62%</td><td>96.15%</td><td>52</td></tr>
+<tr><td>call_1200</td><td>12×</td><td>2/25</td><td>8.00%</td><td>96.00%</td><td>25</td></tr>
+<tr><td>call_1500</td><td>15×</td><td>5/78</td><td>6.41%</td><td>96.15%</td><td>78</td></tr>
+<tr><td>call_2000</td><td>20×</td><td>4/83</td><td>4.82%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_2500</td><td>25×</td><td>1/26</td><td>3.85%</td><td>96.15%</td><td>26</td></tr>
+<tr><td>call_3000</td><td>30×</td><td>4/125</td><td>3.20%</td><td>96.00%</td><td>125</td></tr>
+<tr><td>call_4000</td><td>40×</td><td>2/83</td><td>2.41%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_5000</td><td>50×</td><td>1/52</td><td>1.92%</td><td>96.15%</td><td>52</td></tr>
+<tr><td>call_6500</td><td>65×</td><td>2/135</td><td>1.48%</td><td>96.30%</td><td>135</td></tr>
+<tr><td>call_8000</td><td>80×</td><td>1/83</td><td>1.20%</td><td>96.39%</td><td>83</td></tr>
+<tr><td>call_10000</td><td>100×</td><td>1/104</td><td>0.96%</td><td>96.15%</td><td>104</td></tr>
+  </tbody>
+</table>
+<p>Band <span class="num">96.00–96.55%</span> · spread <span class="num">0.5517%</span> ·
+<span class="num">1,176</span> books. Long-run empirical win rates per mode should trend
+toward the table (LOCAL uses the same published weights).</p>
+
+<!-- ================================================================ 12 -->
+<h2><span class="no">12</span>Not-A-Bug List (do not file)</h2>
+<table class="data">
+  <thead><tr><th>#</th><th>Observation</th><th>Why it’s intentional</th></tr></thead>
+  <tr><td class="id">1</td><td>A <code>wincap</code> event on every winning round, even a 1.4× win</td><td>Per-mode max_win equals the mode’s own multiplier (math-side design); the client no-ops it</td></tr>
+  <tr><td class="id">2</td><td>Only 2 chips per column, even with a gap between cells</td><td>Static cap — a 3rd chip can demand an undrawable win-lose-win pattern; a dynamic cap would leak drawn outcomes</td></tr>
+  <tr><td class="id">3</td><td>Balance doesn’t change when a chip explodes</td><td>The stake left at placement; “Missed” is an outcome marker, not a debit</td></tr>
+  <tr><td class="id">4</td><td>Win credit waits for the line to reach the cell</td><td>Reveal-time crediting is the masking design — an early credit would spoil the outcome</td></tr>
+  <tr><td class="id">5</td><td>The same multiplier appears in different places over time</td><td>Cell pricing follows a live volatility model; only the VALUES are fixed (the ladder)</td></tr>
+  <tr><td class="id">6</td><td>Game feels faster than real time at speed 1×</td><td>Base sim pace is 1.3× by design; the setting multiplies it</td></tr>
+  <tr><td class="id">7</td><td>History clears on reload</td><td>Landing-shot JPEGs are too large for localStorage — in-memory only</td></tr>
+  <tr><td class="id">8</td><td>Balance pill isn’t clickable (demo resets on click in LOCAL)</td><td>The app’s wallet is mock/RGS-owned; no reset affordance on purpose</td></tr>
+  <tr><td class="id">9</td><td>No “Try again” button on errors (demo has one)</td><td>The app compiles its odds in — there is no retryable load; Reload covers recovery</td></tr>
+  <tr><td class="id">10</td><td>Resume shows no chip on the board</td><td>Books are position-neutral; the tapped cell is never persisted</td></tr>
+  <tr><td class="id">11</td><td>Prices/line movement don’t match any real market</td><td>The chart is presentation over pre-generated outcomes (certified replay); prices are theatre</td></tr>
+</table>
+
+</body>
+</html>

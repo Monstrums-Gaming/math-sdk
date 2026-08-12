@@ -38,8 +38,9 @@ The 6 engine files (`gamestate.py`, `game_override.py`, `game_events.py`,
 - `prizes[sku]`: `payout` = RGS multiplier (catalog value at base-bet 1), `prob` = draw
   odds (must sum to 1.0), `criteria` = `"0"` (pays nothing), `"wincap"` (single max
   prize), or any unique `p_*` bucket.
-- `criteria: "0"` is authoritative — its `payout` is forced to 0 (so sub-0.1× catalog
-  values like `$0.01` are legal to author).
+- `criteria: "0"` is authoritative — its `payout` is forced to 0 (so a catalog value
+  below the RGS minimum stays legal to author). Since 2026-08 the RGS accepts payouts
+  down to 0.01×, so only values that round below half a cent need this.
 - `num_sims` must make `num_sims × prob` an exact integer for every prize (100000 works
   for the sample); `run.py` asserts this.
 - `build.sample_events` (default `100`, `0` disables; env override `SAMPLE_EVENTS`) — after
@@ -53,10 +54,11 @@ The 6 engine files (`gamestate.py`, `game_override.py`, `game_events.py`,
 
 - **`box_cost`** (default): payouts authored literally; base mode `cost = box_cost`.
   Reproduces the legacy games but **fails the ACP "cost must be 1.0" validator**.
-- **`unit`**: loader divides each payout by `box_cost`, snaps to the 0.1× grid, sets base
-  mode `cost = 1.0`, and derives `wincap` = max multiplier. **ACP-valid.** Consequence:
-  max-win rescales (e.g. 1000× → 200.8× at box_cost 4.98) and sub-0.1× prizes pay 0. The
-  real box price is set as the ACP bet level. See the `publish-stake-game` skill.
+- **`unit`**: loader divides each payout by `box_cost`, snaps to the 0.01× grid (integer
+  "cents" — the RGS minimum since 2026-08; it was 0.1× before), sets base mode
+  `cost = 1.0`, and derives `wincap` = max multiplier. **ACP-valid.** Consequence:
+  max-win rescales (e.g. 1000× → 200.8× at box_cost 4.98) and sub-0.01× prizes pay 0.
+  The real box price is set as the ACP bet level. See the `publish-stake-game` skill.
 
 ## Build
 
