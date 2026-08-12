@@ -7,10 +7,10 @@ lookup-table weights stay uniform (1 per book) and the win frequencies are drive
 entirely by the distribution quotas.
 
 Each mode uses its own num_sims (the exact denominator N of its win probability,
-<= 100) so the published book counts equal the win chance. ACP-compliant ladder:
-130 cent-resolution modes (winChance 2-70%), RTP 96.25-96.70% (spread 0.45% under
-the strict 0.50% cross-mode limit), per-mode std >= 0.62x (ACP floor 0.60x). The
-RGS accepts whole-cent (0.01x) payouts since 2026-08 (see game_config.py).
+<= 100) so the published book counts equal the win chance; RTP is ~98% across 192
+cent-resolution modes (winChance 2–97%). NOTE: this is a NON-STAKE build — it both
+exceeds Stake's 96.70% ACP cap AND uses off-0.1×-grid (whole-cent) payouts, so it
+cannot be published to Stake Engine (see game_config.py RTP_CEIL / lut_grid_exempt).
 
 Production settings: compression=True and run_format_checks=True (see
 utils/rgs_verification.py::execute_all_tests, which rejects non-.jsonl.zst books).

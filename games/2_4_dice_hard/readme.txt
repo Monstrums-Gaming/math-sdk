@@ -20,43 +20,50 @@ NN, in each direction.
     under_NN  wins if roll < NN   ->  winChance = NN%
     over_NN   wins if roll > NN   ->  winChance = (100 - NN)%
 
-*** STAKE ACP BUILD with CENT-RESOLUTION (0.01x) payouts ***
-The RGS accepts payouts down to 0.01x since 2026-08. The ACP's rejection of the
-earlier 98%-RTP build (2026-08-12) contained ZERO grid errors across 192 whole-cent
-modes — the grid objection is gone. What the ACP DOES enforce (each drawn from
-that rejection) and this ladder is tuned to:
+*** NON-STAKE BUILD — DOES NOT PASS STAKE ACP (two rule violations) ***
+This variant is tuned to a 98% RTP ceiling with CENT-RESOLUTION (0.01x) payouts.
+Stake's ACP dashboard re-checks both server-side and rejects on either:
+  (a) RTP: it recomputes RTP from the LUT and HARD-REJECTS anything above 96.70%
+      ("Return to Player must be between 90% and 96.70%"); this build is ~98%.
+  (b) Grid: it requires every payout to be a multiple of 0.1x; this build pays
+      whole cents (e.g. 1.01x = 101 cents), which is off that grid.
+So this build CANNOT be published to Stake Engine — non-Stake / internal use only.
+To revert to a Stake-legal build: RTP_CEIL=0.967, RTP_FLOOR=0.957, MIN_MULT=1.1,
+snap to the 0.1x grid, and lut_grid_exempt=False in game_config.py, then rebuild.
 
-  (a) RTP band: 90.0% <= per-mode RTP <= 96.70% (recomputed from the LUT).
-  (b) Cross-Mode RTP Consistency: max - min <= 0.50% — the STRICT reading
-      (Kong Climb's approved 0.90% spread would fail this validator today).
-  (c) Base Mode STD: per-mode payout std M*sqrt(w*(1-w)) >= 0.60x. This kills
-      the high-win-chance tail (a 97%-chance 1.01x mode has std 0.17x); with
-      RTP ~0.965 the floor binds at winChance ~71%.
+Why cent resolution: on the coarse 0.1x grid the smallest payout above the 1x stake
+is 1.1x, so a mode only has upside when winChance% * 1.1 <= ceiling — which caps
+roll-under at winChance 89% (under_89); 90%+ can only snap to 1.0x (no profit) and
+drop. Cent (0.01x) resolution lets high win chances pay a real small profit
+(winChance 97% -> 1.01x), so BOTH directions reach target 97 (under_97 / over_03).
 
-Why cent resolution: on the coarse 0.1x grid the ceiling forces multiplier steps
-that leave whole-point RTP gaps (Kong Climb spans 95.7-96.6%). Whole-cent snapping
-pins every mode within half a point of the cap, which is what makes the strict
-0.50% spread limit satisfiable across 130 modes.
+Two rules shape the ladder:
+
+  1. 0.01x (whole-cent) grid: every non-zero payout is an integer number of cents
+     (multiplier * 100), the SDK's native resolution. lut_grid_exempt = True
+     disables the SDK's 0.1x-grid guard so these off-grid cents pass verification.
+  2. RTP band (per-mode): every mode's realised RTP lands in [97.0%, 98.00%]. The
+     tight window keeps the cross-mode spread <= 1.00% — a self-imposed balance
+     choice here (NOT an ACP requirement in this non-Stake build).
+  There is NO volatility/hit-rate rule (modes span a wide hit range).
 
 We FLOOR-snap each multiplier onto the 0.01x grid to the largest value with
-RTP <= 96.70%:
+RTP <= 98.00%:
 
-    multiplier  = largest 0.01x-grid value with (winChance% * mult) <= 96.70%
+    multiplier  = largest 0.01x-grid value with (winChance% * mult) <= 98.00%
     payoutCents = multiplier * 100                  (a whole number of cents)
 
-Compliance filter (130 modes)
+Compliance filter (192 modes)
 -----------------------------
 A mode is kept only when, after floor-snapping:
 
-    payout > 1.00x                 (drop no-upside modes)
-    RTP    in [96.25%, 96.70%]     (realised spread 0.45% < the 0.50% ACP limit)
-    std    >= 0.62x                (margin over the 0.60x ACP Base-STD floor)
+    payout > 1.00x                 (drop no-upside modes; smallest kept is 1.01x)
+    RTP    in [97.0%, 98.0%]       (realised 97.18-98.00%, 0.82% spread)
 
-This yields 130 modes (65 win chances x over/under, winChance 2-70%; win chances
-52/59/62/65 snap below the RTP floor and are skipped — slider UIs must snap to
-the nearest published target) spanning 1.38x .. 48.35x. wincap = 48.35x, carried
-by the 2%-chance modes under_02 / over_98. Min std 0.632x (under_70 / over_30 at
-1.38x).
+Cent resolution snaps every mode just under 98.00%. This yields 192 modes (96 win
+chances x over/under, winChance 2-97%) spanning 1.01x .. 49.0x. wincap = 49.0x,
+carried by the 2%-chance modes under_02 / over_98. Realised RTP ranges 97.18-98.00%.
+Only winChance 98%+ drop (a 1.00x snap = no upside).
 
 Exact integer book counts
 -------------------------
@@ -94,18 +101,15 @@ mode's book counts (win chance) and multiplier, which are UNCHANGED by adding it
 
 NOTE: adding `roll` is an event-structure change, so the books (and their hashes)
 change -- a production rebuild + republish is required for it to go live. Odds are
-untouched (same modes, win chances, multipliers, LUT weights); only the
+untouched (same 192 modes, win chances, multipliers, LUT weights); only the
 diceResult payload grows. Regenerate fairness.json after the prod rebuild.
 
 Build
 -----
 Dev (readable books):
-    env/bin/python games/2_4_dice_hard/run.py
-Production (wipe library/ first if modes changed):
-    COMPRESSION=1 RUN_FORMAT_CHECKS=1 env/bin/python games/2_4_dice_hard/run.py
-then upload library/publish_files/{index.json, books_<mode>.jsonl.zst,
-lookUpTable_<mode>_0.csv} via the ACP dashboard. Regenerate fairness.json
-(fairness_manifest.py), docs/PAYTABLE.md (docs/gen_paytable.py) and
-frontend_demo/dice_hard_rgs.json (frontend_demo/build_demo_data.py) after every
-rebuild. provider_number is a placeholder (2) — set the ACP-assigned value before
-the final upload. Bet levels are set in the ACP dashboard, not here.
+    env/bin/python games/2_4_kong_climb/run.py
+Production: set compression=True and run_conditions["run_format_checks"]=True in
+run.py, then publish library/publish_files/{index.json, books_<mode>.jsonl.zst,
+lookUpTable_<mode>_0.csv} to your (non-Stake) target. NOTE: this 98% build is NOT
+Stake-publishable — the ACP dashboard rejects RTP > 96.70%. provider_number is a
+placeholder (2). Bet levels and gameID are set by the operator, not here.

@@ -8,10 +8,12 @@ description: >-
   <= 0.50%", or "Base Mode STD ... Limit: = 0.60x". Covers the over_NN/under_NN
   model, floor-snapping payouts onto the LUT grid (whole-cent 0.01x is RGS-legal
   since 2026-08), the per-mode + strict cross-mode RTP rules, the per-mode STD
-  floor, and the build/verify loop. Reference games: games/2_4_dice_hard (current
-  ACP-compliant cent-grid ladder) and games/2_4_dice_kong_climb (Kong Climb,
-  legacy 0.1x-grid ladder — its 0.90% spread predates the strict 0.50% validator).
-  Complements the publish-stake-game skill, which owns the ACP upload steps.
+  floor, and the build/verify loop. Reference games: games/2_4_dice_kong_climb
+  (Kong Climb, legacy 0.1x-grid ladder — its 0.90% spread predates the strict
+  0.50% validator) and games/2_4_dice_hard (cent-grid ladder, deliberately
+  NON-STAKE at 98% RTP with the full 2-97 target range; its 2026-08-12 ACP
+  rejection is the source of the tightened rules below). Complements the
+  publish-stake-game skill, which owns the ACP upload steps.
 ---
 
 # Build an ACP-compliant Stake dice game (math-sdk)
@@ -28,11 +30,14 @@ under_NN   wins if roll < NN    ->  winChance = NN%
 over_NN    wins if roll > NN    ->  winChance = (100 - NN)%
 ```
 
-**Reference implementations:** `games/2_4_dice_hard/` is the current ACP-compliant build
-(cent-grid ladder tuned to the 2026-08 validators — read its `game_config.py` module
-docstring first). `games/2_4_dice_kong_climb/` (Kong Climb) is the legacy 0.1×-grid
-ladder; note its 95.7–96.6% band (0.90% spread) predates the strict 0.50% cross-mode
-validator and would be rejected if re-uploaded today. (Kong Climb's folder was
+**Reference implementations:** `games/2_4_dice_kong_climb/` (Kong Climb) is the legacy
+0.1×-grid ladder; note its 95.7–96.6% band (0.90% spread) predates the strict 0.50%
+cross-mode validator and would be rejected if re-uploaded today. `games/2_4_dice_hard/`
+is a cent-grid ladder that is **deliberately non-Stake** (98% RTP, full 2–97 target
+range — kept for a non-Stake operator after its 2026-08-12 ACP rejection revealed the
+tightened validators below; an ACP-compliant 130-mode retune exists in git history at
+`017bef6` if ever needed). No shipped game currently implements the compliant pattern —
+copy the constants block below, not either game's band. (Kong Climb's folder was
 renamed from `2_4_kong_climb`, but its internal `game_id` is still `"2_4_kong_climb"` — so
 build/verify commands that take a `game_id`, like `python -m utils.rgs_verification -g
 2_4_kong_climb`, use the old string while the path uses the new one.)
@@ -95,7 +100,7 @@ dashboard error.
 Hit-rate itself is still not gated (modes span 2–70% win chance) — but the STD floor means
 "too frequent to be volatile" modes are out.
 
-## The compliant design pattern (implemented in `2_4_dice_hard`)
+## The compliant design pattern (verified 2026-08-12; shipped in no game — see git `017bef6`)
 
 Floor-snap each multiplier to the largest **cent-grid** value whose RTP does **not** exceed
 the cap, then keep only payable, volatile-enough modes inside a ≤0.5%-wide RTP window.
@@ -114,12 +119,13 @@ def _cent_mult_below_ceiling(win_chance: int, ceil: float) -> float:
 
 Keep a mode when, after snapping: `payout > 1.00x`, `RTP_FLOOR ≤ RTP ≤ RTP_CEIL`, **and**
 `M·sqrt(w(1−w)) ≥ STD_FLOOR`. `wincap` and the advertised `self.rtp` are **derived** from
-the surviving modes (max multiplier / max mode RTP) — never hard-code them. `2_4_dice_hard`'s
-result: **130 modes** (65 win chances × over/under, winChance 2–70%; 52/59/62/65 snap below
-the RTP floor → ladder gaps, so slider UIs must snap to the nearest published target), RTP
-**96.25–96.70%** (spread 0.45%), min std **0.632×**, wincap **48.35×**, all `cost = 1.0`.
-(Kong Climb's legacy 0.1×-grid pattern — RTP_FLOOR 0.957, 72 modes, 0.90% spread — predates
-the strict spread validator; don't copy its band.)
+the surviving modes (max multiplier / max mode RTP) — never hard-code them. This recipe
+yields (verified from publish_files, commit `017bef6`): **130 modes** (65 win chances ×
+over/under, winChance 2–70%; 52/59/62/65 snap below the RTP floor → ladder gaps, so slider
+UIs must snap to the nearest published target), RTP **96.25–96.70%** (spread 0.45%), min
+std **0.632×**, wincap **48.35×**, all `cost = 1.0`. (Kong Climb's legacy 0.1×-grid pattern
+— RTP_FLOOR 0.957, 72 modes, 0.90% spread — predates the strict spread validator; don't
+copy its band.)
 
 **Exact odds via `num_sims`.** For `winChance = c%`, reduce `c/100 = W/N` in lowest terms
 (`g = gcd(c, 100)`, `W = c/g`, `N = 100/g`); set the mode's `num_sims = N` so it produces
