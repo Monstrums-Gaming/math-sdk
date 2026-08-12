@@ -44,19 +44,21 @@ the `mystery_box` engine — never edit them per-game; author a manifest.**
 - **`prizes[sku]`**: `payout` = RGS multiplier (catalog value at base-bet 1),
   `prob` = draw odds (**must sum to 1.0**), `criteria` = `"0"` (pays nothing),
   `"wincap"` (the single max prize), or any unique `p_*` bucket.
-- **`criteria: "0"` is authoritative** — its `payout` is forced to 0, so sub-0.1×
-  catalog values (like `$0.01`) are legal to author (they just pay nothing).
+- **`criteria: "0"` is authoritative** — its `payout` is forced to 0, so a catalog
+  value below the RGS minimum stays legal to author (it just pays nothing). Since
+  2026-08 the RGS accepts payouts down to **0.01×** (it was 0.1× before), so only
+  values whose unit conversion rounds below half a cent still need this.
 
 ## `cost_model` decides ACP validity — this is the crux
 
 - **`box_cost`** (default): payouts authored literally, base mode `cost = box_cost`.
   Reproduces the legacy math but **FAILS the ACP "Base Mode Cost must be 1.0x"
   validator**. Use only for parity checks, not for an ACP upload.
-- **`unit`**: the loader divides each payout by `box_cost`, snaps to the 0.1× grid,
-  sets base mode `cost = 1.0`, and **derives** `wincap` = max multiplier.
-  **ACP-valid.** Consequences to expect:
+- **`unit`**: the loader divides each payout by `box_cost`, snaps to the 0.01× grid
+  (integer "cents"), sets base mode `cost = 1.0`, and **derives** `wincap` = max
+  multiplier. **ACP-valid.** Consequences to expect:
   - max-win rescales (e.g. `1000× → 200.8×` at `box_cost 4.98`),
-  - sub-0.1× prizes pay `0` (grid floor),
+  - sub-0.01× prizes pay `0` (grid floor),
   - the **real box price becomes the ACP bet level** (set in the dashboard, not here).
 
   `manifests/cash_paradise_unit.json` is the ACP-valid sample — copy it as a starting

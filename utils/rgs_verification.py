@@ -267,7 +267,9 @@ def execute_all_tests(config, excluded_modes=[]):
         if max_rtp_diff > 0.05:
             warnings.warn(f"\n\nMode RTP difference exceedes allowed difference for approvals: {max_rtp_diff}\n")
 
-    fname = f"games/{config.game_id}/library/stats_summary.json"
+    # Use the config's absolute library path — a CWD-relative "games/<id>/..."
+    # breaks when run.py is invoked from outside the repo root (e.g. build.sh).
+    fname = os.path.join(config.library_path, "stats_summary.json")
     write_all_stats(mode_stats, fname)
 
 

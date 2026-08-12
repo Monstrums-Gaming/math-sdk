@@ -133,4 +133,5 @@ Engine ACP — see the `publish-stake-game` skill and
 Note: a manifest with `cost_model: "box_cost"` (base cost = box_cost) reproduces the
 legacy math but **fails** the ACP "cost must be 1.0" validator. For an ACP-valid prod
 build use `cost_model: "unit"` (see `manifests/cash_paradise_unit.json`) — base cost
-becomes 1.0, payouts snap to the 0.1× grid, and the box price is set as the ACP bet level.
+becomes 1.0, payouts snap to the 0.01× grid (the RGS minimum since 2026-08), and the box
+price is set as the ACP bet level.

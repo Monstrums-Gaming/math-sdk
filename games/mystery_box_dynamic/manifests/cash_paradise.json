@@ -17,7 +17,7 @@
         "batching_size": 50000
     },
     "prizes": {
-        "CP1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "0" },
+        "CP1": { "name": "$0.01 Voucher", "payout": 0.01, "prob": 0.302, "criteria": "p_001_voucher" },
         "CP2": { "name": "$0.10 Voucher", "payout": 0.1,  "prob": 0.28,  "criteria": "p_010_voucher" },
         "CP3": { "name": "$1 Voucher",    "payout": 1,    "prob": 0.25,  "criteria": "p_1_voucher" },
         "CP4": { "name": "$2 Voucher",    "payout": 2,    "prob": 0.05,  "criteria": "p_2_voucher" },
